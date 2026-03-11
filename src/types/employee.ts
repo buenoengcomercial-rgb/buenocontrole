@@ -5,6 +5,7 @@ export interface Employee {
   role: string;
   grossSalary: number;
   admissionDate: string;
+  phone: string;
   status: 'ativo' | 'desligado';
   createdAt: string;
 }

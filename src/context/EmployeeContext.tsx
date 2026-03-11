@@ -25,9 +25,9 @@ const genId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
 const SAMPLE_EMPLOYEES: Employee[] = [
-  { id: '1', name: 'João Silva', cpf: '123.456.789-00', role: 'Eletricista', grossSalary: 3500, admissionDate: '2023-03-15', status: 'ativo', createdAt: '2023-03-15' },
-  { id: '2', name: 'Maria Santos', cpf: '987.654.321-00', role: 'Encanadora', grossSalary: 3200, admissionDate: '2023-06-01', status: 'ativo', createdAt: '2023-06-01' },
-  { id: '3', name: 'Carlos Oliveira', cpf: '456.789.123-00', role: 'Pedreiro', grossSalary: 2800, admissionDate: '2024-01-10', status: 'ativo', createdAt: '2024-01-10' },
+  { id: '1', name: 'João Silva', cpf: '123.456.789-00', role: 'Eletricista', grossSalary: 3500, admissionDate: '2023-03-15', phone: '(11) 99999-0001', status: 'ativo', createdAt: '2023-03-15' },
+  { id: '2', name: 'Maria Santos', cpf: '987.654.321-00', role: 'Encanadora', grossSalary: 3200, admissionDate: '2023-06-01', phone: '(11) 99999-0002', status: 'ativo', createdAt: '2023-06-01' },
+  { id: '3', name: 'Carlos Oliveira', cpf: '456.789.123-00', role: 'Pedreiro', grossSalary: 2800, admissionDate: '2024-01-10', phone: '(11) 99999-0003', status: 'ativo', createdAt: '2024-01-10' },
 ];
 
 const SAMPLE_WORK_DAYS: WorkDay[] = (() => {
