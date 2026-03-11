@@ -27,7 +27,7 @@ export default function EmployeesPage() {
   const handleOpen = (e?: Employee) => {
     if (e) {
       setEditId(e.id);
-      setForm({ name: e.name, cpf: e.cpf, role: e.role, grossSalary: e.grossSalary, admissionDate: e.admissionDate, status: e.status });
+      setForm({ name: e.name, cpf: e.cpf, role: e.role, grossSalary: e.grossSalary, admissionDate: e.admissionDate, phone: e.phone || '', status: e.status });
     } else {
       setEditId(null);
       setForm(emptyForm);
