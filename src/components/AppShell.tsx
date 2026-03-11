@@ -3,13 +3,29 @@ import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X, User
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const links = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/fornecedores', label: 'Fornecedores', icon: Truck },
-  { to: '/materiais', label: 'Materiais', icon: Package },
-  { to: '/compras', label: 'Compras', icon: ShoppingCart },
-  { to: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+const sections = [
+  {
+    title: 'Compras',
+    links: [
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/fornecedores', label: 'Fornecedores', icon: Truck },
+      { to: '/materiais', label: 'Materiais', icon: Package },
+      { to: '/compras', label: 'Compras', icon: ShoppingCart },
+      { to: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'Colaboradores',
+    links: [
+      { to: '/colaboradores/painel', label: 'Painel', icon: PieChart },
+      { to: '/colaboradores', label: 'Colaboradores', icon: Users },
+      { to: '/colaboradores/dias', label: 'Dias Trabalhados', icon: CalendarDays },
+      { to: '/colaboradores/pagamentos', label: 'Pagamentos', icon: DollarSign },
+      { to: '/colaboradores/relatorios', label: 'Relatórios', icon: FileText },
+    ],
+  },
 ];
+const links = sections.flatMap(s => s.links);
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
