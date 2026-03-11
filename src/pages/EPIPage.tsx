@@ -128,6 +128,7 @@ export default function EPIPage() {
                   <td className="px-6 py-4 text-sm font-medium">{empName(e.employeeId)}</td>
                   <td className="px-6 py-4 text-sm">{e.epiType}</td>
                   <td className="px-6 py-4 text-sm">{formatDate(e.deliveryDate)}</td>
+                  <td className="px-6 py-4 text-sm">{e.unit || '—'}</td>
                   <td className="px-6 py-4 text-sm text-center">{e.quantity}</td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">{e.notes || '—'}</td>
                   <td className="px-6 py-4 text-right">
