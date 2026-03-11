@@ -67,7 +67,8 @@ export default function EmployeesPage() {
                 <div><label className="label-caps mb-1 block">Cargo</label><Input value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} /></div>
                 <div><label className="label-caps mb-1 block">Salário Bruto</label><Input type="number" min={0} step={0.01} value={form.grossSalary || ''} onChange={e => setForm(f => ({ ...f, grossSalary: Number(e.target.value) }))} /></div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div><label className="label-caps mb-1 block">Telefone</label><Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="(00) 00000-0000" /></div>
                 <div><label className="label-caps mb-1 block">Data de Admissão</label><Input type="date" value={form.admissionDate} onChange={e => setForm(f => ({ ...f, admissionDate: e.target.value }))} /></div>
                 <div>
                   <label className="label-caps mb-1 block">Status</label>
