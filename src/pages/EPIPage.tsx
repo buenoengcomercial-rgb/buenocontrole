@@ -136,7 +136,7 @@ export default function EPIPage() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-meta">Nenhuma entrega registrada.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhuma entrega registrada.</td></tr>}
             </tbody>
           </table>
         </div>

@@ -167,7 +167,11 @@ export default function PurchasesPage() {
                 <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} className="mt-1 shadow-input focus:shadow-input-focus" />
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <Label>Unidade</Label>
+                <Input value={materialId ? (materials.find(m => m.id === materialId)?.unit || '') : ''} readOnly className="mt-1 bg-muted" placeholder="Selecione material" />
+              </div>
               <div>
                 <Label>Quantidade *</Label>
                 <Input type="number" value={quantity} onChange={e => setQuantity(e.target.value)} className="mt-1 shadow-input focus:shadow-input-focus" min="0" step="any" />
