@@ -31,7 +31,7 @@ export default function EPIPage() {
     addEPIDelivery(form);
     toast.success('Entrega de EPI registrada.');
     setOpen(false);
-    setForm({ employeeId: '', epiType: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
+    setForm({ employeeId: '', epiType: '', unit: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
   };
 
   return (
