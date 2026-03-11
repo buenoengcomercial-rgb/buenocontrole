@@ -41,34 +41,41 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </h1>
           <p className="text-xs text-sidebar-foreground mt-0.5">Gestão de Compras</p>
         </div>
-        <nav className="flex-1 px-3 space-y-1">
-          {links.map(link => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === '/'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-indicator"
-                      className="absolute left-0 w-1.5 h-6 rounded-r-sm bg-sidebar-primary"
-                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                    />
-                  )}
-                  <link.icon className="w-[18px] h-[18px] shrink-0" />
-                  {link.label}
-                </>
-              )}
-            </NavLink>
+        <nav className="flex-1 px-3 space-y-4 overflow-y-auto">
+          {sections.map(section => (
+            <div key={section.title}>
+              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/50">{section.title}</p>
+              <div className="space-y-0.5">
+                {section.links.map(link => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.to === '/' || link.to === '/colaboradores'}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                        isActive
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <motion.div
+                            layoutId="sidebar-indicator"
+                            className="absolute left-0 w-1.5 h-6 rounded-r-sm bg-sidebar-primary"
+                            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                          />
+                        )}
+                        <link.icon className="w-[18px] h-[18px] shrink-0" />
+                        {link.label}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
       </aside>
