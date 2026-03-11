@@ -112,24 +112,31 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <div className="px-6 py-6">
                 <h1 className="text-lg font-semibold tracking-tight text-sidebar-accent-foreground">CompraControl</h1>
               </div>
-              <nav className="px-3 space-y-1">
-                {links.map(link => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.to === '/'}
-                    onClick={() => setMobileOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                        isActive
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                          : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
-                      }`
-                    }
-                  >
-                    <link.icon className="w-[18px] h-[18px] shrink-0" />
-                    {link.label}
-                  </NavLink>
+              <nav className="px-3 space-y-4 overflow-y-auto">
+                {sections.map(section => (
+                  <div key={section.title}>
+                    <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/50">{section.title}</p>
+                    <div className="space-y-0.5">
+                      {section.links.map(link => (
+                        <NavLink
+                          key={link.to}
+                          to={link.to}
+                          end={link.to === '/' || link.to === '/colaboradores'}
+                          onClick={() => setMobileOpen(false)}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                              isActive
+                                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                                : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
+                            }`
+                          }
+                        >
+                          <link.icon className="w-[18px] h-[18px] shrink-0" />
+                          {link.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </nav>
             </motion.aside>

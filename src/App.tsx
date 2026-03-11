@@ -26,18 +26,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AppProvider>
-        <BrowserRouter>
-          <AppShell>
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/fornecedores" element={<SuppliersPage />} />
-              <Route path="/materiais" element={<MaterialsPage />} />
-              <Route path="/compras" element={<PurchasesPage />} />
-              <Route path="/relatorios" element={<ReportsPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppShell>
-        </BrowserRouter>
+        <EmployeeProvider>
+          <BrowserRouter>
+            <AppShell>
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/fornecedores" element={<SuppliersPage />} />
+                <Route path="/materiais" element={<MaterialsPage />} />
+                <Route path="/compras" element={<PurchasesPage />} />
+                <Route path="/relatorios" element={<ReportsPage />} />
+                <Route path="/colaboradores" element={<EmployeesPage />} />
+                <Route path="/colaboradores/painel" element={<EmployeeDashboardPage />} />
+                <Route path="/colaboradores/dias" element={<WorkDaysPage />} />
+                <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
+                <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppShell>
+          </BrowserRouter>
+        </EmployeeProvider>
       </AppProvider>
     </TooltipProvider>
   </QueryClientProvider>

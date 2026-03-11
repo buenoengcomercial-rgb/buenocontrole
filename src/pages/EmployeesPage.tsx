@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const emptyForm = { name: '', cpf: '', role: '', grossSalary: 0, admissionDate: '', status: 'ativo' as const };
+const emptyForm: { name: string; cpf: string; role: string; grossSalary: number; admissionDate: string; status: 'ativo' | 'desligado' } = { name: '', cpf: '', role: '', grossSalary: 0, admissionDate: '', status: 'ativo' };
 
 export default function EmployeesPage() {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployeeData();
