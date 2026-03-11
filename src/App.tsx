@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
 import { EmployeeProvider } from "@/context/EmployeeContext";
+import { SafetyProvider } from "@/context/SafetyContext";
 import AppShell from "@/components/AppShell";
 import DashboardPage from "@/pages/DashboardPage";
 import SuppliersPage from "@/pages/SuppliersPage";
@@ -16,6 +17,12 @@ import WorkDaysPage from "@/pages/WorkDaysPage";
 import PaymentsPage from "@/pages/PaymentsPage";
 import EmployeeDashboardPage from "@/pages/EmployeeDashboardPage";
 import EmployeeReportsPage from "@/pages/EmployeeReportsPage";
+import EncargosPage from "@/pages/EncargosPage";
+import FeriasPage from "@/pages/FeriasPage";
+import DocumentacaoPage from "@/pages/DocumentacaoPage";
+import EPIPage from "@/pages/EPIPage";
+import ASOPage from "@/pages/ASOPage";
+import TreinamentosPage from "@/pages/TreinamentosPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -27,23 +34,31 @@ const App = () => (
       <Sonner />
       <AppProvider>
         <EmployeeProvider>
-          <BrowserRouter>
-            <AppShell>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/fornecedores" element={<SuppliersPage />} />
-                <Route path="/materiais" element={<MaterialsPage />} />
-                <Route path="/compras" element={<PurchasesPage />} />
-                <Route path="/relatorios" element={<ReportsPage />} />
-                <Route path="/colaboradores" element={<EmployeesPage />} />
-                <Route path="/colaboradores/painel" element={<EmployeeDashboardPage />} />
-                <Route path="/colaboradores/dias" element={<WorkDaysPage />} />
-                <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
-                <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AppShell>
-          </BrowserRouter>
+          <SafetyProvider>
+            <BrowserRouter>
+              <AppShell>
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/fornecedores" element={<SuppliersPage />} />
+                  <Route path="/materiais" element={<MaterialsPage />} />
+                  <Route path="/compras" element={<PurchasesPage />} />
+                  <Route path="/relatorios" element={<ReportsPage />} />
+                  <Route path="/colaboradores" element={<EmployeesPage />} />
+                  <Route path="/colaboradores/painel" element={<EmployeeDashboardPage />} />
+                  <Route path="/colaboradores/dias" element={<WorkDaysPage />} />
+                  <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
+                  <Route path="/colaboradores/encargos" element={<EncargosPage />} />
+                  <Route path="/colaboradores/ferias" element={<FeriasPage />} />
+                  <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
+                  <Route path="/seguranca/documentacao" element={<DocumentacaoPage />} />
+                  <Route path="/seguranca/epi" element={<EPIPage />} />
+                  <Route path="/seguranca/aso" element={<ASOPage />} />
+                  <Route path="/seguranca/treinamentos" element={<TreinamentosPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AppShell>
+            </BrowserRouter>
+          </SafetyProvider>
         </EmployeeProvider>
       </AppProvider>
     </TooltipProvider>
