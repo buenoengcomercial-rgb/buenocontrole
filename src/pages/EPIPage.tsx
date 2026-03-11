@@ -116,6 +116,7 @@ export default function EPIPage() {
                 <th className="label-caps text-left px-6 py-3">Colaborador</th>
                 <th className="label-caps text-left px-6 py-3">Tipo de EPI</th>
                 <th className="label-caps text-left px-6 py-3">Data</th>
+                <th className="label-caps text-left px-6 py-3">Unidade</th>
                 <th className="label-caps text-center px-6 py-3">Qtd</th>
                 <th className="label-caps text-left px-6 py-3">Observações</th>
                 <th className="label-caps text-right px-6 py-3">Ações</th>
