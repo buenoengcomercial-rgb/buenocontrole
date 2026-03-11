@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
 import { EmployeeProvider } from "@/context/EmployeeContext";
 import { SafetyProvider } from "@/context/SafetyContext";
+import { ProjectProvider } from "@/context/ProjectContext";
 import AppShell from "@/components/AppShell";
 import DashboardPage from "@/pages/DashboardPage";
 import SuppliersPage from "@/pages/SuppliersPage";
@@ -23,6 +24,9 @@ import DocumentacaoPage from "@/pages/DocumentacaoPage";
 import EPIPage from "@/pages/EPIPage";
 import ASOPage from "@/pages/ASOPage";
 import TreinamentosPage from "@/pages/TreinamentosPage";
+import ProjectsPage from "@/pages/ProjectsPage";
+import ProjectDetailPage from "@/pages/ProjectDetailPage";
+import ProjectReportsPage from "@/pages/ProjectReportsPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -35,29 +39,34 @@ const App = () => (
       <AppProvider>
         <EmployeeProvider>
           <SafetyProvider>
-            <BrowserRouter>
-              <AppShell>
-                <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/fornecedores" element={<SuppliersPage />} />
-                  <Route path="/materiais" element={<MaterialsPage />} />
-                  <Route path="/compras" element={<PurchasesPage />} />
-                  <Route path="/relatorios" element={<ReportsPage />} />
-                  <Route path="/colaboradores" element={<EmployeesPage />} />
-                  <Route path="/colaboradores/painel" element={<EmployeeDashboardPage />} />
-                  <Route path="/colaboradores/dias" element={<WorkDaysPage />} />
-                  <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
-                  <Route path="/colaboradores/encargos" element={<EncargosPage />} />
-                  <Route path="/colaboradores/ferias" element={<FeriasPage />} />
-                  <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
-                  <Route path="/seguranca/documentacao" element={<DocumentacaoPage />} />
-                  <Route path="/seguranca/epi" element={<EPIPage />} />
-                  <Route path="/seguranca/aso" element={<ASOPage />} />
-                  <Route path="/seguranca/treinamentos" element={<TreinamentosPage />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AppShell>
-            </BrowserRouter>
+            <ProjectProvider>
+              <BrowserRouter>
+                <AppShell>
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/obras" element={<ProjectsPage />} />
+                    <Route path="/obras/:id" element={<ProjectDetailPage />} />
+                    <Route path="/obras/relatorios" element={<ProjectReportsPage />} />
+                    <Route path="/fornecedores" element={<SuppliersPage />} />
+                    <Route path="/materiais" element={<MaterialsPage />} />
+                    <Route path="/compras" element={<PurchasesPage />} />
+                    <Route path="/relatorios" element={<ReportsPage />} />
+                    <Route path="/colaboradores" element={<EmployeesPage />} />
+                    <Route path="/colaboradores/painel" element={<EmployeeDashboardPage />} />
+                    <Route path="/colaboradores/dias" element={<WorkDaysPage />} />
+                    <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
+                    <Route path="/colaboradores/encargos" element={<EncargosPage />} />
+                    <Route path="/colaboradores/ferias" element={<FeriasPage />} />
+                    <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
+                    <Route path="/seguranca/documentacao" element={<DocumentacaoPage />} />
+                    <Route path="/seguranca/epi" element={<EPIPage />} />
+                    <Route path="/seguranca/aso" element={<ASOPage />} />
+                    <Route path="/seguranca/treinamentos" element={<TreinamentosPage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </AppShell>
+              </BrowserRouter>
+            </ProjectProvider>
           </SafetyProvider>
         </EmployeeProvider>
       </AppProvider>
