@@ -30,6 +30,7 @@ export interface EPIDelivery {
   id: string;
   employeeId: string;
   epiType: string;
+  unit: string;
   deliveryDate: string;
   quantity: number;
   notes: string;

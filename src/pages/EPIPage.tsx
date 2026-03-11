@@ -16,7 +16,7 @@ export default function EPIPage() {
   const { epiDeliveries, addEPIDelivery, deleteEPIDelivery } = useSafetyData();
   const [open, setOpen] = useState(false);
   const [filterEmployee, setFilterEmployee] = useState('all');
-  const [form, setForm] = useState({ employeeId: '', epiType: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
+  const [form, setForm] = useState({ employeeId: '', epiType: '', unit: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
 
   const empName = (id: string) => employees.find(e => e.id === id)?.name ?? '—';
   const activeEmployees = employees.filter(e => e.status === 'ativo');
@@ -31,7 +31,7 @@ export default function EPIPage() {
     addEPIDelivery(form);
     toast.success('Entrega de EPI registrada.');
     setOpen(false);
-    setForm({ employeeId: '', epiType: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
+    setForm({ employeeId: '', epiType: '', unit: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
   };
 
   return (
@@ -65,7 +65,16 @@ export default function EPIPage() {
                   <Input type="date" value={form.deliveryDate} onChange={e => setForm(f => ({ ...f, deliveryDate: e.target.value }))} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="label-caps mb-1 block">Unidade</label>
+                  <Select value={form.unit} onValueChange={v => setForm(f => ({ ...f, unit: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      {['Unidade', 'Par', 'Peça', 'Caixa', 'Pacote', 'Kit'].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <label className="label-caps mb-1 block">Quantidade</label>
                   <Input type="number" min={1} value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: Number(e.target.value) }))} />
@@ -107,6 +116,7 @@ export default function EPIPage() {
                 <th className="label-caps text-left px-6 py-3">Colaborador</th>
                 <th className="label-caps text-left px-6 py-3">Tipo de EPI</th>
                 <th className="label-caps text-left px-6 py-3">Data</th>
+                <th className="label-caps text-left px-6 py-3">Unidade</th>
                 <th className="label-caps text-center px-6 py-3">Qtd</th>
                 <th className="label-caps text-left px-6 py-3">Observações</th>
                 <th className="label-caps text-right px-6 py-3">Ações</th>
@@ -118,6 +128,7 @@ export default function EPIPage() {
                   <td className="px-6 py-4 text-sm font-medium">{empName(e.employeeId)}</td>
                   <td className="px-6 py-4 text-sm">{e.epiType}</td>
                   <td className="px-6 py-4 text-sm">{formatDate(e.deliveryDate)}</td>
+                  <td className="px-6 py-4 text-sm">{e.unit || '—'}</td>
                   <td className="px-6 py-4 text-sm text-center">{e.quantity}</td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">{e.notes || '—'}</td>
                   <td className="px-6 py-4 text-right">
@@ -125,7 +136,7 @@ export default function EPIPage() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-meta">Nenhuma entrega registrada.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhuma entrega registrada.</td></tr>}
             </tbody>
           </table>
         </div>
