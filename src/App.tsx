@@ -4,12 +4,18 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider } from "@/context/AppContext";
+import { EmployeeProvider } from "@/context/EmployeeContext";
 import AppShell from "@/components/AppShell";
 import DashboardPage from "@/pages/DashboardPage";
 import SuppliersPage from "@/pages/SuppliersPage";
 import MaterialsPage from "@/pages/MaterialsPage";
 import PurchasesPage from "@/pages/PurchasesPage";
 import ReportsPage from "@/pages/ReportsPage";
+import EmployeesPage from "@/pages/EmployeesPage";
+import WorkDaysPage from "@/pages/WorkDaysPage";
+import PaymentsPage from "@/pages/PaymentsPage";
+import EmployeeDashboardPage from "@/pages/EmployeeDashboardPage";
+import EmployeeReportsPage from "@/pages/EmployeeReportsPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
