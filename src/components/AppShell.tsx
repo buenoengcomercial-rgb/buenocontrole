@@ -1,0 +1,125 @@
+import { NavLink, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const links = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/fornecedores', label: 'Fornecedores', icon: Truck },
+  { to: '/materiais', label: 'Materiais', icon: Package },
+  { to: '/compras', label: 'Compras', icon: ShoppingCart },
+  { to: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+];
+
+export default function AppShell({ children }: { children: React.ReactNode }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex flex-col w-60 bg-sidebar fixed inset-y-0 left-0 z-30">
+        <div className="px-6 py-6">
+          <h1 className="text-lg font-semibold tracking-tight text-sidebar-accent-foreground">
+            CompraControl
+          </h1>
+          <p className="text-xs text-sidebar-foreground mt-0.5">Gestão de Compras</p>
+        </div>
+        <nav className="flex-1 px-3 space-y-1">
+          {links.map(link => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              end={link.to === '/'}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  isActive
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                    : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-indicator"
+                      className="absolute left-0 w-1.5 h-6 rounded-r-sm bg-sidebar-primary"
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                  <link.icon className="w-[18px] h-[18px] shrink-0" />
+                  {link.label}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 inset-x-0 h-14 bg-sidebar flex items-center px-4 z-40">
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="text-sidebar-foreground hover:text-sidebar-accent-foreground p-1"
+        >
+          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+        <span className="ml-3 text-sm font-semibold text-sidebar-accent-foreground">CompraControl</span>
+      </div>
+
+      {/* Mobile Sidebar */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-foreground/50 z-40"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: -240 }}
+              animate={{ x: 0 }}
+              exit={{ x: -240 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="lg:hidden fixed inset-y-0 left-0 w-60 bg-sidebar z-50"
+            >
+              <div className="px-6 py-6">
+                <h1 className="text-lg font-semibold tracking-tight text-sidebar-accent-foreground">CompraControl</h1>
+              </div>
+              <nav className="px-3 space-y-1">
+                {links.map(link => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.to === '/'}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                        isActive
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
+                      }`
+                    }
+                  >
+                    <link.icon className="w-[18px] h-[18px] shrink-0" />
+                    {link.label}
+                  </NavLink>
+                ))}
+              </nav>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <main className="flex-1 lg:ml-60 pt-14 lg:pt-0">
+        <div className="px-4 py-6 lg:px-12 lg:py-8 max-w-[1400px]">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
