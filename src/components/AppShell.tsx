@@ -1,15 +1,31 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X, Users, CalendarDays, DollarSign, FileText, PieChart } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const links = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/fornecedores', label: 'Fornecedores', icon: Truck },
-  { to: '/materiais', label: 'Materiais', icon: Package },
-  { to: '/compras', label: 'Compras', icon: ShoppingCart },
-  { to: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+const sections = [
+  {
+    title: 'Compras',
+    links: [
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/fornecedores', label: 'Fornecedores', icon: Truck },
+      { to: '/materiais', label: 'Materiais', icon: Package },
+      { to: '/compras', label: 'Compras', icon: ShoppingCart },
+      { to: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'Colaboradores',
+    links: [
+      { to: '/colaboradores/painel', label: 'Painel', icon: PieChart },
+      { to: '/colaboradores', label: 'Colaboradores', icon: Users },
+      { to: '/colaboradores/dias', label: 'Dias Trabalhados', icon: CalendarDays },
+      { to: '/colaboradores/pagamentos', label: 'Pagamentos', icon: DollarSign },
+      { to: '/colaboradores/relatorios', label: 'Relatórios', icon: FileText },
+    ],
+  },
 ];
+const links = sections.flatMap(s => s.links);
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -25,34 +41,41 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </h1>
           <p className="text-xs text-sidebar-foreground mt-0.5">Gestão de Compras</p>
         </div>
-        <nav className="flex-1 px-3 space-y-1">
-          {links.map(link => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === '/'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <motion.div
-                      layoutId="sidebar-indicator"
-                      className="absolute left-0 w-1.5 h-6 rounded-r-sm bg-sidebar-primary"
-                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                    />
-                  )}
-                  <link.icon className="w-[18px] h-[18px] shrink-0" />
-                  {link.label}
-                </>
-              )}
-            </NavLink>
+        <nav className="flex-1 px-3 space-y-4 overflow-y-auto">
+          {sections.map(section => (
+            <div key={section.title}>
+              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/50">{section.title}</p>
+              <div className="space-y-0.5">
+                {section.links.map(link => (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.to === '/' || link.to === '/colaboradores'}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                        isActive
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && (
+                          <motion.div
+                            layoutId="sidebar-indicator"
+                            className="absolute left-0 w-1.5 h-6 rounded-r-sm bg-sidebar-primary"
+                            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                          />
+                        )}
+                        <link.icon className="w-[18px] h-[18px] shrink-0" />
+                        {link.label}
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
       </aside>
@@ -89,24 +112,31 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <div className="px-6 py-6">
                 <h1 className="text-lg font-semibold tracking-tight text-sidebar-accent-foreground">CompraControl</h1>
               </div>
-              <nav className="px-3 space-y-1">
-                {links.map(link => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.to === '/'}
-                    onClick={() => setMobileOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                        isActive
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                          : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
-                      }`
-                    }
-                  >
-                    <link.icon className="w-[18px] h-[18px] shrink-0" />
-                    {link.label}
-                  </NavLink>
+              <nav className="px-3 space-y-4 overflow-y-auto">
+                {sections.map(section => (
+                  <div key={section.title}>
+                    <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/50">{section.title}</p>
+                    <div className="space-y-0.5">
+                      {section.links.map(link => (
+                        <NavLink
+                          key={link.to}
+                          to={link.to}
+                          end={link.to === '/' || link.to === '/colaboradores'}
+                          onClick={() => setMobileOpen(false)}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                              isActive
+                                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                                : 'text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50'
+                            }`
+                          }
+                        >
+                          <link.icon className="w-[18px] h-[18px] shrink-0" />
+                          {link.label}
+                        </NavLink>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </nav>
             </motion.aside>
