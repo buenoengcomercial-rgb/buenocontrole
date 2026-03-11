@@ -16,7 +16,7 @@ export default function EPIPage() {
   const { epiDeliveries, addEPIDelivery, deleteEPIDelivery } = useSafetyData();
   const [open, setOpen] = useState(false);
   const [filterEmployee, setFilterEmployee] = useState('all');
-  const [form, setForm] = useState({ employeeId: '', epiType: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
+  const [form, setForm] = useState({ employeeId: '', epiType: '', unit: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
 
   const empName = (id: string) => employees.find(e => e.id === id)?.name ?? '—';
   const activeEmployees = employees.filter(e => e.status === 'ativo');
