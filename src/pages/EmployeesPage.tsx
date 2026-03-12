@@ -11,7 +11,7 @@ import { Plus, Search, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-rea
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 
-const emptyForm: { name: string; cpf: string; role: string; grossSalary: number; admissionDate: string; phone: string; status: 'ativo' | 'desligado' } = { name: '', cpf: '', role: '', grossSalary: 0, admissionDate: '', phone: '', status: 'ativo' };
+const emptyForm: { name: string; cpf: string; role: string; grossSalary: number; admissionDate: string; phone: string; pixKeyType: string; pixKey: string; status: 'ativo' | 'desligado' } = { name: '', cpf: '', role: '', grossSalary: 0, admissionDate: '', phone: '', pixKeyType: '', pixKey: '', status: 'ativo' };
 
 export default function EmployeesPage() {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployeeData();
