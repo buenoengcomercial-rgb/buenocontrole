@@ -207,7 +207,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       addProjectDocument, updateProjectDocument, deleteProjectDocument,
       addMeasurement, updateMeasurement, deleteMeasurement,
       addDASExpense, updateDASExpense, deleteDASExpense,
-      addProjectPurchase, deleteProjectPurchase,
+      addProjectPurchase, updateProjectPurchase, deleteProjectPurchase,
     }}>
       {children}
     </ProjectContext.Provider>

@@ -109,6 +109,8 @@ export interface ProjectPurchase {
   date: string;
   invoiceNumber: string;
   totalValue: number;
+  freightValue: number;
+  icmsValue: number;
   description: string;
   notes: string;
   createdAt: string;
