@@ -611,21 +611,46 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
 }
 
 /* ── Docs Tab ── */
-function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
+function DocsTab({ projectId, docs, onAdd, onUpdate, onDelete }: any) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ type: 'ART' as ProjectDocType, description: '', documentDate: '', expiryDate: '', fileName: '' });
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({ type: 'ART' as ProjectDocType, description: '', documentDate: '', expiryDate: '', fileName: '', value: 0, paymentDate: '', paymentStatus: 'pendente' as 'pago' | 'pendente', docNotes: '' });
+
+  const totalDocsCost = docs.reduce((s: number, d: any) => s + (d.value || 0), 0);
+  const totalPaid = docs.filter((d: any) => d.paymentStatus === 'pago').reduce((s: number, d: any) => s + (d.value || 0), 0);
+
+  const resetForm = () => setForm({ type: 'ART', description: '', documentDate: '', expiryDate: '', fileName: '', value: 0, paymentDate: '', paymentStatus: 'pendente', docNotes: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd({ ...form, projectId });
-    setForm({ type: 'ART', description: '', documentDate: '', expiryDate: '', fileName: '' });
+    if (editId) {
+      const existing = docs.find((d: any) => d.id === editId)!;
+      onUpdate({ ...existing, ...form });
+      setEditId(null);
+    } else {
+      onAdd({ ...form, projectId });
+    }
+    resetForm();
     setShowForm(false);
+  };
+
+  const handleEdit = (d: any) => {
+    setEditId(d.id);
+    setForm({ type: d.type, description: d.description, documentDate: d.documentDate, expiryDate: d.expiryDate, fileName: d.fileName, value: d.value || 0, paymentDate: d.paymentDate || '', paymentStatus: d.paymentStatus || 'pendente', docNotes: d.docNotes || '' });
+    setShowForm(true);
   };
 
   return (
     <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Total Documentação</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalDocsCost)}</p></div>
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Pago</span><p className="text-xl font-semibold mt-1 text-success">{formatCurrency(totalPaid)}</p></div>
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Pendente</span><p className="text-xl font-semibold mt-1 text-warning">{formatCurrency(totalDocsCost - totalPaid)}</p></div>
+      </div>
+
       <div className="flex justify-end">
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Adicionar Documento</button>
+        <button onClick={() => { setEditId(null); resetForm(); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Adicionar Documento</button>
       </div>
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -637,7 +662,19 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
           <div><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Data do Documento</label><input type="date" value={form.documentDate} onChange={e => setForm({ ...form, documentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Data de Vencimento</label><input type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div className="flex items-end"><button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar</button></div>
+          <div><label className="label-caps block mb-1">Valor (R$)</label><input type="number" step="0.01" value={form.value || ''} onChange={e => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" placeholder="0,00" /></div>
+          <div><label className="label-caps block mb-1">Data do Pagamento</label><input type="date" value={form.paymentDate} onChange={e => setForm({ ...form, paymentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Status Pagamento</label>
+            <select value={form.paymentStatus} onChange={e => setForm({ ...form, paymentStatus: e.target.value as 'pago' | 'pendente' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
+            </select>
+          </div>
+          <div><label className="label-caps block mb-1">Observações</label><input value={form.docNotes} onChange={e => setForm({ ...form, docNotes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div className="md:col-span-2 flex items-end gap-2">
+            <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Atualizar' : 'Salvar'}</button>
+            {editId && <button type="button" onClick={() => { setEditId(null); resetForm(); setShowForm(false); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
+          </div>
         </form>
       )}
       <div className="space-y-2">
@@ -653,11 +690,17 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
                     <span className="text-xs bg-secondary px-2 py-0.5 rounded font-medium">{d.type}</span>
                     {expired && <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Vencido</span>}
                     {expiring && !expired && <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{days}d</span>}
+                    {d.value > 0 && <span className={`text-xs px-2 py-0.5 rounded font-medium ${d.paymentStatus === 'pago' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>{d.paymentStatus === 'pago' ? 'Pago' : 'Pendente'}</span>}
                   </div>
                   <p className="text-sm mt-1">{d.description || '—'}</p>
                   <p className="text-muted-foreground text-xs">{d.documentDate && formatDate(d.documentDate)} {d.expiryDate && `→ ${formatDate(d.expiryDate)}`}</p>
+                  {d.value > 0 && <p className="text-sm font-medium mt-1">{formatCurrency(d.value)} {d.paymentDate && <span className="text-muted-foreground text-xs ml-1">pago em {formatDate(d.paymentDate)}</span>}</p>}
+                  {d.docNotes && <p className="text-xs text-muted-foreground mt-1">{d.docNotes}</p>}
                 </div>
-                <button onClick={() => onDelete(d.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleEdit(d)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => onDelete(d.id)} className="text-destructive p-1.5 rounded-md hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></button>
+                </div>
               </div>
               <AttachedDocuments entityType="project_doc" entityId={d.id} />
             </div>
