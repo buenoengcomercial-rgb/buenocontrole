@@ -374,6 +374,68 @@ export type Database = {
           },
         ]
       }
+      equipment_rentals: {
+        Row: {
+          billing_type: string
+          created_at: string
+          end_date: string | null
+          equipment_name: string
+          equipment_type: string
+          id: string
+          invoice_number: string
+          notes: string
+          project_id: string
+          quantity: number
+          start_date: string
+          supplier: string
+          total_value: number
+          unit_value: number
+          updated_at: string
+        }
+        Insert: {
+          billing_type?: string
+          created_at?: string
+          end_date?: string | null
+          equipment_name: string
+          equipment_type?: string
+          id?: string
+          invoice_number?: string
+          notes?: string
+          project_id: string
+          quantity?: number
+          start_date: string
+          supplier?: string
+          total_value?: number
+          unit_value?: number
+          updated_at?: string
+        }
+        Update: {
+          billing_type?: string
+          created_at?: string
+          end_date?: string | null
+          equipment_name?: string
+          equipment_type?: string
+          id?: string
+          invoice_number?: string
+          notes?: string
+          project_id?: string
+          quantity?: number
+          start_date?: string
+          supplier?: string
+          total_value?: number
+          unit_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_rentals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materials: {
         Row: {
           category: string
