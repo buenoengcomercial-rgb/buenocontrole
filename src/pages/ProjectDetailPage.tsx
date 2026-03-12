@@ -713,10 +713,11 @@ function DocsTab({ projectId, docs, onAdd, onUpdate, onDelete }: any) {
 }
 
 /* ── Costs Tab ── */
-function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects, projectPurchases }: any) {
+function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects, projectPurchases, projectDocs }: any) {
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
   const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0), 0);
   const totalOutsourced = outsourced.reduce((s: number, sv: any) => s + sv.value, 0);
+  const totalDocsCost = (projectDocs || []).reduce((s: number, d: any) => s + (d.value || 0), 0);
 
   const laborCost = useMemo(() => {
     let total = 0;
@@ -739,15 +740,16 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
   const activeProjectCount = allProjects.length || 1;
   const dasCost = useMemo(() => dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount, [dasExpenses, activeProjectCount]);
 
-  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost;
+  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost;
   const profit = project.contractValue - totalCost;
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Materiais / Compras</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalMaterials + totalProjectPurchases)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Mão de Obra</span><p className="text-xl font-semibold mt-1">{formatCurrency(laborCost)}</p><p className="text-xs text-muted-foreground">Inclui 13º proporcional</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Terceirizados</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalOutsourced)}</p></div>
+        <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Documentação</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalDocsCost)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">DAS Proporcional</span><p className="text-xl font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
         <div className="bg-primary text-primary-foreground rounded-xl p-5 shadow-card"><span className="label-caps text-xs text-primary-foreground/70">Custo Total</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalCost)}</p></div>
       </div>
