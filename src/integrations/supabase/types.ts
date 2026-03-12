@@ -835,9 +835,11 @@ export type Database = {
           id: string
           month: string
           net_salary: number
+          notes: string
           other_additions: number
           other_discounts: number
           payment_date: string
+          payment_method: string
         }
         Insert: {
           advance_discount?: number
@@ -847,9 +849,11 @@ export type Database = {
           id?: string
           month: string
           net_salary?: number
+          notes?: string
           other_additions?: number
           other_discounts?: number
           payment_date: string
+          payment_method?: string
         }
         Update: {
           advance_discount?: number
@@ -859,9 +863,11 @@ export type Database = {
           id?: string
           month?: string
           net_salary?: number
+          notes?: string
           other_additions?: number
           other_discounts?: number
           payment_date?: string
+          payment_method?: string
         }
         Relationships: [
           {
