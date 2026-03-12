@@ -73,16 +73,16 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
   // Company Charges
   const addCharge = useCallback(async (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('company_charges').insert({
-      month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
+      charge_type: c.chargeType, month: c.month, value: c.value,
       due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
-    }).select().single();
+    } as any).select().single();
     if (data) setCharges(prev => [...prev, mapCharge(data)]);
   }, []);
   const updateCharge = useCallback(async (c: CompanyCharge) => {
     await supabase.from('company_charges').update({
-      month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
+      charge_type: c.chargeType, month: c.month, value: c.value,
       due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
-    }).eq('id', c.id);
+    } as any).eq('id', c.id);
     setCharges(prev => prev.map(x => x.id === c.id ? c : x));
   }, []);
   const deleteCharge = useCallback(async (id: string) => {
