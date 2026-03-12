@@ -36,8 +36,8 @@ export default function DashboardPage() {
 
   // DAS status
   const dasCurrentMonth = useMemo(() => dasExpenses.find(d => d.month === currentMonth), [dasExpenses, currentMonth]);
-  // INSS/FGTS status (now company-level)
-  const chargeCurrentMonth = useMemo(() => charges.find(c => c.month === currentMonth), [charges, currentMonth]);
+  // INSS/FGTS status (individual records per type)
+  const chargesCurrentMonth = useMemo(() => charges.filter(c => c.month === currentMonth), [charges, currentMonth]);
 
   const projectCostData = useMemo(() => {
     const activeProjectCount = projects.length || 1;
