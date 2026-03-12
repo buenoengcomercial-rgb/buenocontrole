@@ -422,27 +422,103 @@ function AllocationsTab({ projectId, allocations, employees, onAdd, onDelete }: 
 }
 
 /* ── Materials Tab ── */
-function MaterialsTab({ purchases, suppliers, materials }: any) {
+function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurchases, onAdd, onDelete }: any) {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ date: '', supplierId: '', materialId: '', invoiceNumber: '', totalValue: 0, description: '', notes: '' });
+
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
+  const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue, 0);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAdd({ ...form, projectId, supplierId: form.supplierId || null, materialId: form.materialId || null });
+    setForm({ date: '', supplierId: '', materialId: '', invoiceNumber: '', totalValue: 0, description: '', notes: '' });
+    setShowForm(false);
+  };
+
+  const sorted = [...(projectPurchases || [])].sort((a: any, b: any) => b.date.localeCompare(a.date));
+
   return (
     <div className="space-y-4">
-      <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps">Total em Materiais</span><p className="text-2xl font-semibold mt-1">{formatCurrency(totalMaterials)}</p></div>
-      <div className="bg-card rounded-xl shadow-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Material</th><th className="label-caps text-left px-4 py-3">Fornecedor</th><th className="label-caps text-right px-4 py-3">Valor</th></tr></thead>
-          <tbody>
-            {purchases.map((p: any) => (
-              <tr key={p.id} className="border-b border-border">
-                <td className="px-4 py-3">{formatDate(p.date)}</td>
-                <td className="px-4 py-3">{materials.find((m: any) => m.id === p.materialId)?.name || '—'}</td>
-                <td className="px-4 py-3">{suppliers.find((s: any) => s.id === p.supplierId)?.name || '—'}</td>
-                <td className="px-4 py-3 text-right font-medium">{formatCurrency(p.finalPrice)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {purchases.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhum material vinculado.</p>}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Compras da Obra</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalProjectPurchases)}</p></div>
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Materiais (por cidade)</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalMaterials)}</p></div>
+        <div className="bg-primary text-primary-foreground rounded-xl p-4 shadow-card"><span className="label-caps text-xs text-primary-foreground/70">Total Geral</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalMaterials + totalProjectPurchases)}</p></div>
       </div>
+
+      <div className="flex justify-end">
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Nova Compra</button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Fornecedor (opcional)</label>
+            <select value={form.supplierId} onChange={e => setForm({ ...form, supplierId: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <option value="">— Nenhum —</option>
+              {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          <div><label className="label-caps block mb-1">Material (opcional)</label>
+            <select value={form.materialId} onChange={e => setForm({ ...form, materialId: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <option value="">— Nenhum —</option>
+              {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </div>
+          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Valor Total (R$) *</label><input type="number" required min="0" step="0.01" value={form.totalValue || ''} onChange={e => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Descrição *</label><input required value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div className="md:col-span-2"><label className="label-caps block mb-1">Observações</label><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm min-h-[60px]" /></div>
+          <div className="flex items-end"><button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar</button></div>
+        </form>
+      )}
+
+      {/* Project purchases list */}
+      {sorted.length > 0 && (
+        <div className="bg-card rounded-xl shadow-card overflow-hidden">
+          <h3 className="text-sm font-semibold px-4 pt-4 pb-2">Compras da Obra</h3>
+          <table className="w-full text-sm">
+            <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th><th className="label-caps text-left px-4 py-3 hidden lg:table-cell">NF</th><th className="label-caps text-right px-4 py-3">Valor</th><th className="label-caps text-right px-4 py-3">Ações</th></tr></thead>
+            <tbody>
+              {sorted.map((p: any) => (
+                <React.Fragment key={p.id}>
+                  <tr className="border-b border-border hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3">{formatDate(p.date)}</td>
+                    <td className="px-4 py-3">{p.description || '—'}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{p.supplierId ? (suppliers.find((s: any) => s.id === p.supplierId)?.name || '—') : '—'}</td>
+                    <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{p.invoiceNumber || '—'}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(p.totalValue)}</td>
+                    <td className="px-4 py-3 text-right"><button onClick={() => onDelete(p.id)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-4 h-4 text-destructive" /></button></td>
+                  </tr>
+                  <tr><td colSpan={6} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Legacy purchases by city */}
+      {purchases.length > 0 && (
+        <div className="bg-card rounded-xl shadow-card overflow-hidden">
+          <h3 className="text-sm font-semibold px-4 pt-4 pb-2">Materiais vinculados por cidade</h3>
+          <table className="w-full text-sm">
+            <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Material</th><th className="label-caps text-left px-4 py-3">Fornecedor</th><th className="label-caps text-right px-4 py-3">Valor</th></tr></thead>
+            <tbody>
+              {purchases.map((p: any) => (
+                <tr key={p.id} className="border-b border-border">
+                  <td className="px-4 py-3">{formatDate(p.date)}</td>
+                  <td className="px-4 py-3">{materials.find((m: any) => m.id === p.materialId)?.name || '—'}</td>
+                  <td className="px-4 py-3">{suppliers.find((s: any) => s.id === p.supplierId)?.name || '—'}</td>
+                  <td className="px-4 py-3 text-right font-medium">{formatCurrency(p.finalPrice)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {sorted.length === 0 && purchases.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhuma compra registrada.</p>}
     </div>
   );
 }
