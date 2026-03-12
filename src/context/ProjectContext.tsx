@@ -9,6 +9,7 @@ interface ProjectState {
   projectDocuments: ProjectDocument[];
   measurements: Measurement[];
   dasExpenses: DASExpense[];
+  projectPurchases: ProjectPurchase[];
   loading: boolean;
   addProject: (p: Omit<Project, 'id' | 'createdAt'>) => void;
   updateProject: (p: Project) => void;
@@ -26,6 +27,8 @@ interface ProjectState {
   addDASExpense: (d: Omit<DASExpense, 'id' | 'createdAt'>) => void;
   updateDASExpense: (d: DASExpense) => void;
   deleteDASExpense: (id: string) => void;
+  addProjectPurchase: (p: Omit<ProjectPurchase, 'id' | 'createdAt'>) => void;
+  deleteProjectPurchase: (id: string) => void;
 }
 
 const ProjectContext = createContext<ProjectState | null>(null);
