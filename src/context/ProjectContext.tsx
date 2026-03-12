@@ -73,6 +73,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('project_documents').select('*').then(({ data }) => setProjectDocuments((data || []).map(mapProjectDoc))),
       supabase.from('measurements').select('*').then(({ data }) => setMeasurements((data || []).map(mapMeasurement))),
       supabase.from('das_expenses').select('*').then(({ data }) => setDASExpenses((data || []).map(mapDAS))),
+      supabase.from('project_purchases').select('*').then(({ data }) => setProjectPurchases((data || []).map(mapProjectPurchase))),
     ]).finally(() => setLoading(false));
   }, []);
 
