@@ -13,6 +13,11 @@ export interface Vacation {
   startDate: string;
   endDate: string;
   status: 'em_ferias' | 'concluidas';
+  vacationValue: number;
+  bonusValue: number; // 1/3 adicional
+  totalPaid: number;
+  paymentDate: string;
+  notes: string;
   createdAt: string;
 }
 

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
+import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,6 +11,7 @@ import { toast } from 'sonner';
 
 export default function EmployeeReportsPage() {
   const { employees, advances, payments, workDays } = useEmployeeData();
+  const { vacations } = useSafetyData();
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [filterEmployee, setFilterEmployee] = useState('all');
 
@@ -114,6 +116,7 @@ export default function EmployeeReportsPage() {
           <TabsTrigger value="payments">Pagamentos</TabsTrigger>
           <TabsTrigger value="advances">Adiantamentos</TabsTrigger>
           <TabsTrigger value="vouchers">Vale Alimentação</TabsTrigger>
+          <TabsTrigger value="ferias">Férias Pagas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="payments" className="space-y-3">
@@ -209,6 +212,49 @@ export default function EmployeeReportsPage() {
                     </tr>
                   ))}
                   {voucherReport.length === 0 && <tr><td colSpan={4} className="px-6 py-12 text-center text-meta">Nenhum registro encontrado.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="ferias" className="space-y-3">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => {
+              const data = vacations
+                .filter(v => v.paymentDate?.startsWith(month))
+                .filter(v => filterEmployee === 'all' || v.employeeId === filterEmployee)
+                .map(v => ({ Colaborador: employees.find(e => e.id === v.employeeId)?.name || '—', Início: v.startDate, Término: v.endDate, 'Valor Férias': v.vacationValue, '1/3': v.bonusValue, 'Total Pago': v.totalPaid, 'Data Pgto': v.paymentDate }));
+              exportCSV(data, `ferias-pagas-${month}`);
+            }}>
+              <FileDown className="w-4 h-4 mr-2" />Exportar CSV
+            </Button>
+          </div>
+          <div className="bg-card rounded-xl shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead><tr className="bg-muted">
+                  <th className="label-caps text-left px-6 py-3">Colaborador</th>
+                  <th className="label-caps text-left px-6 py-3">Período</th>
+                  <th className="label-caps text-right px-6 py-3">Valor Férias</th>
+                  <th className="label-caps text-right px-6 py-3">1/3</th>
+                  <th className="label-caps text-right px-6 py-3">Total Pago</th>
+                  <th className="label-caps text-left px-6 py-3">Data Pgto</th>
+                </tr></thead>
+                <tbody>
+                  {vacations
+                    .filter(v => v.paymentDate?.startsWith(month))
+                    .filter(v => filterEmployee === 'all' || v.employeeId === filterEmployee)
+                    .map(v => (
+                      <tr key={v.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                        <td className="px-6 py-4 text-sm font-medium">{employees.find(e => e.id === v.employeeId)?.name || '—'}</td>
+                        <td className="px-6 py-4 text-sm">{formatDate(v.startDate)} – {formatDate(v.endDate)}</td>
+                        <td className="px-6 py-4 text-sm text-right">{formatCurrency(v.vacationValue)}</td>
+                        <td className="px-6 py-4 text-sm text-right">{formatCurrency(v.bonusValue)}</td>
+                        <td className="px-6 py-4 text-sm text-right font-semibold">{formatCurrency(v.totalPaid)}</td>
+                        <td className="px-6 py-4 text-sm">{v.paymentDate ? formatDate(v.paymentDate) : '—'}</td>
+                      </tr>
+                    ))}
+                  {vacations.filter(v => v.paymentDate?.startsWith(month)).length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-meta">Nenhuma férias paga no período.</td></tr>}
                 </tbody>
               </table>
             </div>
