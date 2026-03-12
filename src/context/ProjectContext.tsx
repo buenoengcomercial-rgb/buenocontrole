@@ -124,6 +124,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase.from('project_documents').insert({
       project_id: d.projectId, type: d.type, description: d.description, document_date: d.documentDate,
       expiry_date: d.expiryDate || null, file_name: d.fileName,
+      value: d.value || 0, payment_date: d.paymentDate || null, payment_status: d.paymentStatus || 'pendente', doc_notes: d.docNotes || '',
     }).select().single();
     if (data) setProjectDocuments(prev => [...prev, mapProjectDoc(data)]);
   }, []);
@@ -131,6 +132,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     await supabase.from('project_documents').update({
       project_id: d.projectId, type: d.type, description: d.description, document_date: d.documentDate,
       expiry_date: d.expiryDate || null, file_name: d.fileName,
+      value: d.value || 0, payment_date: d.paymentDate || null, payment_status: d.paymentStatus || 'pendente', doc_notes: d.docNotes || '',
     }).eq('id', d.id);
     setProjectDocuments(prev => prev.map(x => x.id === d.id ? d : x));
   }, []);
