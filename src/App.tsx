@@ -42,6 +42,7 @@ const App = () => (
         <EmployeeProvider>
           <SafetyProvider>
             <ProjectProvider>
+              <AttachmentProvider>
               <BrowserRouter>
                 <AppShell>
                   <Routes>
