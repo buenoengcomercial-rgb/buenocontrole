@@ -18,6 +18,12 @@ const sections = [
     ],
   },
   {
+    title: 'Financeiro',
+    links: [
+      { to: '/financeiro/das', label: 'DAS — Simples Nacional', icon: Receipt },
+    ],
+  },
+  {
     title: 'Compras',
     links: [
       { to: '/fornecedores', label: 'Fornecedores', icon: Truck },

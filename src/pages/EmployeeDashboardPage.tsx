@@ -1,15 +1,16 @@
 import { useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { formatCurrency } from '@/lib/format';
-import { Users, DollarSign, ArrowUpCircle, UtensilsCrossed } from 'lucide-react';
+import { calculate13thSalary } from '@/types/employee';
+import { Users, DollarSign, ArrowUpCircle, UtensilsCrossed, Gift } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function EmployeeDashboardPage() {
   const { employees, advances, payments, workDays } = useEmployeeData();
   const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentYear = new Date().getFullYear();
 
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
-
   const totalSalaries = useMemo(() => activeEmployees.reduce((s, e) => s + e.grossSalary, 0), [activeEmployees]);
 
   const totalAdvancesMonth = useMemo(() =>
@@ -22,16 +23,25 @@ export default function EmployeeDashboardPage() {
     [workDays, currentMonth]
   );
 
-  const totalPayroll = totalSalaries + totalMealVoucher;
+  // 13th salary
+  const thirteenthData = useMemo(() =>
+    activeEmployees.map(e => ({
+      id: e.id,
+      name: e.name,
+      value: calculate13thSalary(e.grossSalary, e.admissionDate, currentYear),
+    })),
+    [activeEmployees, currentYear]
+  );
+  const total13th = useMemo(() => thirteenthData.reduce((s, d) => s + d.value, 0), [thirteenthData]);
 
   const kpis = [
     { label: 'Folha Salarial', value: formatCurrency(totalSalaries), icon: DollarSign, accent: true },
     { label: 'Adiantamentos no Mês', value: formatCurrency(totalAdvancesMonth), icon: ArrowUpCircle },
     { label: 'Vale Alimentação no Mês', value: formatCurrency(totalMealVoucher), icon: UtensilsCrossed },
+    { label: '13º Acumulado', value: formatCurrency(total13th), icon: Gift },
     { label: 'Colaboradores Ativos', value: activeEmployees.length.toString(), icon: Users },
   ];
 
-  // Monthly payroll chart
   const monthlyData = useMemo(() => {
     const months: Record<string, { salaries: number; vouchers: number }> = {};
     payments.forEach(p => {
@@ -43,25 +53,22 @@ export default function EmployeeDashboardPage() {
       if (!months[m]) months[m] = { salaries: 0, vouchers: 0 };
       months[m].vouchers += w.mealVoucherValue;
     });
-    return Object.entries(months)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-6)
-      .map(([month, data]) => ({
-        month: new Date(month + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-        salarios: data.salaries,
-        va: data.vouchers,
-      }));
+    return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).slice(-6).map(([month, data]) => ({
+      month: new Date(month + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      salarios: data.salaries,
+      va: data.vouchers,
+    }));
   }, [payments, workDays]);
 
   return (
     <div className="space-y-8">
       <h1>Painel de Colaboradores</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {kpis.map(kpi => (
           <div key={kpi.label} className={`rounded-xl p-6 shadow-card ${kpi.accent ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
             <div className="flex items-center justify-between mb-3">
-              <span className={`label-caps ${kpi.accent ? 'text-primary-foreground/70' : ''}`}>{kpi.label}</span>
+              <span className={`label-caps text-xs ${kpi.accent ? 'text-primary-foreground/70' : ''}`}>{kpi.label}</span>
               <kpi.icon className={`w-5 h-5 ${kpi.accent ? 'text-primary-foreground/50' : 'text-muted-foreground'}`} />
             </div>
             <p className="text-2xl font-semibold tracking-tight">{kpi.value}</p>
@@ -86,19 +93,21 @@ export default function EmployeeDashboardPage() {
           </div>
         </div>
 
+        {/* 13th salary breakdown */}
         <div className="bg-card rounded-xl p-6 shadow-card">
-          <h2 className="mb-4">Colaboradores Ativos</h2>
+          <h2 className="mb-4">13º Salário Proporcional ({currentYear})</h2>
           <div className="space-y-3">
-            {activeEmployees.map(e => (
-              <div key={e.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div>
-                  <p className="text-sm font-medium">{e.name}</p>
-                  <p className="text-xs text-muted-foreground">{e.role}</p>
-                </div>
-                <span className="text-sm font-medium">{formatCurrency(e.grossSalary)}</span>
+            {thirteenthData.map(d => (
+              <div key={d.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <p className="text-sm font-medium">{d.name}</p>
+                <span className="text-sm font-medium">{formatCurrency(d.value)}</span>
               </div>
             ))}
-            {activeEmployees.length === 0 && <p className="text-meta">Nenhum colaborador ativo.</p>}
+            {thirteenthData.length === 0 && <p className="text-muted-foreground text-sm">Nenhum colaborador ativo.</p>}
+            <div className="flex items-center justify-between pt-2 border-t-2 border-border">
+              <p className="text-sm font-bold">Total</p>
+              <span className="text-sm font-bold text-primary">{formatCurrency(total13th)}</span>
+            </div>
           </div>
         </div>
       </div>

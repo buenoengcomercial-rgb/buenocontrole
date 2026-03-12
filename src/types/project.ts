@@ -70,3 +70,33 @@ export interface ProjectDocument {
   fileName: string;
   createdAt: string;
 }
+
+export type MeasurementStatus = 'pendente' | 'enviada' | 'aprovada' | 'paga';
+
+export const MEASUREMENT_STATUSES: { value: MeasurementStatus; label: string }[] = [
+  { value: 'pendente', label: 'Pendente' },
+  { value: 'enviada', label: 'Enviada' },
+  { value: 'aprovada', label: 'Aprovada' },
+  { value: 'paga', label: 'Paga' },
+];
+
+export interface Measurement {
+  id: string;
+  projectId: string;
+  number: number;
+  date: string;
+  description: string;
+  value: number;
+  percentExecuted: number;
+  status: MeasurementStatus;
+  createdAt: string;
+}
+
+export interface DASExpense {
+  id: string;
+  month: string; // YYYY-MM
+  dueDate: string;
+  value: number;
+  paid: boolean;
+  createdAt: string;
+}
