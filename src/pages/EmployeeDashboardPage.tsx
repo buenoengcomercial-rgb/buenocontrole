@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency } from '@/lib/format';
-import { calculate13thSalary } from '@/types/employee';
-import { Users, DollarSign, ArrowUpCircle, UtensilsCrossed, Gift, Palmtree } from 'lucide-react';
+import { Users, DollarSign, ArrowUpCircle, UtensilsCrossed, Palmtree } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function EmployeeDashboardPage() {
