@@ -336,7 +336,8 @@ function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }:
           </tr></thead>
           <tbody>
             {measurements.sort((a, b) => a.number - b.number).map((m) => (
-              <tr key={m.id} className="border-b border-border">
+              <React.Fragment key={m.id}>
+              <tr className="border-b border-border">
                 <td className="px-4 py-3 font-medium">#{m.number}</td>
                 <td className="px-4 py-3">{formatDate(m.date)}</td>
                 <td className="px-4 py-3">{m.description}</td>
@@ -350,6 +351,8 @@ function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }:
                   </div>
                 </td>
               </tr>
+              <tr><td colSpan={7} className="px-4 py-2 bg-muted/30"><AttachedDocuments entityType="measurement" entityId={m.id} /></td></tr>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
