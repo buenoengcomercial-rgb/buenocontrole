@@ -1,17 +1,17 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { PayrollCharge, Vacation, EmployeeDocument, EPIDelivery, ASO, Training } from '@/types/safety';
+import type { CompanyCharge, Vacation, EmployeeDocument, EPIDelivery, ASO, Training } from '@/types/safety';
 
 interface SafetyState {
-  charges: PayrollCharge[];
+  charges: CompanyCharge[];
   vacations: Vacation[];
   documents: EmployeeDocument[];
   epiDeliveries: EPIDelivery[];
   asos: ASO[];
   trainings: Training[];
   loading: boolean;
-  addCharge: (c: Omit<PayrollCharge, 'id' | 'createdAt'>) => void;
-  updateCharge: (c: PayrollCharge) => void;
+  addCharge: (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => void;
+  updateCharge: (c: CompanyCharge) => void;
   deleteCharge: (id: string) => void;
   addVacation: (v: Omit<Vacation, 'id' | 'createdAt'>) => void;
   updateVacation: (v: Vacation) => void;
@@ -31,8 +31,8 @@ interface SafetyState {
 
 const SafetyContext = createContext<SafetyState | null>(null);
 
-function mapCharge(r: any): PayrollCharge {
-  return { id: r.id, employeeId: r.employee_id, month: r.month, inssValue: Number(r.inss_value), fgtsValue: Number(r.fgts_value), dueDate: r.due_date || '', paid: r.paid, paidValue: Number(r.paid_value), paymentDate: r.payment_date || '', createdAt: r.created_at };
+function mapCharge(r: any): CompanyCharge {
+  return { id: r.id, month: r.month, inssValue: Number(r.inss_value), fgtsValue: Number(r.fgts_value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: r.notes || '', createdAt: r.created_at };
 }
 function mapVacation(r: any): Vacation {
   return { id: r.id, employeeId: r.employee_id, startDate: r.start_date, endDate: r.end_date, status: r.status as Vacation['status'], vacationValue: Number(r.vacation_value), bonusValue: Number(r.bonus_value), totalPaid: Number(r.total_paid), paymentDate: r.payment_date || '', notes: r.notes, createdAt: r.created_at };
@@ -51,7 +51,7 @@ function mapTraining(r: any): Training {
 }
 
 export function SafetyProvider({ children }: { children: React.ReactNode }) {
-  const [charges, setCharges] = useState<PayrollCharge[]>([]);
+  const [charges, setCharges] = useState<CompanyCharge[]>([]);
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [epiDeliveries, setEPIDeliveries] = useState<EPIDelivery[]>([]);
@@ -61,7 +61,7 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('payroll_charges').select('*').then(({ data }) => setCharges((data || []).map(mapCharge))),
+      supabase.from('company_charges').select('*').then(({ data }) => setCharges((data || []).map(mapCharge))),
       supabase.from('vacations').select('*').then(({ data }) => setVacations((data || []).map(mapVacation))),
       supabase.from('employee_documents').select('*').then(({ data }) => setDocuments((data || []).map(mapDoc))),
       supabase.from('epi_deliveries').select('*').then(({ data }) => setEPIDeliveries((data || []).map(mapEPI))),
@@ -70,23 +70,23 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
     ]).finally(() => setLoading(false));
   }, []);
 
-  // Charges
-  const addCharge = useCallback(async (c: Omit<PayrollCharge, 'id' | 'createdAt'>) => {
-    const { data } = await supabase.from('payroll_charges').insert({
-      employee_id: c.employeeId, month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
-      due_date: c.dueDate || null, paid: c.paid, paid_value: c.paidValue, payment_date: c.paymentDate || null,
+  // Company Charges
+  const addCharge = useCallback(async (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('company_charges').insert({
+      month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
+      due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
     }).select().single();
     if (data) setCharges(prev => [...prev, mapCharge(data)]);
   }, []);
-  const updateCharge = useCallback(async (c: PayrollCharge) => {
-    await supabase.from('payroll_charges').update({
-      employee_id: c.employeeId, month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
-      due_date: c.dueDate || null, paid: c.paid, paid_value: c.paidValue, payment_date: c.paymentDate || null,
+  const updateCharge = useCallback(async (c: CompanyCharge) => {
+    await supabase.from('company_charges').update({
+      month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
+      due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
     }).eq('id', c.id);
     setCharges(prev => prev.map(x => x.id === c.id ? c : x));
   }, []);
   const deleteCharge = useCallback(async (id: string) => {
-    await supabase.from('payroll_charges').delete().eq('id', id);
+    await supabase.from('company_charges').delete().eq('id', id);
     setCharges(prev => prev.filter(x => x.id !== id));
   }, []);
 

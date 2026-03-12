@@ -19,7 +19,6 @@ serve(async (req) => {
     const today = new Date();
     const todayStr = today.toISOString().slice(0, 10);
     
-    // Calculate reminder window: 5 days before due date
     const reminderDate = new Date(today);
     reminderDate.setDate(reminderDate.getDate() + 5);
     const reminderStr = reminderDate.toISOString().slice(0, 10);
@@ -42,22 +41,28 @@ serve(async (req) => {
       }
     }
 
-    // Check payroll charges (INSS/FGTS)
+    // Check company charges (INSS/FGTS) - now company-level, not per employee
     const { data: chargesData } = await supabase
-      .from('payroll_charges')
-      .select('*, employees(name)')
+      .from('company_charges')
+      .select('*')
       .eq('paid', false)
-      .not('due_date', 'is', null)
       .lte('due_date', reminderStr);
 
     if (chargesData && chargesData.length > 0) {
       for (const charge of chargesData) {
         const isOverdue = charge.due_date < todayStr;
-        const empName = (charge as any).employees?.name || 'N/A';
-        const total = Number(charge.inss_value) + Number(charge.fgts_value);
-        pendingItems.push(
-          `• INSS/FGTS ${charge.month} (${empName}): R$ ${total.toFixed(2)} - Vencimento: ${charge.due_date} ${isOverdue ? '⚠️ VENCIDO' : '⏰ Próximo do vencimento'}`
-        );
+        const totalInss = Number(charge.inss_value);
+        const totalFgts = Number(charge.fgts_value);
+        if (totalInss > 0) {
+          pendingItems.push(
+            `• INSS ${charge.month}: R$ ${totalInss.toFixed(2)} - Vencimento: ${charge.due_date} ${isOverdue ? '⚠️ VENCIDO' : '⏰ Próximo do vencimento'}`
+          );
+        }
+        if (totalFgts > 0) {
+          pendingItems.push(
+            `• FGTS ${charge.month}: R$ ${totalFgts.toFixed(2)} - Vencimento: ${charge.due_date} ${isOverdue ? '⚠️ VENCIDO' : '⏰ Próximo do vencimento'}`
+          );
+        }
       }
     }
 
@@ -67,7 +72,6 @@ serve(async (req) => {
       });
     }
 
-    // Build notification message
     const subject = `[EngControl] ${pendingItems.length} pagamento(s) pendente(s)`;
     const body = `Olá,\n\nOs seguintes pagamentos estão pendentes ou próximos do vencimento:\n\n${pendingItems.join('\n')}\n\nPor favor, verifique e realize os pagamentos necessários.\n\n— Sistema EngControl`;
 
@@ -75,7 +79,7 @@ serve(async (req) => {
     console.log(`Subject: ${subject}`);
     console.log(`Body: ${body}`);
 
-    // Try to send email via Lovable's transactional email if available
+    // Try to send email
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (lovableApiKey) {
       try {
