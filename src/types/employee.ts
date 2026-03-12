@@ -69,3 +69,23 @@ export function getSalaryPaymentDate(year: number, month: number): Date {
   }
   return d;
 }
+
+/** Calculate proportional 13th salary for a given year */
+export function calculate13thSalary(grossSalary: number, admissionDate: string, year: number): number {
+  const admission = new Date(admissionDate + 'T00:00:00');
+  const admYear = admission.getFullYear();
+  if (admYear > year) return 0;
+  const admMonth = admission.getMonth(); // 0-indexed
+  // If admitted after day 15 of the month, that month doesn't count
+  const firstMonth = admYear === year
+    ? (admission.getDate() > 15 ? admMonth + 1 : admMonth)
+    : 0;
+  const months = Math.max(0, Math.min(12, 12 - firstMonth));
+  return Math.round((grossSalary / 12) * months * 100) / 100;
+}
+
+/** Calculate daily 13th salary cost for a single day worked */
+export function calculate13thDailyCost(grossSalary: number): number {
+  // 13th = 1 month salary / year => daily portion = grossSalary / (12 * 22)
+  return grossSalary / (12 * 22);
+}

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X, Users, CalendarDays, DollarSign, FileText, PieChart, Shield, HardHat, Palmtree, BookOpen, GraduationCap, Stethoscope, Building2, Wrench } from 'lucide-react';
+import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X, Users, CalendarDays, DollarSign, FileText, PieChart, Shield, HardHat, Palmtree, BookOpen, GraduationCap, Stethoscope, Building2, Wrench, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -15,6 +15,12 @@ const sections = [
     links: [
       { to: '/obras', label: 'Obras e Projetos', icon: Building2 },
       { to: '/obras/relatorios', label: 'Relatórios de Obras', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'Financeiro',
+    links: [
+      { to: '/financeiro/das', label: 'DAS — Simples Nacional', icon: Receipt },
     ],
   },
   {
