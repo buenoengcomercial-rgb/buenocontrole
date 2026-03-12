@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
+import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
