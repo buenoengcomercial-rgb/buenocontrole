@@ -32,7 +32,7 @@ interface SafetyState {
 const SafetyContext = createContext<SafetyState | null>(null);
 
 function mapCharge(r: any): CompanyCharge {
-  return { id: r.id, month: r.month, inssValue: Number(r.inss_value), fgtsValue: Number(r.fgts_value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: r.notes || '', createdAt: r.created_at };
+  return { id: r.id, chargeType: r.charge_type as CompanyCharge['chargeType'], month: r.month, value: Number(r.value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: r.notes || '', createdAt: r.created_at };
 }
 function mapVacation(r: any): Vacation {
   return { id: r.id, employeeId: r.employee_id, startDate: r.start_date, endDate: r.end_date, status: r.status as Vacation['status'], vacationValue: Number(r.vacation_value), bonusValue: Number(r.bonus_value), totalPaid: Number(r.total_paid), paymentDate: r.payment_date || '', notes: r.notes, createdAt: r.created_at };
@@ -73,16 +73,16 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
   // Company Charges
   const addCharge = useCallback(async (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('company_charges').insert({
-      month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
+      charge_type: c.chargeType, month: c.month, value: c.value,
       due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
-    }).select().single();
+    } as any).select().single();
     if (data) setCharges(prev => [...prev, mapCharge(data)]);
   }, []);
   const updateCharge = useCallback(async (c: CompanyCharge) => {
     await supabase.from('company_charges').update({
-      month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
+      charge_type: c.chargeType, month: c.month, value: c.value,
       due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
-    }).eq('id', c.id);
+    } as any).eq('id', c.id);
     setCharges(prev => prev.map(x => x.id === c.id ? c : x));
   }, []);
   const deleteCharge = useCallback(async (id: string) => {

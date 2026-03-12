@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const activeEmployees = employees.filter(e => e.status === 'ativo');
 
   const totalPayroll = useMemo(() => activeEmployees.reduce((s, e) => s + e.grossSalary, 0), [activeEmployees]);
-  const totalCharges = useMemo(() => charges.filter(c => c.month === currentMonth).reduce((s, c) => s + c.inssValue + c.fgtsValue, 0), [charges, currentMonth]);
+  const totalCharges = useMemo(() => charges.filter(c => c.month === currentMonth).reduce((s, c) => s + c.value, 0), [charges, currentMonth]);
   const totalMealVoucher = useMemo(() => workDays.filter(w => w.date.startsWith(currentMonth)).reduce((s, w) => s + w.mealVoucherValue, 0), [workDays, currentMonth]);
   const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === currentMonth).reduce((s, d) => s + d.value, 0), [dasExpenses, currentMonth]);
 
@@ -36,13 +36,13 @@ export default function DashboardPage() {
 
   // DAS status
   const dasCurrentMonth = useMemo(() => dasExpenses.find(d => d.month === currentMonth), [dasExpenses, currentMonth]);
-  // INSS/FGTS status (now company-level)
-  const chargeCurrentMonth = useMemo(() => charges.find(c => c.month === currentMonth), [charges, currentMonth]);
+  // INSS/FGTS status (individual records per type)
+  const chargesCurrentMonth = useMemo(() => charges.filter(c => c.month === currentMonth), [charges, currentMonth]);
 
   const projectCostData = useMemo(() => {
     const activeProjectCount = projects.length || 1;
     const totalDAS = dasExpenses.reduce((s, d) => s + d.value, 0);
-    const totalChargesAll = charges.reduce((s, c) => s + c.inssValue + c.fgtsValue, 0);
+    const totalChargesAll = charges.reduce((s, c) => s + c.value, 0);
     return projects.map(p => {
       const projAllocs = allocations.filter(a => a.projectId === p.id && a.worked);
       const projPurchases = purchases.filter(pu => pu.city === p.city);
@@ -145,13 +145,15 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-foreground">INSS</span>
             <Shield className="w-4 h-4 text-muted-foreground" />
           </div>
-          {chargeCurrentMonth ? (
-            chargeCurrentMonth.paid
-              ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
-              : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Sem registro neste mês</span>
-          )}
+          {(() => {
+            const inssCharge = chargesCurrentMonth.find(c => c.chargeType === 'INSS');
+            if (inssCharge) {
+              return inssCharge.paid
+                ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
+                : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>;
+            }
+            return <span className="text-xs text-muted-foreground">Sem registro neste mês</span>;
+          })()}
         </Link>
 
         <Link to="/colaboradores/encargos" className="bg-card rounded-xl p-4 shadow-card hover:shadow-md transition-shadow">
@@ -159,13 +161,15 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-foreground">FGTS</span>
             <Shield className="w-4 h-4 text-muted-foreground" />
           </div>
-          {chargeCurrentMonth ? (
-            chargeCurrentMonth.paid
-              ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
-              : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Sem registro neste mês</span>
-          )}
+          {(() => {
+            const fgtsCharge = chargesCurrentMonth.find(c => c.chargeType === 'FGTS');
+            if (fgtsCharge) {
+              return fgtsCharge.paid
+                ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
+                : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>;
+            }
+            return <span className="text-xs text-muted-foreground">Sem registro neste mês</span>;
+          })()}
         </Link>
       </div>
 

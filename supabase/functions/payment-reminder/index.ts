@@ -41,7 +41,7 @@ serve(async (req) => {
       }
     }
 
-    // Check company charges (INSS/FGTS) - now company-level, not per employee
+    // Check company charges (individual INSS/FGTS records)
     const { data: chargesData } = await supabase
       .from('company_charges')
       .select('*')
@@ -51,16 +51,10 @@ serve(async (req) => {
     if (chargesData && chargesData.length > 0) {
       for (const charge of chargesData) {
         const isOverdue = charge.due_date < todayStr;
-        const totalInss = Number(charge.inss_value);
-        const totalFgts = Number(charge.fgts_value);
-        if (totalInss > 0) {
+        const val = Number(charge.value);
+        if (val > 0) {
           pendingItems.push(
-            `• INSS ${charge.month}: R$ ${totalInss.toFixed(2)} - Vencimento: ${charge.due_date} ${isOverdue ? '⚠️ VENCIDO' : '⏰ Próximo do vencimento'}`
-          );
-        }
-        if (totalFgts > 0) {
-          pendingItems.push(
-            `• FGTS ${charge.month}: R$ ${totalFgts.toFixed(2)} - Vencimento: ${charge.due_date} ${isOverdue ? '⚠️ VENCIDO' : '⏰ Próximo do vencimento'}`
+            `• ${charge.charge_type} ${charge.month}: R$ ${val.toFixed(2)} - Vencimento: ${charge.due_date} ${isOverdue ? '⚠️ VENCIDO' : '⏰ Próximo do vencimento'}`
           );
         }
       }

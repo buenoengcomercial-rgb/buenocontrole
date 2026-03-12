@@ -4,37 +4,51 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Pencil, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Trash2, Pencil, CheckCircle2, Clock, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
-import type { CompanyCharge } from '@/types/safety';
+import type { CompanyCharge, ChargeType } from '@/types/safety';
 
 export default function EncargosPage() {
   const { charges, addCharge, updateCharge, deleteCharge } = useSafetyData();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
-  const [form, setForm] = useState({ month: new Date().toISOString().slice(0, 7), inssValue: 0, fgtsValue: 0, dueDate: '', paid: false, paymentDate: '', notes: '' });
+  const [filterType, setFilterType] = useState<'all' | ChargeType>('all');
+  const [form, setForm] = useState({
+    chargeType: 'INSS' as ChargeType,
+    month: new Date().toISOString().slice(0, 7),
+    value: 0,
+    dueDate: '',
+    paid: false,
+    paymentDate: '',
+    notes: '',
+  });
 
   const filtered = useMemo(() =>
-    charges.filter(c => c.month.startsWith(filterYear)).sort((a, b) => b.month.localeCompare(a.month)),
-    [charges, filterYear]
+    charges
+      .filter(c => c.month.startsWith(filterYear))
+      .filter(c => filterType === 'all' || c.chargeType === filterType)
+      .sort((a, b) => b.month.localeCompare(a.month) || a.chargeType.localeCompare(b.chargeType)),
+    [charges, filterYear, filterType]
   );
 
   const handleOpen = (c?: CompanyCharge) => {
     if (c) {
       setEditId(c.id);
-      setForm({ month: c.month, inssValue: c.inssValue, fgtsValue: c.fgtsValue, dueDate: c.dueDate, paid: c.paid, paymentDate: c.paymentDate, notes: c.notes });
+      setForm({ chargeType: c.chargeType, month: c.month, value: c.value, dueDate: c.dueDate, paid: c.paid, paymentDate: c.paymentDate, notes: c.notes });
     } else {
       setEditId(null);
-      setForm({ month: new Date().toISOString().slice(0, 7), inssValue: 0, fgtsValue: 0, dueDate: '', paid: false, paymentDate: '', notes: '' });
+      setForm({ chargeType: 'INSS', month: new Date().toISOString().slice(0, 7), value: 0, dueDate: '', paid: false, paymentDate: '', notes: '' });
     }
     setOpen(true);
   };
 
   const handleSubmit = () => {
     if (!form.month || !form.dueDate) { toast.error('Preencha mês e data de vencimento.'); return; }
+    if (form.value <= 0) { toast.error('Informe o valor do encargo.'); return; }
     if (editId) {
       const existing = charges.find(c => c.id === editId)!;
       updateCharge({ ...existing, ...form });
@@ -46,8 +60,8 @@ export default function EncargosPage() {
     setOpen(false);
   };
 
-  const totalINSS = filtered.reduce((s, c) => s + c.inssValue, 0);
-  const totalFGTS = filtered.reduce((s, c) => s + c.fgtsValue, 0);
+  const totalINSS = filtered.filter(c => c.chargeType === 'INSS').reduce((s, c) => s + c.value, 0);
+  const totalFGTS = filtered.filter(c => c.chargeType === 'FGTS').reduce((s, c) => s + c.value, 0);
   const pendingCount = filtered.filter(c => !c.paid).length;
 
   return (
@@ -55,15 +69,25 @@ export default function EncargosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1>Encargos Trabalhistas</h1>
-          <p className="text-sm text-muted-foreground mt-1">Registro mensal de INSS e FGTS da empresa (valores totais da folha)</p>
+          <p className="text-sm text-muted-foreground mt-1">Registro individual de INSS e FGTS da empresa</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpen()}><Plus className="w-4 h-4 mr-2" />Novo Encargo Mensal</Button>
+            <Button onClick={() => handleOpen()}><Plus className="w-4 h-4 mr-2" />Novo Encargo</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{editId ? 'Editar' : 'Novo'} Encargo Mensal</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editId ? 'Editar' : 'Novo'} Encargo</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
+              <div>
+                <label className="label-caps mb-1 block">Tipo de Encargo</label>
+                <Select value={form.chargeType} onValueChange={(v) => setForm(f => ({ ...f, chargeType: v as ChargeType }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INSS">INSS</SelectItem>
+                    <SelectItem value="FGTS">FGTS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label-caps mb-1 block">Mês de Referência</label>
@@ -74,22 +98,14 @@ export default function EncargosPage() {
                   <Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label-caps mb-1 block">Valor Total INSS</label>
-                  <Input type="number" min={0} step={0.01} value={form.inssValue || ''} onChange={e => setForm(f => ({ ...f, inssValue: Number(e.target.value) }))} />
-                </div>
-                <div>
-                  <label className="label-caps mb-1 block">Valor Total FGTS</label>
-                  <Input type="number" min={0} step={0.01} value={form.fgtsValue || ''} onChange={e => setForm(f => ({ ...f, fgtsValue: Number(e.target.value) }))} />
-                </div>
+              <div>
+                <label className="label-caps mb-1 block">Valor (R$)</label>
+                <Input type="number" min={0} step={0.01} value={form.value || ''} onChange={e => setForm(f => ({ ...f, value: Number(e.target.value) }))} />
               </div>
-
               <div>
                 <label className="label-caps mb-1 block">Observações</label>
                 <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Informações do contador, detalhes do pagamento..." />
               </div>
-
               <div className="border-t border-border pt-4 mt-2">
                 <p className="text-sm font-semibold text-foreground mb-3">Controle de Pagamento</p>
                 <div className="grid grid-cols-2 gap-4">
@@ -112,9 +128,22 @@ export default function EncargosPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-start">
-        <div>
-          <label className="label-caps mb-1 block">Filtrar por Ano</label>
-          <Input type="number" min={2020} max={2030} value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-32" />
+        <div className="flex gap-4">
+          <div>
+            <label className="label-caps mb-1 block">Filtrar por Ano</label>
+            <Input type="number" min={2020} max={2030} value={filterYear} onChange={e => setFilterYear(e.target.value)} className="w-32" />
+          </div>
+          <div>
+            <label className="label-caps mb-1 block">Tipo</label>
+            <Select value={filterType} onValueChange={(v) => setFilterType(v as 'all' | ChargeType)}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="INSS">INSS</SelectItem>
+                <SelectItem value="FGTS">FGTS</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="flex gap-4 mt-4 sm:mt-5">
           <div className="bg-card rounded-lg px-4 py-2 shadow-card">
@@ -137,11 +166,10 @@ export default function EncargosPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-muted">
+                <th className="label-caps text-left px-6 py-3">Tipo</th>
                 <th className="label-caps text-left px-6 py-3">Mês</th>
                 <th className="label-caps text-left px-6 py-3">Vencimento</th>
-                <th className="label-caps text-right px-6 py-3">INSS</th>
-                <th className="label-caps text-right px-6 py-3">FGTS</th>
-                <th className="label-caps text-right px-6 py-3">Total</th>
+                <th className="label-caps text-right px-6 py-3">Valor</th>
                 <th className="label-caps text-center px-6 py-3">Status</th>
                 <th className="label-caps text-left px-6 py-3">Pagamento</th>
                 <th className="label-caps text-right px-6 py-3">Ações</th>
@@ -150,11 +178,14 @@ export default function EncargosPage() {
             <tbody>
               {filtered.map(c => (
                 <tr key={c.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full ${c.chargeType === 'INSS' ? 'bg-primary/10 text-primary' : 'bg-accent/50 text-accent-foreground'}`}>
+                      {c.chargeType}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 text-sm font-medium">{c.month}</td>
                   <td className="px-6 py-4 text-sm">{c.dueDate ? formatDate(c.dueDate) : '—'}</td>
-                  <td className="px-6 py-4 text-sm text-right">{formatCurrency(c.inssValue)}</td>
-                  <td className="px-6 py-4 text-sm text-right">{formatCurrency(c.fgtsValue)}</td>
-                  <td className="px-6 py-4 text-sm text-right font-medium">{formatCurrency(c.inssValue + c.fgtsValue)}</td>
+                  <td className="px-6 py-4 text-sm text-right font-medium">{formatCurrency(c.value)}</td>
                   <td className="px-6 py-4 text-center">
                     {c.paid
                       ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
@@ -170,7 +201,7 @@ export default function EncargosPage() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-meta">Nenhum encargo registrado neste ano.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhum encargo registrado neste ano.</td></tr>}
             </tbody>
           </table>
         </div>

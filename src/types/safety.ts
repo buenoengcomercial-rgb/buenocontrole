@@ -1,8 +1,10 @@
+export type ChargeType = 'INSS' | 'FGTS';
+
 export interface CompanyCharge {
   id: string;
+  chargeType: ChargeType;
   month: string; // YYYY-MM
-  inssValue: number;
-  fgtsValue: number;
+  value: number;
   dueDate: string;
   paymentDate: string;
   paid: boolean;
