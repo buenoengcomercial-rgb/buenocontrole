@@ -44,6 +44,8 @@ export interface SalaryPayment {
   otherAdditions: number;
   netSalary: number;
   paymentDate: string;
+  paymentMethod: string;
+  notes: string;
   createdAt: string;
 }
 

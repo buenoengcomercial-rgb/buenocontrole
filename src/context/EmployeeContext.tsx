@@ -146,7 +146,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
       employees, workDays, advances, payments, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addWorkDay, updateWorkDay, deleteWorkDay,
-      generateAdvance, addAdvanceManual, addPayment, deletePayment, deleteAdvance,
+      generateAdvance, addAdvanceManual, addPayment, updatePayment, deletePayment, deleteAdvance,
     }}>
       {children}
     </EmployeeContext.Provider>
