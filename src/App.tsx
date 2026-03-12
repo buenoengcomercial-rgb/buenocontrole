@@ -27,6 +27,7 @@ import TreinamentosPage from "@/pages/TreinamentosPage";
 import ProjectsPage from "@/pages/ProjectsPage";
 import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import ProjectReportsPage from "@/pages/ProjectReportsPage";
+import DASPage from "@/pages/DASPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
