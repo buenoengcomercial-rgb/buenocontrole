@@ -569,15 +569,17 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
       if (!a.worked) return;
       const emp = employees.find((e: any) => e.id === a.employeeId);
       if (!emp) return;
-      const month = a.date.slice(0, 7);
-      const empCharges = charges.filter((c: any) => c.employeeId === a.employeeId && c.month === month);
-      const monthlyCharges = empCharges.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
-      const dailyCost = (emp.grossSalary + monthlyCharges) / 22;
+      const dailyCost = emp.grossSalary / 22;
       const thirteenthDaily = calculate13thDailyCost(emp.grossSalary);
       total += dailyCost + thirteenthDaily;
     });
     return total;
-  }, [allocations, employees, charges]);
+  }, [allocations, employees]);
+
+  const chargesCost = useMemo(() => {
+    const totalCharges = charges.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
+    return totalCharges / (allProjects.length || 1);
+  }, [charges, allProjects]);
 
   const activeProjectCount = allProjects.length || 1;
   const dasCost = useMemo(() => dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount, [dasExpenses, activeProjectCount]);
