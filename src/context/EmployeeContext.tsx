@@ -16,6 +16,7 @@ interface EmployeeState {
   updateWorkDay: (w: WorkDay) => void;
   deleteWorkDay: (id: string) => void;
   generateAdvance: (employeeId: string, month: string) => void;
+  addAdvanceManual: (employeeId: string, month: string, value: number) => void;
   addPayment: (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => void;
   deletePayment: (id: string) => void;
   deleteAdvance: (id: string) => void;
@@ -27,7 +28,7 @@ function mapEmployee(r: any): Employee {
   return { id: r.id, name: r.name, cpf: r.cpf, role: r.role, grossSalary: Number(r.gross_salary), admissionDate: r.admission_date, phone: r.phone, status: r.status as Employee['status'], createdAt: r.created_at };
 }
 function mapWorkDay(r: any): WorkDay {
-  return { id: r.id, employeeId: r.employee_id, date: r.date, worked: r.worked, interior: r.interior, mealVoucherValue: Number(r.meal_voucher_value) };
+  return { id: r.id, employeeId: r.employee_id, date: r.date, worked: r.worked, interior: r.interior, mealVoucherValue: Number(r.meal_voucher_value), absenceType: r.absence_type || '', absenceReason: r.absence_reason || '', absenceNotes: r.absence_notes || '' };
 }
 function mapAdvance(r: any): SalaryAdvance {
   return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, createdAt: r.created_at };
@@ -70,16 +71,18 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addWorkDay = useCallback(async (w: Omit<WorkDay, 'id' | 'mealVoucherValue'>) => {
-    const mealVoucherValue = calculateMealVoucher(w.worked, w.interior);
+    const mealVoucherValue = w.absenceType === 'falta_justificada' ? 0 : calculateMealVoucher(w.worked, w.interior);
     const { data } = await supabase.from('work_days').insert({
       employee_id: w.employeeId, date: w.date, worked: w.worked, interior: w.interior, meal_voucher_value: mealVoucherValue,
+      absence_type: w.absenceType || '', absence_reason: w.absenceReason || '', absence_notes: w.absenceNotes || '',
     }).select().single();
     if (data) setWorkDays(prev => [...prev, mapWorkDay(data)]);
   }, []);
   const updateWorkDay = useCallback(async (w: WorkDay) => {
-    const mealVoucherValue = calculateMealVoucher(w.worked, w.interior);
+    const mealVoucherValue = w.absenceType === 'falta_justificada' ? 0 : calculateMealVoucher(w.worked, w.interior);
     await supabase.from('work_days').update({
       employee_id: w.employeeId, date: w.date, worked: w.worked, interior: w.interior, meal_voucher_value: mealVoucherValue,
+      absence_type: w.absenceType || '', absence_reason: w.absenceReason || '', absence_notes: w.absenceNotes || '',
     }).eq('id', w.id);
     setWorkDays(prev => prev.map(x => x.id === w.id ? { ...w, mealVoucherValue } : x));
   }, []);
@@ -100,6 +103,17 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
     }).select().single();
     if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
   }, [employees, advances]);
+
+  const addAdvanceManual = useCallback(async (employeeId: string, month: string, value: number) => {
+    const exists = advances.find(a => a.employeeId === employeeId && a.month === month);
+    if (exists) return;
+    const [y, m] = month.split('-').map(Number);
+    const payDate = getAdvancePaymentDate(y, m);
+    const { data } = await supabase.from('salary_advances').insert({
+      employee_id: employeeId, month, value, payment_date: payDate.toISOString().slice(0, 10),
+    }).select().single();
+    if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
+  }, [advances]);
 
   const addPayment = useCallback(async (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('salary_payments').insert({
@@ -122,7 +136,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
       employees, workDays, advances, payments, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addWorkDay, updateWorkDay, deleteWorkDay,
-      generateAdvance, addPayment, deletePayment, deleteAdvance,
+      generateAdvance, addAdvanceManual, addPayment, deletePayment, deleteAdvance,
     }}>
       {children}
     </EmployeeContext.Provider>
