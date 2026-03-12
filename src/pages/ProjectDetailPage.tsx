@@ -140,9 +140,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
       if (!emp) return;
       const m = a.date.slice(0, 7);
       if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
-      const empC = charges.filter((c: any) => c.employeeId === a.employeeId && c.month === m);
-      const mc = empC.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
-      months[m].maoDeObra += (emp.grossSalary + mc) / 22 + calculate13thDailyCost(emp.grossSalary);
+      months[m].maoDeObra += emp.grossSalary / 22 + calculate13thDailyCost(emp.grossSalary);
     });
     outsourced.forEach((s: any) => {
       const m = s.date.slice(0, 7);
