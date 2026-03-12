@@ -44,7 +44,7 @@ function mapOutsourced(r: any): OutsourcedService {
   return { id: r.id, projectId: r.project_id, date: r.date, company: r.company, cnpj: r.cnpj, description: r.description, value: Number(r.value), invoiceNumber: r.invoice_number, fileName: r.file_name, createdAt: r.created_at };
 }
 function mapProjectDoc(r: any): ProjectDocument {
-  return { id: r.id, projectId: r.project_id, type: r.type as ProjectDocument['type'], description: r.description, documentDate: r.document_date, expiryDate: r.expiry_date || '', fileName: r.file_name, createdAt: r.created_at };
+  return { id: r.id, projectId: r.project_id, type: r.type as ProjectDocument['type'], description: r.description, documentDate: r.document_date, expiryDate: r.expiry_date || '', fileName: r.file_name, value: Number(r.value || 0), paymentDate: r.payment_date || '', paymentStatus: r.payment_status || 'pendente', docNotes: r.doc_notes || '', createdAt: r.created_at };
 }
 function mapMeasurement(r: any): Measurement {
   return { id: r.id, projectId: r.project_id, number: r.number, date: r.date, description: r.description, value: Number(r.value), percentExecuted: Number(r.percent_executed), status: r.status as Measurement['status'], createdAt: r.created_at };
