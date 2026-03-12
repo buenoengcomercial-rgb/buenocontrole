@@ -35,7 +35,7 @@ function mapAdvance(r: any): SalaryAdvance {
   return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, notes: r.notes || '', createdAt: r.created_at };
 }
 function mapPayment(r: any): SalaryPayment {
-  return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, createdAt: r.created_at };
+  return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, paymentMethod: r.payment_method || '', notes: r.notes || '', createdAt: r.created_at };
 }
 
 export function EmployeeProvider({ children }: { children: React.ReactNode }) {
