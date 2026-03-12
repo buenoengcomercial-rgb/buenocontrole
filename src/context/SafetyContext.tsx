@@ -32,7 +32,7 @@ interface SafetyState {
 const SafetyContext = createContext<SafetyState | null>(null);
 
 function mapCharge(r: any): CompanyCharge {
-  return { id: r.id, month: r.month, inssValue: Number(r.inss_value), fgtsValue: Number(r.fgts_value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: r.notes || '', createdAt: r.created_at };
+  return { id: r.id, chargeType: r.charge_type as CompanyCharge['chargeType'], month: r.month, value: Number(r.value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: r.notes || '', createdAt: r.created_at };
 }
 function mapVacation(r: any): Vacation {
   return { id: r.id, employeeId: r.employee_id, startDate: r.start_date, endDate: r.end_date, status: r.status as Vacation['status'], vacationValue: Number(r.vacation_value), bonusValue: Number(r.bonus_value), totalPaid: Number(r.total_paid), paymentDate: r.payment_date || '', notes: r.notes, createdAt: r.created_at };
