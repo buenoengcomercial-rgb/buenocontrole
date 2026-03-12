@@ -13,6 +13,7 @@ import AttachedDocuments from '@/components/AttachedDocuments';
 export default function PurchasesPage() {
   const { purchases, suppliers, materials, addPurchase, deletePurchase } = useAppData();
   const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const [supplierId, setSupplierId] = useState('');
