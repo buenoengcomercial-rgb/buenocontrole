@@ -73,10 +73,11 @@ export default function ProjectDetailPage() {
 }
 
 /* ── Dashboard Tab ── */
-function DashboardTab({ project, allocations, employees, purchases, outsourced, charges, measurements, dasExpenses, allProjects, projectPurchases }: any) {
+function DashboardTab({ project, allocations, employees, purchases, outsourced, charges, measurements, dasExpenses, allProjects, projectPurchases, projectDocs }: any) {
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
   const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0), 0);
   const totalOutsourced = outsourced.reduce((s: number, sv: any) => s + sv.value, 0);
+  const totalDocsCost = (projectDocs || []).reduce((s: number, d: any) => s + (d.value || 0), 0);
 
   const laborCost = useMemo(() => {
     let total = 0;
