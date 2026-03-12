@@ -85,7 +85,7 @@ export default function DocumentacaoPage() {
         </Dialog>
       </div>
 
-      <p className="text-meta">Registre a integração de segurança, documentos de contratação e ficha de EPI de cada colaborador. O upload de PDF estará disponível com Lovable Cloud.</p>
+      <p className="text-meta">Registre a integração de segurança, documentos de contratação e ficha de EPI de cada colaborador. Use o botão "Anexar" em cada registro para upload de PDF ou imagens.</p>
 
       <div>
         <label className="label-caps mb-1 block">Filtrar por Colaborador</label>

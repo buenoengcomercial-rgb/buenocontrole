@@ -1065,6 +1065,9 @@ export type Database = {
       }
       work_days: {
         Row: {
+          absence_notes: string
+          absence_reason: string
+          absence_type: string
           created_at: string
           date: string
           employee_id: string
@@ -1074,6 +1077,9 @@ export type Database = {
           worked: boolean
         }
         Insert: {
+          absence_notes?: string
+          absence_reason?: string
+          absence_type?: string
           created_at?: string
           date: string
           employee_id: string
@@ -1083,6 +1089,9 @@ export type Database = {
           worked?: boolean
         }
         Update: {
+          absence_notes?: string
+          absence_reason?: string
+          absence_type?: string
           created_at?: string
           date?: string
           employee_id?: string

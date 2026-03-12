@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
-import { calculateAdvance, getAdvancePaymentDate, getSalaryPaymentDate } from '@/types/employee';
+import { calculateAdvance, getSalaryPaymentDate } from '@/types/employee';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,19 +11,25 @@ import { Plus, Trash2, DollarSign, ArrowUpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PaymentsPage() {
-  const { employees, advances, payments, workDays, generateAdvance, addPayment, deleteAdvance, deletePayment } = useEmployeeData();
+  const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, addPayment, deleteAdvance, deletePayment } = useEmployeeData();
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
 
   // Advance generation
   const [advMonth, setAdvMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [advEmployee, setAdvEmployee] = useState('');
+  const [advCustomValue, setAdvCustomValue] = useState<number | ''>('');
 
   const handleGenerateAdvance = () => {
     if (!advEmployee) { toast.error('Selecione um colaborador.'); return; }
     const exists = advances.find(a => a.employeeId === advEmployee && a.month === advMonth);
     if (exists) { toast.error('Adiantamento já gerado para este mês.'); return; }
-    generateAdvance(advEmployee, advMonth);
+    if (advCustomValue && advCustomValue > 0) {
+      addAdvanceManual(advEmployee, advMonth, advCustomValue);
+    } else {
+      generateAdvance(advEmployee, advMonth);
+    }
     toast.success('Adiantamento gerado.');
+    setAdvCustomValue('');
   };
 
   const handleGenerateAllAdvances = () => {
@@ -47,7 +53,7 @@ export default function PaymentsPage() {
     const advDiscount = adv?.value || 0;
     const net = emp.grossSalary - advDiscount - payForm.otherDiscounts + payForm.otherAdditions;
     const [y, m] = payForm.month.split('-').map(Number);
-    const payDate = getSalaryPaymentDate(y, m + 1); // salary paid on 5th business day of NEXT month
+    const payDate = getSalaryPaymentDate(y, m + 1);
     return { grossSalary: emp.grossSalary, advDiscount, net, payDate: payDate.toISOString().slice(0, 10) };
   }, [payForm, employees, advances]);
 
@@ -79,59 +85,11 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <h1>Pagamentos</h1>
 
-      <Tabs defaultValue="advances" className="space-y-4">
+      <Tabs defaultValue="salaries" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="advances" className="gap-2"><ArrowUpCircle className="w-4 h-4" />Adiantamentos</TabsTrigger>
           <TabsTrigger value="salaries" className="gap-2"><DollarSign className="w-4 h-4" />Salários</TabsTrigger>
+          <TabsTrigger value="advances" className="gap-2"><ArrowUpCircle className="w-4 h-4" />Adiantamentos</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="advances" className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <div><label className="label-caps mb-1 block">Mês</label><Input type="month" value={advMonth} onChange={e => setAdvMonth(e.target.value)} className="w-[180px]" /></div>
-            <div className="flex-1 min-w-[200px]">
-              <label className="label-caps mb-1 block">Colaborador</label>
-              <Select value={advEmployee} onValueChange={setAdvEmployee}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleGenerateAdvance}>Gerar Adiantamento</Button>
-            <Button variant="outline" onClick={handleGenerateAllAdvances}>Gerar Todos</Button>
-          </div>
-
-          <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
-
-          <div className="bg-card rounded-xl shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="bg-muted">
-                  <th className="label-caps text-left px-6 py-3">Colaborador</th>
-                  <th className="label-caps text-left px-6 py-3">Mês Ref.</th>
-                  <th className="label-caps text-right px-6 py-3">Valor (40%)</th>
-                  <th className="label-caps text-left px-6 py-3">Data Pgto</th>
-                  <th className="label-caps text-right px-6 py-3">Ações</th>
-                </tr></thead>
-                <tbody>
-                  {filteredAdvances.map(a => {
-                    const emp = employees.find(e => e.id === a.employeeId);
-                    return (
-                      <tr key={a.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
-                        <td className="px-6 py-4 text-sm font-medium">{emp?.name || '—'}</td>
-                        <td className="px-6 py-4 text-sm">{a.month}</td>
-                        <td className="px-6 py-4 text-sm text-right">{formatCurrency(a.value)}</td>
-                        <td className="px-6 py-4 text-sm">{formatDate(a.paymentDate)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <button onClick={() => { deleteAdvance(a.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filteredAdvances.length === 0 && <tr><td colSpan={5} className="px-6 py-12 text-center text-meta">Nenhum adiantamento encontrado.</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </TabsContent>
 
         <TabsContent value="salaries" className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 items-end">
@@ -205,6 +163,58 @@ export default function PaymentsPage() {
                     );
                   })}
                   {filteredPayments.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhum pagamento encontrado.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="advances" className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div><label className="label-caps mb-1 block">Mês</label><Input type="month" value={advMonth} onChange={e => setAdvMonth(e.target.value)} className="w-[180px]" /></div>
+            <div className="flex-1 min-w-[200px]">
+              <label className="label-caps mb-1 block">Colaborador</label>
+              <Select value={advEmployee} onValueChange={setAdvEmployee}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="label-caps mb-1 block">Valor (vazio = 40%)</label>
+              <Input type="number" min={0} step={0.01} value={advCustomValue} onChange={e => setAdvCustomValue(e.target.value ? Number(e.target.value) : '')} placeholder="Automático 40%" className="w-[180px]" />
+            </div>
+            <Button onClick={handleGenerateAdvance}>Gerar Adiantamento</Button>
+            <Button variant="outline" onClick={handleGenerateAllAdvances}>Gerar Todos (40%)</Button>
+          </div>
+
+          <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
+
+          <div className="bg-card rounded-xl shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead><tr className="bg-muted">
+                  <th className="label-caps text-left px-6 py-3">Colaborador</th>
+                  <th className="label-caps text-left px-6 py-3">Mês Ref.</th>
+                  <th className="label-caps text-right px-6 py-3">Valor</th>
+                  <th className="label-caps text-left px-6 py-3">Data Pgto</th>
+                  <th className="label-caps text-right px-6 py-3">Ações</th>
+                </tr></thead>
+                <tbody>
+                  {filteredAdvances.map(a => {
+                    const emp = employees.find(e => e.id === a.employeeId);
+                    return (
+                      <tr key={a.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                        <td className="px-6 py-4 text-sm font-medium">{emp?.name || '—'}</td>
+                        <td className="px-6 py-4 text-sm">{a.month}</td>
+                        <td className="px-6 py-4 text-sm text-right">{formatCurrency(a.value)}</td>
+                        <td className="px-6 py-4 text-sm">{formatDate(a.paymentDate)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <button onClick={() => { deleteAdvance(a.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredAdvances.length === 0 && <tr><td colSpan={5} className="px-6 py-12 text-center text-meta">Nenhum adiantamento encontrado.</td></tr>}
                 </tbody>
               </table>
             </div>

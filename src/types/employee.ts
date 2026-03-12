@@ -17,6 +17,9 @@ export interface WorkDay {
   worked: boolean;
   interior: boolean;
   mealVoucherValue: number; // 20 if worked && !interior, 0 otherwise
+  absenceType: string; // '' | 'falta_justificada'
+  absenceReason: string;
+  absenceNotes: string;
 }
 
 export interface SalaryAdvance {

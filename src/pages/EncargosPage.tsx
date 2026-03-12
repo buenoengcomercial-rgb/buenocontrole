@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Pencil, CheckCircle2, Clock, Filter } from 'lucide-react';
+import { Plus, Trash2, Pencil, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import type { CompanyCharge, ChargeType } from '@/types/safety';
@@ -161,55 +161,39 @@ export default function EncargosPage() {
         </div>
       </div>
 
-      <div className="bg-card rounded-xl shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted">
-                <th className="label-caps text-left px-6 py-3">Tipo</th>
-                <th className="label-caps text-left px-6 py-3">Mês</th>
-                <th className="label-caps text-left px-6 py-3">Vencimento</th>
-                <th className="label-caps text-right px-6 py-3">Valor</th>
-                <th className="label-caps text-center px-6 py-3">Status</th>
-                <th className="label-caps text-left px-6 py-3">Pagamento</th>
-                <th className="label-caps text-right px-6 py-3">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(c => (
-                <tr key={c.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full ${c.chargeType === 'INSS' ? 'bg-primary/10 text-primary' : 'bg-accent/50 text-accent-foreground'}`}>
-                      {c.chargeType}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">{c.month}</td>
-                  <td className="px-6 py-4 text-sm">{c.dueDate ? formatDate(c.dueDate) : '—'}</td>
-                  <td className="px-6 py-4 text-sm text-right font-medium">{formatCurrency(c.value)}</td>
-                  <td className="px-6 py-4 text-center">
-                    {c.paid
-                      ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
-                      : <span className="inline-flex items-center gap-1 text-xs bg-warning/20 text-warning px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>
-                    }
-                  </td>
-                  <td className="px-6 py-4 text-sm">{c.paymentDate ? formatDate(c.paymentDate) : '—'}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button onClick={() => handleOpen(c)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => { deleteCharge(c.id); toast.success('Encargo removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhum encargo registrado neste ano.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+      <div className="space-y-4">
+        {filtered.map(c => (
+          <div key={c.id} className="bg-card rounded-xl shadow-card overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <div className="flex items-center gap-4">
+                <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-full ${c.chargeType === 'INSS' ? 'bg-primary/10 text-primary' : 'bg-accent/50 text-accent-foreground'}`}>
+                  {c.chargeType}
+                </span>
+                <span className="text-sm font-medium">{c.month}</span>
+                <span className="text-sm text-muted-foreground">Venc: {c.dueDate ? formatDate(c.dueDate) : '—'}</span>
+                <span className="text-sm font-semibold">{formatCurrency(c.value)}</span>
+                {c.paid
+                  ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
+                  : <span className="inline-flex items-center gap-1 text-xs bg-warning/20 text-warning px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>
+                }
+                {c.paymentDate && <span className="text-sm text-muted-foreground">Pgto: {formatDate(c.paymentDate)}</span>}
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => handleOpen(c)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => { deleteCharge(c.id); toast.success('Encargo removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </div>
+            <div className="px-6 py-3">
+              <AttachedDocuments entityType="encargo" entityId={c.id} />
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="bg-card rounded-xl shadow-card px-6 py-12 text-center text-meta">
+            Nenhum encargo registrado neste ano.
+          </div>
+        )}
       </div>
-
-      {filtered.map(c => (
-        <AttachedDocuments key={c.id} entityType="encargo" entityId={c.id} />
-      ))}
     </div>
   );
 }
