@@ -6,6 +6,8 @@ export interface Employee {
   grossSalary: number;
   admissionDate: string;
   phone: string;
+  pixKeyType: string;
+  pixKey: string;
   status: 'ativo' | 'desligado';
   createdAt: string;
 }

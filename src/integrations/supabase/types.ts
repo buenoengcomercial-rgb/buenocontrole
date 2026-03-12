@@ -294,6 +294,8 @@ export type Database = {
           id: string
           name: string
           phone: string
+          pix_key: string
+          pix_key_type: string
           role: string
           status: string
           updated_at: string
@@ -306,6 +308,8 @@ export type Database = {
           id?: string
           name: string
           phone?: string
+          pix_key?: string
+          pix_key_type?: string
           role?: string
           status?: string
           updated_at?: string
@@ -318,6 +322,8 @@ export type Database = {
           id?: string
           name?: string
           phone?: string
+          pix_key?: string
+          pix_key_type?: string
           role?: string
           status?: string
           updated_at?: string

@@ -11,7 +11,7 @@ import { Plus, Search, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-rea
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 
-const emptyForm: { name: string; cpf: string; role: string; grossSalary: number; admissionDate: string; phone: string; status: 'ativo' | 'desligado' } = { name: '', cpf: '', role: '', grossSalary: 0, admissionDate: '', phone: '', status: 'ativo' };
+const emptyForm: { name: string; cpf: string; role: string; grossSalary: number; admissionDate: string; phone: string; pixKeyType: string; pixKey: string; status: 'ativo' | 'desligado' } = { name: '', cpf: '', role: '', grossSalary: 0, admissionDate: '', phone: '', pixKeyType: '', pixKey: '', status: 'ativo' };
 
 export default function EmployeesPage() {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployeeData();
@@ -29,7 +29,7 @@ export default function EmployeesPage() {
   const handleOpen = (e?: Employee) => {
     if (e) {
       setEditId(e.id);
-      setForm({ name: e.name, cpf: e.cpf, role: e.role, grossSalary: e.grossSalary, admissionDate: e.admissionDate, phone: e.phone || '', status: e.status });
+      setForm({ name: e.name, cpf: e.cpf, role: e.role, grossSalary: e.grossSalary, admissionDate: e.admissionDate, phone: e.phone || '', pixKeyType: e.pixKeyType || '', pixKey: e.pixKey || '', status: e.status });
     } else {
       setEditId(null);
       setForm(emptyForm);
@@ -79,6 +79,22 @@ export default function EmployeesPage() {
                     <SelectContent>{EMPLOYEE_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="label-caps mb-1 block">Tipo Chave PIX</label>
+                  <Select value={form.pixKeyType} onValueChange={v => setForm(f => ({ ...f, pixKeyType: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CPF">CPF</SelectItem>
+                      <SelectItem value="CNPJ">CNPJ</SelectItem>
+                      <SelectItem value="Telefone">Telefone</SelectItem>
+                      <SelectItem value="E-mail">E-mail</SelectItem>
+                      <SelectItem value="Chave Aleatória">Chave Aleatória</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><label className="label-caps mb-1 block">Chave PIX</label><Input value={form.pixKey} onChange={e => setForm(f => ({ ...f, pixKey: e.target.value }))} placeholder="Informe a chave PIX" /></div>
               </div>
             </div>
             <div className="flex justify-end gap-2">

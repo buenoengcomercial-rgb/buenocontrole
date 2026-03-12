@@ -2,8 +2,7 @@ import { useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency } from '@/lib/format';
-import { calculate13thSalary } from '@/types/employee';
-import { Users, DollarSign, ArrowUpCircle, UtensilsCrossed, Gift, Palmtree } from 'lucide-react';
+import { Users, DollarSign, ArrowUpCircle, UtensilsCrossed, Palmtree } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function EmployeeDashboardPage() {
@@ -44,16 +43,6 @@ export default function EmployeeDashboardPage() {
     [vacationsMonth]
   );
 
-  // 13th salary
-  const thirteenthData = useMemo(() =>
-    activeEmployees.map(e => ({
-      id: e.id,
-      name: e.name,
-      value: calculate13thSalary(e.grossSalary, e.admissionDate, currentYear),
-    })),
-    [activeEmployees, currentYear]
-  );
-  const total13th = useMemo(() => thirteenthData.reduce((s, d) => s + d.value, 0), [thirteenthData]);
 
   const kpis = [
     { label: 'Salário Bruto (Pago)', value: formatCurrency(totalGrossMonth), icon: DollarSign, accent: true },
@@ -61,7 +50,6 @@ export default function EmployeeDashboardPage() {
     { label: 'Adiantamentos no Mês', value: formatCurrency(totalAdvancesMonth), icon: ArrowUpCircle },
     { label: 'Vale Alimentação no Mês', value: formatCurrency(totalMealVoucher), icon: UtensilsCrossed },
     { label: 'Férias no Mês', value: formatCurrency(totalVacationsMonth), icon: Palmtree },
-    { label: '13º Acumulado', value: formatCurrency(total13th), icon: Gift },
     { label: 'Colaboradores Ativos', value: activeEmployees.length.toString(), icon: Users },
   ];
 
@@ -138,21 +126,20 @@ export default function EmployeeDashboardPage() {
           </div>
         </div>
 
-        {/* 13th salary breakdown */}
+        {/* Employee PIX info */}
         <div className="bg-card rounded-xl p-6 shadow-card">
-          <h2 className="mb-4">13º Salário Proporcional ({currentYear})</h2>
+          <h2 className="mb-4">Dados PIX dos Colaboradores</h2>
           <div className="space-y-3">
-            {thirteenthData.map(d => (
-              <div key={d.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <p className="text-sm font-medium">{d.name}</p>
-                <span className="text-sm font-medium">{formatCurrency(d.value)}</span>
+            {activeEmployees.filter(e => e.pixKey).map(e => (
+              <div key={e.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div>
+                  <p className="text-sm font-medium">{e.name}</p>
+                  <p className="text-xs text-muted-foreground">{e.pixKeyType || 'PIX'}</p>
+                </div>
+                <span className="text-sm font-mono">{e.pixKey}</span>
               </div>
             ))}
-            {thirteenthData.length === 0 && <p className="text-muted-foreground text-sm">Nenhum colaborador ativo.</p>}
-            <div className="flex items-center justify-between pt-2 border-t-2 border-border">
-              <p className="text-sm font-bold">Total</p>
-              <span className="text-sm font-bold text-primary">{formatCurrency(total13th)}</span>
-            </div>
+            {activeEmployees.filter(e => e.pixKey).length === 0 && <p className="text-muted-foreground text-sm">Nenhuma chave PIX cadastrada.</p>}
           </div>
         </div>
       </div>
