@@ -577,7 +577,7 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
   }, [allocations, employees]);
 
   const chargesCost = useMemo(() => {
-    const totalCharges = charges.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
+    const totalCharges = charges.reduce((s: number, c: any) => s + c.value, 0);
     return totalCharges / (allProjects.length || 1);
   }, [charges, allProjects]);
 
