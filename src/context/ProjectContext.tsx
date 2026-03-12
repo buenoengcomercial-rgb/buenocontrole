@@ -44,7 +44,7 @@ function mapOutsourced(r: any): OutsourcedService {
   return { id: r.id, projectId: r.project_id, date: r.date, company: r.company, cnpj: r.cnpj, description: r.description, value: Number(r.value), invoiceNumber: r.invoice_number, fileName: r.file_name, createdAt: r.created_at };
 }
 function mapProjectDoc(r: any): ProjectDocument {
-  return { id: r.id, projectId: r.project_id, type: r.type as ProjectDocument['type'], description: r.description, documentDate: r.document_date, expiryDate: r.expiry_date || '', fileName: r.file_name, createdAt: r.created_at };
+  return { id: r.id, projectId: r.project_id, type: r.type as ProjectDocument['type'], description: r.description, documentDate: r.document_date, expiryDate: r.expiry_date || '', fileName: r.file_name, value: Number(r.value || 0), paymentDate: r.payment_date || '', paymentStatus: r.payment_status || 'pendente', docNotes: r.doc_notes || '', createdAt: r.created_at };
 }
 function mapMeasurement(r: any): Measurement {
   return { id: r.id, projectId: r.project_id, number: r.number, date: r.date, description: r.description, value: Number(r.value), percentExecuted: Number(r.percent_executed), status: r.status as Measurement['status'], createdAt: r.created_at };
@@ -124,6 +124,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase.from('project_documents').insert({
       project_id: d.projectId, type: d.type, description: d.description, document_date: d.documentDate,
       expiry_date: d.expiryDate || null, file_name: d.fileName,
+      value: d.value || 0, payment_date: d.paymentDate || null, payment_status: d.paymentStatus || 'pendente', doc_notes: d.docNotes || '',
     }).select().single();
     if (data) setProjectDocuments(prev => [...prev, mapProjectDoc(data)]);
   }, []);
@@ -131,6 +132,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     await supabase.from('project_documents').update({
       project_id: d.projectId, type: d.type, description: d.description, document_date: d.documentDate,
       expiry_date: d.expiryDate || null, file_name: d.fileName,
+      value: d.value || 0, payment_date: d.paymentDate || null, payment_status: d.paymentStatus || 'pendente', doc_notes: d.docNotes || '',
     }).eq('id', d.id);
     setProjectDocuments(prev => prev.map(x => x.id === d.id ? d : x));
   }, []);

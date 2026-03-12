@@ -17,7 +17,7 @@ type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'docs' | '
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { projects, updateProject, allocations, addAllocation, deleteAllocation, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase } = useProjectData();
+  const { projects, updateProject, allocations, addAllocation, deleteAllocation, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, updateProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase } = useProjectData();
   const { employees } = useEmployeeData();
   const { purchases, suppliers, materials } = useAppData();
   const { charges } = useSafetyData();
@@ -61,22 +61,23 @@ export default function ProjectDetailPage() {
         ))}
       </div>
 
-      {tab === 'dashboard' && <DashboardTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} measurements={projMeasurements} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} />}
+      {tab === 'dashboard' && <DashboardTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} measurements={projMeasurements} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} />}
       {tab === 'measurements' && <MeasurementsTab projectId={id!} measurements={projMeasurements} onAdd={addMeasurement} onUpdate={updateMeasurement} onDelete={deleteMeasurement} />}
       {tab === 'allocations' && <AllocationsTab projectId={id!} allocations={projAllocations} employees={employees} onAdd={addAllocation} onDelete={deleteAllocation} />}
       {tab === 'materials' && <MaterialsTab projectId={id!} purchases={projPurchases} suppliers={suppliers} materials={materials} projectPurchases={projProjectPurchases} onAdd={addProjectPurchase} onUpdate={updateProjectPurchase} onDelete={deleteProjectPurchase} />}
       {tab === 'outsourced' && <OutsourcedTab projectId={id!} services={projOutsourced} onAdd={addOutsourcedService} onDelete={deleteOutsourcedService} />}
-      {tab === 'docs' && <DocsTab projectId={id!} docs={projDocs} onAdd={addProjectDocument} onDelete={deleteProjectDocument} />}
-      {tab === 'costs' && <CostsTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} />}
+      {tab === 'docs' && <DocsTab projectId={id!} docs={projDocs} onAdd={addProjectDocument} onUpdate={updateProjectDocument} onDelete={deleteProjectDocument} />}
+      {tab === 'costs' && <CostsTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} />}
     </div>
   );
 }
 
 /* ── Dashboard Tab ── */
-function DashboardTab({ project, allocations, employees, purchases, outsourced, charges, measurements, dasExpenses, allProjects, projectPurchases }: any) {
+function DashboardTab({ project, allocations, employees, purchases, outsourced, charges, measurements, dasExpenses, allProjects, projectPurchases, projectDocs }: any) {
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
   const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0), 0);
   const totalOutsourced = outsourced.reduce((s: number, sv: any) => s + sv.value, 0);
+  const totalDocsCost = (projectDocs || []).reduce((s: number, d: any) => s + (d.value || 0), 0);
 
   const laborCost = useMemo(() => {
     let total = 0;
@@ -102,7 +103,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount;
   }, [dasExpenses, activeProjectCount]);
 
-  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost;
+  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost;
 
   // Revenue from approved/paid measurements
   const totalReceived = useMemo(() => {
@@ -124,9 +125,10 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     { name: 'Materiais', value: totalMaterials + totalProjectPurchases },
     { name: 'Mão de Obra', value: laborCost },
     { name: 'Terceirizados', value: totalOutsourced },
+    { name: 'Documentação', value: totalDocsCost },
     { name: 'DAS Proporcional', value: dasCost },
   ].filter(d => d.value > 0);
-  const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(280, 60%, 50%)'];
+  const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(340, 70%, 50%)', 'hsl(280, 60%, 50%)'];
 
   // Cost evolution by month
   const costEvolution = useMemo(() => {
@@ -609,21 +611,46 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
 }
 
 /* ── Docs Tab ── */
-function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
+function DocsTab({ projectId, docs, onAdd, onUpdate, onDelete }: any) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ type: 'ART' as ProjectDocType, description: '', documentDate: '', expiryDate: '', fileName: '' });
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({ type: 'ART' as ProjectDocType, description: '', documentDate: '', expiryDate: '', fileName: '', value: 0, paymentDate: '', paymentStatus: 'pendente' as 'pago' | 'pendente', docNotes: '' });
+
+  const totalDocsCost = docs.reduce((s: number, d: any) => s + (d.value || 0), 0);
+  const totalPaid = docs.filter((d: any) => d.paymentStatus === 'pago').reduce((s: number, d: any) => s + (d.value || 0), 0);
+
+  const resetForm = () => setForm({ type: 'ART', description: '', documentDate: '', expiryDate: '', fileName: '', value: 0, paymentDate: '', paymentStatus: 'pendente', docNotes: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd({ ...form, projectId });
-    setForm({ type: 'ART', description: '', documentDate: '', expiryDate: '', fileName: '' });
+    if (editId) {
+      const existing = docs.find((d: any) => d.id === editId)!;
+      onUpdate({ ...existing, ...form });
+      setEditId(null);
+    } else {
+      onAdd({ ...form, projectId });
+    }
+    resetForm();
     setShowForm(false);
+  };
+
+  const handleEdit = (d: any) => {
+    setEditId(d.id);
+    setForm({ type: d.type, description: d.description, documentDate: d.documentDate, expiryDate: d.expiryDate, fileName: d.fileName, value: d.value || 0, paymentDate: d.paymentDate || '', paymentStatus: d.paymentStatus || 'pendente', docNotes: d.docNotes || '' });
+    setShowForm(true);
   };
 
   return (
     <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Total Documentação</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalDocsCost)}</p></div>
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Pago</span><p className="text-xl font-semibold mt-1 text-success">{formatCurrency(totalPaid)}</p></div>
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Pendente</span><p className="text-xl font-semibold mt-1 text-warning">{formatCurrency(totalDocsCost - totalPaid)}</p></div>
+      </div>
+
       <div className="flex justify-end">
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Adicionar Documento</button>
+        <button onClick={() => { setEditId(null); resetForm(); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Adicionar Documento</button>
       </div>
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -635,7 +662,19 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
           <div><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Data do Documento</label><input type="date" value={form.documentDate} onChange={e => setForm({ ...form, documentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Data de Vencimento</label><input type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div className="flex items-end"><button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar</button></div>
+          <div><label className="label-caps block mb-1">Valor (R$)</label><input type="number" step="0.01" value={form.value || ''} onChange={e => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" placeholder="0,00" /></div>
+          <div><label className="label-caps block mb-1">Data do Pagamento</label><input type="date" value={form.paymentDate} onChange={e => setForm({ ...form, paymentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Status Pagamento</label>
+            <select value={form.paymentStatus} onChange={e => setForm({ ...form, paymentStatus: e.target.value as 'pago' | 'pendente' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <option value="pendente">Pendente</option>
+              <option value="pago">Pago</option>
+            </select>
+          </div>
+          <div><label className="label-caps block mb-1">Observações</label><input value={form.docNotes} onChange={e => setForm({ ...form, docNotes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div className="md:col-span-2 flex items-end gap-2">
+            <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Atualizar' : 'Salvar'}</button>
+            {editId && <button type="button" onClick={() => { setEditId(null); resetForm(); setShowForm(false); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
+          </div>
         </form>
       )}
       <div className="space-y-2">
@@ -651,11 +690,17 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
                     <span className="text-xs bg-secondary px-2 py-0.5 rounded font-medium">{d.type}</span>
                     {expired && <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Vencido</span>}
                     {expiring && !expired && <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{days}d</span>}
+                    {d.value > 0 && <span className={`text-xs px-2 py-0.5 rounded font-medium ${d.paymentStatus === 'pago' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>{d.paymentStatus === 'pago' ? 'Pago' : 'Pendente'}</span>}
                   </div>
                   <p className="text-sm mt-1">{d.description || '—'}</p>
                   <p className="text-muted-foreground text-xs">{d.documentDate && formatDate(d.documentDate)} {d.expiryDate && `→ ${formatDate(d.expiryDate)}`}</p>
+                  {d.value > 0 && <p className="text-sm font-medium mt-1">{formatCurrency(d.value)} {d.paymentDate && <span className="text-muted-foreground text-xs ml-1">pago em {formatDate(d.paymentDate)}</span>}</p>}
+                  {d.docNotes && <p className="text-xs text-muted-foreground mt-1">{d.docNotes}</p>}
                 </div>
-                <button onClick={() => onDelete(d.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleEdit(d)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => onDelete(d.id)} className="text-destructive p-1.5 rounded-md hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></button>
+                </div>
               </div>
               <AttachedDocuments entityType="project_doc" entityId={d.id} />
             </div>
@@ -668,10 +713,11 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
 }
 
 /* ── Costs Tab ── */
-function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects, projectPurchases }: any) {
+function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects, projectPurchases, projectDocs }: any) {
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
   const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0), 0);
   const totalOutsourced = outsourced.reduce((s: number, sv: any) => s + sv.value, 0);
+  const totalDocsCost = (projectDocs || []).reduce((s: number, d: any) => s + (d.value || 0), 0);
 
   const laborCost = useMemo(() => {
     let total = 0;
@@ -694,15 +740,16 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
   const activeProjectCount = allProjects.length || 1;
   const dasCost = useMemo(() => dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount, [dasExpenses, activeProjectCount]);
 
-  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost;
+  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost;
   const profit = project.contractValue - totalCost;
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Materiais / Compras</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalMaterials + totalProjectPurchases)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Mão de Obra</span><p className="text-xl font-semibold mt-1">{formatCurrency(laborCost)}</p><p className="text-xs text-muted-foreground">Inclui 13º proporcional</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Terceirizados</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalOutsourced)}</p></div>
+        <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Documentação</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalDocsCost)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">DAS Proporcional</span><p className="text-xl font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
         <div className="bg-primary text-primary-foreground rounded-xl p-5 shadow-card"><span className="label-caps text-xs text-primary-foreground/70">Custo Total</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalCost)}</p></div>
       </div>

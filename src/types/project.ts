@@ -68,6 +68,10 @@ export interface ProjectDocument {
   documentDate: string;
   expiryDate: string;
   fileName: string;
+  value: number;
+  paymentDate: string;
+  paymentStatus: 'pago' | 'pendente';
+  docNotes: string;
   createdAt: string;
 }
 
