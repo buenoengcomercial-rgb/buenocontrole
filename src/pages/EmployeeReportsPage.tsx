@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 export default function EmployeeReportsPage() {
   const { employees, advances, payments, workDays } = useEmployeeData();
+  const { vacations } = useSafetyData();
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [filterEmployee, setFilterEmployee] = useState('all');
 
