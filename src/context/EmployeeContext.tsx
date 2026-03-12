@@ -120,8 +120,17 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase.from('salary_payments').insert({
       employee_id: p.employeeId, month: p.month, gross_salary: p.grossSalary, advance_discount: p.advanceDiscount,
       other_discounts: p.otherDiscounts, other_additions: p.otherAdditions, net_salary: p.netSalary, payment_date: p.paymentDate,
+      payment_method: p.paymentMethod || '', notes: p.notes || '',
     }).select().single();
     if (data) setPayments(prev => [...prev, mapPayment(data)]);
+  }, []);
+  const updatePayment = useCallback(async (p: SalaryPayment) => {
+    await supabase.from('salary_payments').update({
+      gross_salary: p.grossSalary, advance_discount: p.advanceDiscount,
+      other_discounts: p.otherDiscounts, other_additions: p.otherAdditions, net_salary: p.netSalary,
+      payment_date: p.paymentDate, payment_method: p.paymentMethod || '', notes: p.notes || '',
+    }).eq('id', p.id);
+    setPayments(prev => prev.map(x => x.id === p.id ? p : x));
   }, []);
   const deletePayment = useCallback(async (id: string) => {
     await supabase.from('salary_payments').delete().eq('id', id);
