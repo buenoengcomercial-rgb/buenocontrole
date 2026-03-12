@@ -31,7 +31,7 @@ function mapWorkDay(r: any): WorkDay {
   return { id: r.id, employeeId: r.employee_id, date: r.date, worked: r.worked, interior: r.interior, mealVoucherValue: Number(r.meal_voucher_value), absenceType: r.absence_type || '', absenceReason: r.absence_reason || '', absenceNotes: r.absence_notes || '' };
 }
 function mapAdvance(r: any): SalaryAdvance {
-  return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, createdAt: r.created_at };
+  return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, notes: r.notes || '', createdAt: r.created_at };
 }
 function mapPayment(r: any): SalaryPayment {
   return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, createdAt: r.created_at };
