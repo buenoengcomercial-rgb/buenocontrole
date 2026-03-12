@@ -10,6 +10,7 @@ import { calculate13thDailyCost } from '@/types/employee';
 import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES } from '@/types/project';
 import type { ProjectDocType, MeasurementStatus, Measurement } from '@/types/project';
 import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil } from 'lucide-react';
+import AttachedDocuments from '@/components/AttachedDocuments';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
 type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'docs' | 'measurements' | 'costs';
