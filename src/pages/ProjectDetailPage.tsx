@@ -669,7 +669,7 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
 /* ── Costs Tab ── */
 function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects, projectPurchases }: any) {
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
-  const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue, 0);
+  const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0), 0);
   const totalOutsourced = outsourced.reduce((s: number, sv: any) => s + sv.value, 0);
 
   const laborCost = useMemo(() => {
