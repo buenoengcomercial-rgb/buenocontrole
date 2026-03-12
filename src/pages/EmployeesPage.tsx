@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import type { Employee } from '@/types/employee';
 import { EMPLOYEE_STATUSES } from '@/types/employee';

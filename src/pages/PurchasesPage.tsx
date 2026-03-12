@@ -108,7 +108,8 @@ export default function PurchasesPage() {
                 const sup = suppliers.find(x => x.id === p.supplierId);
                 const mat = materials.find(x => x.id === p.materialId);
                 return (
-                  <tr key={p.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                  <React.Fragment key={p.id}>
+                  <tr className="border-b border-border hover:bg-row-hover transition-colors duration-150">
                     <td className="px-6 py-4 text-sm">{formatDate(p.date)}</td>
                     <td className="px-6 py-4 text-sm font-medium">{sup?.name || '—'}</td>
                     <td className="px-6 py-4 text-sm hidden md:table-cell">{mat?.name || '—'}</td>
@@ -118,11 +119,16 @@ export default function PurchasesPage() {
                     <td className="px-6 py-4 text-sm text-right hidden lg:table-cell text-muted-foreground">{formatCurrency(p.taxValue)}</td>
                     <td className="px-6 py-4 text-sm text-right font-medium">{formatCurrency(p.finalPrice)}</td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => deletePurchase(p.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors duration-150">
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </button>
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => setExpandedId(expandedId === p.id ? null : p.id)} className="p-2 rounded-lg hover:bg-muted transition-colors duration-150">{expandedId === p.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}</button>
+                        <button onClick={() => deletePurchase(p.id)} className="p-2 rounded-lg hover:bg-destructive/10 transition-colors duration-150"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                      </div>
                     </td>
                   </tr>
+                  {expandedId === p.id && (
+                    <tr><td colSpan={9} className="px-6 py-4 bg-muted/30"><AttachedDocuments entityType="purchase" entityId={p.id} /></td></tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
               {sorted.length === 0 && (

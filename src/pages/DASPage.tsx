@@ -108,6 +108,10 @@ export default function DASPage() {
         </table>
         {dasExpenses.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhum DAS registrado.</p>}
       </div>
+
+      {dasExpenses.map(d => (
+        <AttachedDocuments key={d.id} entityType="das" entityId={d.id} />
+      ))}
     </div>
   );
 }
