@@ -4,6 +4,10 @@ export interface PayrollCharge {
   month: string; // YYYY-MM
   inssValue: number;
   fgtsValue: number;
+  dueDate: string;
+  paid: boolean;
+  paidValue: number;
+  paymentDate: string;
   createdAt: string;
 }
 
