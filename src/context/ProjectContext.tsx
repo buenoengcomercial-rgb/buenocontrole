@@ -174,15 +174,29 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setDASExpenses(prev => prev.filter(x => x.id !== id));
   }, []);
 
+  const addProjectPurchase = useCallback(async (p: Omit<ProjectPurchase, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('project_purchases').insert({
+      project_id: p.projectId, supplier_id: p.supplierId || null, material_id: p.materialId || null,
+      date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
+      description: p.description, notes: p.notes,
+    }).select().single();
+    if (data) setProjectPurchases(prev => [...prev, mapProjectPurchase(data)]);
+  }, []);
+  const deleteProjectPurchase = useCallback(async (id: string) => {
+    await supabase.from('project_purchases').delete().eq('id', id);
+    setProjectPurchases(prev => prev.filter(x => x.id !== id));
+  }, []);
+
   return (
     <ProjectContext.Provider value={{
-      projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, loading,
+      projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, projectPurchases, loading,
       addProject, updateProject, deleteProject,
       addAllocation, deleteAllocation,
       addOutsourcedService, deleteOutsourcedService,
       addProjectDocument, updateProjectDocument, deleteProjectDocument,
       addMeasurement, updateMeasurement, deleteMeasurement,
       addDASExpense, updateDASExpense, deleteDASExpense,
+      addProjectPurchase, deleteProjectPurchase,
     }}>
       {children}
     </ProjectContext.Provider>
