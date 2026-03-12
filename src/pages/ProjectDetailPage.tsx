@@ -7,17 +7,17 @@ import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { daysUntilExpiry } from '@/types/safety';
 import { calculate13thDailyCost } from '@/types/employee';
-import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES } from '@/types/project';
-import type { ProjectDocType, MeasurementStatus, Measurement } from '@/types/project';
-import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil } from 'lucide-react';
+import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES, EQUIPMENT_TYPES, BILLING_TYPES } from '@/types/project';
+import type { ProjectDocType, MeasurementStatus, Measurement, EquipmentRental, EquipmentType, BillingType } from '@/types/project';
+import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck } from 'lucide-react';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
-type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'docs' | 'measurements' | 'costs';
+type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { projects, updateProject, allocations, addAllocation, deleteAllocation, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, updateProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase } = useProjectData();
+  const { projects, updateProject, allocations, addAllocation, deleteAllocation, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, updateProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase, equipmentRentals, addEquipmentRental, updateEquipmentRental, deleteEquipmentRental } = useProjectData();
   const { employees } = useEmployeeData();
   const { purchases, suppliers, materials } = useAppData();
   const { charges } = useSafetyData();
@@ -32,6 +32,7 @@ export default function ProjectDetailPage() {
   const projDocs = projectDocuments.filter(d => d.projectId === id);
   const projMeasurements = measurements.filter(m => m.projectId === id);
   const projProjectPurchases = projectPurchases.filter(pp => pp.projectId === id);
+  const projRentals = equipmentRentals.filter(r => r.projectId === id);
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -39,6 +40,7 @@ export default function ProjectDetailPage() {
     { key: 'allocations', label: 'Colaboradores', icon: Users },
     { key: 'materials', label: 'Materiais', icon: Package },
     { key: 'outsourced', label: 'Terceirizados', icon: Wrench },
+    { key: 'rentals', label: 'Aluguéis', icon: Truck },
     { key: 'docs', label: 'Documentação', icon: FileText },
     { key: 'costs', label: 'Custos', icon: DollarSign },
   ];
@@ -61,13 +63,14 @@ export default function ProjectDetailPage() {
         ))}
       </div>
 
-      {tab === 'dashboard' && <DashboardTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} measurements={projMeasurements} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} />}
+      {tab === 'dashboard' && <DashboardTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} measurements={projMeasurements} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
       {tab === 'measurements' && <MeasurementsTab projectId={id!} measurements={projMeasurements} onAdd={addMeasurement} onUpdate={updateMeasurement} onDelete={deleteMeasurement} />}
       {tab === 'allocations' && <AllocationsTab projectId={id!} allocations={projAllocations} employees={employees} onAdd={addAllocation} onDelete={deleteAllocation} />}
       {tab === 'materials' && <MaterialsTab projectId={id!} purchases={projPurchases} suppliers={suppliers} materials={materials} projectPurchases={projProjectPurchases} onAdd={addProjectPurchase} onUpdate={updateProjectPurchase} onDelete={deleteProjectPurchase} />}
       {tab === 'outsourced' && <OutsourcedTab projectId={id!} services={projOutsourced} onAdd={addOutsourcedService} onDelete={deleteOutsourcedService} />}
+      {tab === 'rentals' && <RentalsTab projectId={id!} rentals={projRentals} onAdd={addEquipmentRental} onUpdate={updateEquipmentRental} onDelete={deleteEquipmentRental} />}
       {tab === 'docs' && <DocsTab projectId={id!} docs={projDocs} onAdd={addProjectDocument} onUpdate={updateProjectDocument} onDelete={deleteProjectDocument} />}
-      {tab === 'costs' && <CostsTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} />}
+      {tab === 'costs' && <CostsTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
     </div>
   );
 }
