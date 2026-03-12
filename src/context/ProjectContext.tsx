@@ -62,6 +62,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projectDocuments, setProjectDocuments] = useState<ProjectDocument[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [dasExpenses, setDASExpenses] = useState<DASExpense[]>([]);
+  const [projectPurchases, setProjectPurchases] = useState<ProjectPurchase[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
