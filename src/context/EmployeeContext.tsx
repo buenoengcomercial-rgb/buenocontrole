@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import type { Employee, WorkDay, SalaryAdvance, SalaryPayment } from '@/types/employee';
 import { calculateAdvance, calculateMealVoucher, getAdvancePaymentDate } from '@/types/employee';
 
@@ -7,6 +8,7 @@ interface EmployeeState {
   workDays: WorkDay[];
   advances: SalaryAdvance[];
   payments: SalaryPayment[];
+  loading: boolean;
   addEmployee: (e: Omit<Employee, 'id' | 'createdAt'>) => void;
   updateEmployee: (e: Employee) => void;
   deleteEmployee: (id: string) => void;
@@ -21,107 +23,103 @@ interface EmployeeState {
 
 const EmployeeContext = createContext<EmployeeState | null>(null);
 
-const genId = () => crypto.randomUUID();
-const now = () => new Date().toISOString();
-
-const SAMPLE_EMPLOYEES: Employee[] = [
-  { id: '1', name: 'João Silva', cpf: '123.456.789-00', role: 'Eletricista', grossSalary: 3500, admissionDate: '2023-03-15', phone: '(11) 99999-0001', status: 'ativo', createdAt: '2023-03-15' },
-  { id: '2', name: 'Maria Santos', cpf: '987.654.321-00', role: 'Encanadora', grossSalary: 3200, admissionDate: '2023-06-01', phone: '(11) 99999-0002', status: 'ativo', createdAt: '2023-06-01' },
-  { id: '3', name: 'Carlos Oliveira', cpf: '456.789.123-00', role: 'Pedreiro', grossSalary: 2800, admissionDate: '2024-01-10', phone: '(11) 99999-0003', status: 'ativo', createdAt: '2024-01-10' },
-];
-
-const SAMPLE_WORK_DAYS: WorkDay[] = (() => {
-  const days: WorkDay[] = [];
-  let id = 1;
-  // Generate some work days for March 2025
-  for (let d = 1; d <= 10; d++) {
-    const date = `2025-03-${String(d).padStart(2, '0')}`;
-    const dayOfWeek = new Date(date).getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-    for (const empId of ['1', '2', '3']) {
-      const interior = empId === '3' && d <= 5;
-      days.push({
-        id: String(id++),
-        employeeId: empId,
-        date,
-        worked: true,
-        interior,
-        mealVoucherValue: calculateMealVoucher(true, interior),
-      });
-    }
-  }
-  return days;
-})();
-
-const SAMPLE_ADVANCES: SalaryAdvance[] = [
-  { id: '1', employeeId: '1', month: '2025-02', value: calculateAdvance(3500), paymentDate: '2025-02-22', createdAt: '2025-02-22' },
-  { id: '2', employeeId: '2', month: '2025-02', value: calculateAdvance(3200), paymentDate: '2025-02-22', createdAt: '2025-02-22' },
-];
-
-const SAMPLE_PAYMENTS: SalaryPayment[] = [
-  { id: '1', employeeId: '1', month: '2025-02', grossSalary: 3500, advanceDiscount: 1400, otherDiscounts: 0, otherAdditions: 0, netSalary: 2100, paymentDate: '2025-03-07', createdAt: '2025-03-07' },
-];
+function mapEmployee(r: any): Employee {
+  return { id: r.id, name: r.name, cpf: r.cpf, role: r.role, grossSalary: Number(r.gross_salary), admissionDate: r.admission_date, phone: r.phone, status: r.status as Employee['status'], createdAt: r.created_at };
+}
+function mapWorkDay(r: any): WorkDay {
+  return { id: r.id, employeeId: r.employee_id, date: r.date, worked: r.worked, interior: r.interior, mealVoucherValue: Number(r.meal_voucher_value) };
+}
+function mapAdvance(r: any): SalaryAdvance {
+  return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, createdAt: r.created_at };
+}
+function mapPayment(r: any): SalaryPayment {
+  return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, createdAt: r.created_at };
+}
 
 export function EmployeeProvider({ children }: { children: React.ReactNode }) {
-  const [employees, setEmployees] = useState<Employee[]>(SAMPLE_EMPLOYEES);
-  const [workDays, setWorkDays] = useState<WorkDay[]>(SAMPLE_WORK_DAYS);
-  const [advances, setAdvances] = useState<SalaryAdvance[]>(SAMPLE_ADVANCES);
-  const [payments, setPayments] = useState<SalaryPayment[]>(SAMPLE_PAYMENTS);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [workDays, setWorkDays] = useState<WorkDay[]>([]);
+  const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
+  const [payments, setPayments] = useState<SalaryPayment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addEmployee = useCallback((e: Omit<Employee, 'id' | 'createdAt'>) => {
-    setEmployees(prev => [...prev, { ...e, id: genId(), createdAt: now() }]);
+  useEffect(() => {
+    Promise.all([
+      supabase.from('employees').select('*').then(({ data }) => setEmployees((data || []).map(mapEmployee))),
+      supabase.from('work_days').select('*').then(({ data }) => setWorkDays((data || []).map(mapWorkDay))),
+      supabase.from('salary_advances').select('*').then(({ data }) => setAdvances((data || []).map(mapAdvance))),
+      supabase.from('salary_payments').select('*').then(({ data }) => setPayments((data || []).map(mapPayment))),
+    ]).finally(() => setLoading(false));
   }, []);
-  const updateEmployee = useCallback((e: Employee) => {
+
+  const addEmployee = useCallback(async (e: Omit<Employee, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('employees').insert({
+      name: e.name, cpf: e.cpf, role: e.role, gross_salary: e.grossSalary, admission_date: e.admissionDate, phone: e.phone, status: e.status,
+    }).select().single();
+    if (data) setEmployees(prev => [...prev, mapEmployee(data)]);
+  }, []);
+  const updateEmployee = useCallback(async (e: Employee) => {
+    await supabase.from('employees').update({
+      name: e.name, cpf: e.cpf, role: e.role, gross_salary: e.grossSalary, admission_date: e.admissionDate, phone: e.phone, status: e.status,
+    }).eq('id', e.id);
     setEmployees(prev => prev.map(x => x.id === e.id ? e : x));
   }, []);
-  const deleteEmployee = useCallback((id: string) => {
+  const deleteEmployee = useCallback(async (id: string) => {
+    await supabase.from('employees').delete().eq('id', id);
     setEmployees(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addWorkDay = useCallback((w: Omit<WorkDay, 'id' | 'mealVoucherValue'>) => {
+  const addWorkDay = useCallback(async (w: Omit<WorkDay, 'id' | 'mealVoucherValue'>) => {
     const mealVoucherValue = calculateMealVoucher(w.worked, w.interior);
-    setWorkDays(prev => [...prev, { ...w, id: genId(), mealVoucherValue }]);
+    const { data } = await supabase.from('work_days').insert({
+      employee_id: w.employeeId, date: w.date, worked: w.worked, interior: w.interior, meal_voucher_value: mealVoucherValue,
+    }).select().single();
+    if (data) setWorkDays(prev => [...prev, mapWorkDay(data)]);
   }, []);
-  const updateWorkDay = useCallback((w: WorkDay) => {
+  const updateWorkDay = useCallback(async (w: WorkDay) => {
     const mealVoucherValue = calculateMealVoucher(w.worked, w.interior);
+    await supabase.from('work_days').update({
+      employee_id: w.employeeId, date: w.date, worked: w.worked, interior: w.interior, meal_voucher_value: mealVoucherValue,
+    }).eq('id', w.id);
     setWorkDays(prev => prev.map(x => x.id === w.id ? { ...w, mealVoucherValue } : x));
   }, []);
-  const deleteWorkDay = useCallback((id: string) => {
+  const deleteWorkDay = useCallback(async (id: string) => {
+    await supabase.from('work_days').delete().eq('id', id);
     setWorkDays(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const generateAdvance = useCallback((employeeId: string, month: string) => {
-    setAdvances(prev => {
-      const exists = prev.find(a => a.employeeId === employeeId && a.month === month);
-      if (exists) return prev;
-      const emp = employees.find(e => e.id === employeeId);
-      if (!emp) return prev;
-      const [y, m] = month.split('-').map(Number);
-      const payDate = getAdvancePaymentDate(y, m);
-      return [...prev, {
-        id: genId(),
-        employeeId,
-        month,
-        value: calculateAdvance(emp.grossSalary),
-        paymentDate: payDate.toISOString().slice(0, 10),
-        createdAt: now(),
-      }];
-    });
-  }, [employees]);
+  const generateAdvance = useCallback(async (employeeId: string, month: string) => {
+    const exists = advances.find(a => a.employeeId === employeeId && a.month === month);
+    if (exists) return;
+    const emp = employees.find(e => e.id === employeeId);
+    if (!emp) return;
+    const [y, m] = month.split('-').map(Number);
+    const payDate = getAdvancePaymentDate(y, m);
+    const { data } = await supabase.from('salary_advances').insert({
+      employee_id: employeeId, month, value: calculateAdvance(emp.grossSalary), payment_date: payDate.toISOString().slice(0, 10),
+    }).select().single();
+    if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
+  }, [employees, advances]);
 
-  const addPayment = useCallback((p: Omit<SalaryPayment, 'id' | 'createdAt'>) => {
-    setPayments(prev => [...prev, { ...p, id: genId(), createdAt: now() }]);
+  const addPayment = useCallback(async (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('salary_payments').insert({
+      employee_id: p.employeeId, month: p.month, gross_salary: p.grossSalary, advance_discount: p.advanceDiscount,
+      other_discounts: p.otherDiscounts, other_additions: p.otherAdditions, net_salary: p.netSalary, payment_date: p.paymentDate,
+    }).select().single();
+    if (data) setPayments(prev => [...prev, mapPayment(data)]);
   }, []);
-  const deletePayment = useCallback((id: string) => {
+  const deletePayment = useCallback(async (id: string) => {
+    await supabase.from('salary_payments').delete().eq('id', id);
     setPayments(prev => prev.filter(x => x.id !== id));
   }, []);
-  const deleteAdvance = useCallback((id: string) => {
+  const deleteAdvance = useCallback(async (id: string) => {
+    await supabase.from('salary_advances').delete().eq('id', id);
     setAdvances(prev => prev.filter(x => x.id !== id));
   }, []);
 
   return (
     <EmployeeContext.Provider value={{
-      employees, workDays, advances, payments,
+      employees, workDays, advances, payments, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addWorkDay, updateWorkDay, deleteWorkDay,
       generateAdvance, addPayment, deletePayment, deleteAdvance,
