@@ -50,7 +50,6 @@ export default function EmployeeDashboardPage() {
     { label: 'Adiantamentos no Mês', value: formatCurrency(totalAdvancesMonth), icon: ArrowUpCircle },
     { label: 'Vale Alimentação no Mês', value: formatCurrency(totalMealVoucher), icon: UtensilsCrossed },
     { label: 'Férias no Mês', value: formatCurrency(totalVacationsMonth), icon: Palmtree },
-    { label: '13º Acumulado', value: formatCurrency(total13th), icon: Gift },
     { label: 'Colaboradores Ativos', value: activeEmployees.length.toString(), icon: Users },
   ];
 
