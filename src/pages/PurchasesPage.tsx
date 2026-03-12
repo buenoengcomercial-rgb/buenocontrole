@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { TAX_TYPES } from '@/types';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function PurchasesPage() {
   const { purchases, suppliers, materials, addPurchase, deletePurchase } = useAppData();
