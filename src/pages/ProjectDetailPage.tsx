@@ -535,17 +535,20 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
           const expiring = days !== null && days <= 30;
           const expired = days !== null && days < 0;
           return (
-            <div key={d.id} className="bg-card rounded-xl p-4 shadow-card flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs bg-secondary px-2 py-0.5 rounded font-medium">{d.type}</span>
-                  {expired && <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Vencido</span>}
-                  {expiring && !expired && <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{days}d</span>}
+            <div key={d.id} className="bg-card rounded-xl p-4 shadow-card space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-secondary px-2 py-0.5 rounded font-medium">{d.type}</span>
+                    {expired && <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Vencido</span>}
+                    {expiring && !expired && <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{days}d</span>}
+                  </div>
+                  <p className="text-sm mt-1">{d.description || '—'}</p>
+                  <p className="text-muted-foreground text-xs">{d.documentDate && formatDate(d.documentDate)} {d.expiryDate && `→ ${formatDate(d.expiryDate)}`}</p>
                 </div>
-                <p className="text-sm mt-1">{d.description || '—'}</p>
-                <p className="text-muted-foreground text-xs">{d.documentDate && formatDate(d.documentDate)} {d.expiryDate && `→ ${formatDate(d.expiryDate)}`}</p>
+                <button onClick={() => onDelete(d.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></button>
               </div>
-              <button onClick={() => onDelete(d.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></button>
+              <AttachedDocuments entityType="project_doc" entityId={d.id} />
             </div>
           );
         })}
