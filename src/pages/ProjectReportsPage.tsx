@@ -23,14 +23,15 @@ export default function ProjectReportsPage() {
       const outsourcedCost = projOutsourced.reduce((s, sv) => s + sv.value, 0);
 
       let laborCost = 0;
+      const activeProjectCount = projects.length || 1;
+      const monthlyChargesTotal = charges.reduce((s, c) => s + c.inssValue + c.fgtsValue, 0);
+      const chargesPerProject = monthlyChargesTotal / activeProjectCount;
       projAllocations.forEach(a => {
         const emp = employees.find(e => e.id === a.employeeId);
         if (!emp) return;
-        const month = a.date.slice(0, 7);
-        const empCharges = charges.filter(c => c.employeeId === a.employeeId && c.month === month);
-        const monthlyCharges = empCharges.reduce((s, c) => s + c.inssValue + c.fgtsValue, 0);
-        laborCost += (emp.grossSalary + monthlyCharges) / 22;
+        laborCost += emp.grossSalary / 22;
       });
+      laborCost += chargesPerProject;
 
       const totalCost = materialCost + laborCost + outsourcedCost;
       const profit = p.contractValue - totalCost;
