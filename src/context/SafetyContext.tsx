@@ -32,8 +32,8 @@ const genId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
 const SAMPLE_CHARGES: PayrollCharge[] = [
-  { id: '1', employeeId: '1', month: '2025-02', inssValue: 385, fgtsValue: 280, createdAt: '2025-02-28' },
-  { id: '2', employeeId: '2', month: '2025-02', inssValue: 352, fgtsValue: 256, createdAt: '2025-02-28' },
+  { id: '1', employeeId: '1', month: '2025-02', inssValue: 385, fgtsValue: 280, dueDate: '2025-03-07', paid: true, paidValue: 665, paymentDate: '2025-03-05', createdAt: '2025-02-28' },
+  { id: '2', employeeId: '2', month: '2025-02', inssValue: 352, fgtsValue: 256, dueDate: '2025-03-07', paid: false, paidValue: 0, paymentDate: '', createdAt: '2025-02-28' },
 ];
 
 const SAMPLE_ASOS: ASO[] = [

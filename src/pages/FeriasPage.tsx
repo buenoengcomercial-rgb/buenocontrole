@@ -58,11 +58,6 @@ export default function FeriasPage() {
     setOpen(true);
   };
 
-  const handleVacationValueChange = (val: number) => {
-    const bonus = Math.round(val / 3 * 100) / 100;
-    setForm(f => ({ ...f, vacationValue: val, bonusValue: bonus, totalPaid: Math.round((val + bonus) * 100) / 100 }));
-  };
-
   const handleSubmit = () => {
     if (!form.employeeId || !form.startDate || !form.endDate) { toast.error('Preencha todos os campos obrigatórios.'); return; }
     if (editId) {
@@ -84,7 +79,6 @@ export default function FeriasPage() {
     [employees]
   );
 
-  // Filtered vacations for reports
   const filteredVacations = useMemo(() => {
     return vacations
       .filter(v => filterEmployee === 'all' || v.employeeId === filterEmployee)
@@ -117,7 +111,7 @@ export default function FeriasPage() {
             <DialogHeader><DialogTitle>{editId ? 'Editar' : 'Registrar'} Férias</DialogTitle></DialogHeader>
             <div className="grid gap-4 py-4">
               <div>
-                <label className="label-caps mb-1 block">Colaborador</label>
+                <label className="label-caps mb-1 block">Colaborador *</label>
                 <Select value={form.employeeId} onValueChange={v => setForm(f => ({ ...f, employeeId: v }))}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>{employees.filter(e => e.status === 'ativo').map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
@@ -125,11 +119,11 @@ export default function FeriasPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label-caps mb-1 block">Data Início</label>
+                  <label className="label-caps mb-1 block">Data Início *</label>
                   <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="label-caps mb-1 block">Data Término</label>
+                  <label className="label-caps mb-1 block">Data Término *</label>
                   <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
                 </div>
               </div>
@@ -144,21 +138,12 @@ export default function FeriasPage() {
                 </Select>
               </div>
 
-              {/* Financial fields */}
               <div className="border-t border-border pt-4 mt-2">
                 <p className="text-sm font-semibold text-foreground mb-3">Controle Financeiro</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="label-caps mb-1 block">Valor das Férias (R$)</label>
-                    <Input type="number" step="0.01" min="0" value={form.vacationValue || ''} onChange={e => handleVacationValueChange(Number(e.target.value))} placeholder="0,00" />
-                  </div>
-                  <div>
-                    <label className="label-caps mb-1 block">Adicional 1/3 (R$)</label>
-                    <Input type="number" step="0.01" min="0" value={form.bonusValue || ''} onChange={e => setForm(f => ({ ...f, bonusValue: Number(e.target.value), totalPaid: Math.round((f.vacationValue + Number(e.target.value)) * 100) / 100 }))} placeholder="Auto" />
-                  </div>
-                  <div>
-                    <label className="label-caps mb-1 block">Valor Total Pago (R$)</label>
-                    <Input type="number" step="0.01" min="0" value={form.totalPaid || ''} onChange={e => setForm(f => ({ ...f, totalPaid: Number(e.target.value) }))} />
+                    <label className="label-caps mb-1 block">Valor Pago de Férias (R$)</label>
+                    <Input type="number" step="0.01" min="0" value={form.totalPaid || ''} onChange={e => setForm(f => ({ ...f, totalPaid: Number(e.target.value) }))} placeholder="0,00" />
                   </div>
                   <div>
                     <label className="label-caps mb-1 block">Data Pagamento</label>
@@ -209,9 +194,8 @@ export default function FeriasPage() {
                     <th className="label-caps text-left px-6 py-3">Colaborador</th>
                     <th className="label-caps text-left px-6 py-3">Início</th>
                     <th className="label-caps text-left px-6 py-3">Término</th>
-                    <th className="label-caps text-right px-6 py-3">Valor Férias</th>
-                    <th className="label-caps text-right px-6 py-3">1/3 Adicional</th>
-                    <th className="label-caps text-right px-6 py-3">Total Pago</th>
+                    <th className="label-caps text-right px-6 py-3">Valor Pago</th>
+                    <th className="label-caps text-left px-6 py-3">Data Pgto</th>
                     <th className="label-caps text-left px-6 py-3">Status</th>
                     <th className="label-caps text-right px-6 py-3">Ações</th>
                   </tr>
@@ -222,9 +206,8 @@ export default function FeriasPage() {
                       <td className="px-6 py-4 text-sm font-medium">{empName(v.employeeId)}</td>
                       <td className="px-6 py-4 text-sm">{formatDate(v.startDate)}</td>
                       <td className="px-6 py-4 text-sm">{formatDate(v.endDate)}</td>
-                      <td className="px-6 py-4 text-sm text-right">{formatCurrency(v.vacationValue)}</td>
-                      <td className="px-6 py-4 text-sm text-right">{formatCurrency(v.bonusValue)}</td>
                       <td className="px-6 py-4 text-sm text-right font-semibold">{formatCurrency(v.totalPaid)}</td>
+                      <td className="px-6 py-4 text-sm">{v.paymentDate ? formatDate(v.paymentDate) : '—'}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${v.status === 'em_ferias' ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
                           {v.status === 'em_ferias' ? 'Em Férias' : 'Concluídas'}
@@ -238,7 +221,7 @@ export default function FeriasPage() {
                       </td>
                     </tr>
                   ))}
-                  {vacations.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-meta">Nenhuma férias registrada.</td></tr>}
+                  {vacations.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhuma férias registrada.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -263,26 +246,16 @@ export default function FeriasPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-card rounded-xl p-4 shadow-card">
-              <p className="label-caps mb-1">Total Férias</p>
-              <p className="text-lg font-semibold">{formatCurrency(filteredVacations.reduce((s, v) => s + v.vacationValue, 0))}</p>
-            </div>
-            <div className="bg-card rounded-xl p-4 shadow-card">
-              <p className="label-caps mb-1">Total 1/3 Adicional</p>
-              <p className="text-lg font-semibold">{formatCurrency(filteredVacations.reduce((s, v) => s + v.bonusValue, 0))}</p>
-            </div>
-            <div className="bg-card rounded-xl p-4 shadow-card">
-              <p className="label-caps mb-1">Total Pago</p>
-              <p className="text-lg font-semibold">{formatCurrency(totalPaidMonth)}</p>
-            </div>
+          <div className="bg-card rounded-xl p-4 shadow-card">
+            <p className="label-caps mb-1">Total Pago no Período</p>
+            <p className="text-lg font-semibold">{formatCurrency(totalPaidMonth)}</p>
           </div>
 
           <div className="flex justify-end">
             <Button variant="outline" size="sm" onClick={() => exportCSV(filteredVacations.map(v => ({
               Colaborador: empName(v.employeeId), Início: v.startDate, Término: v.endDate,
-              'Valor Férias': v.vacationValue, '1/3 Adicional': v.bonusValue, 'Total Pago': v.totalPaid,
-              'Data Pgto': v.paymentDate, Status: v.status === 'em_ferias' ? 'Em Férias' : 'Concluídas', Obs: v.notes,
+              'Valor Pago': v.totalPaid, 'Data Pgto': v.paymentDate,
+              Status: v.status === 'em_ferias' ? 'Em Férias' : 'Concluídas', Obs: v.notes,
             })), `ferias-${filterMonth || 'todos'}`)}>
               <FileDown className="w-4 h-4 mr-2" />Exportar CSV
             </Button>
@@ -294,9 +267,7 @@ export default function FeriasPage() {
                 <thead><tr className="bg-muted">
                   <th className="label-caps text-left px-6 py-3">Colaborador</th>
                   <th className="label-caps text-left px-6 py-3">Período</th>
-                  <th className="label-caps text-right px-6 py-3">Valor Férias</th>
-                  <th className="label-caps text-right px-6 py-3">1/3</th>
-                  <th className="label-caps text-right px-6 py-3">Total Pago</th>
+                  <th className="label-caps text-right px-6 py-3">Valor Pago</th>
                   <th className="label-caps text-left px-6 py-3">Data Pgto</th>
                   <th className="label-caps text-left px-6 py-3">Obs</th>
                 </tr></thead>
@@ -305,14 +276,12 @@ export default function FeriasPage() {
                     <tr key={v.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
                       <td className="px-6 py-4 text-sm font-medium">{empName(v.employeeId)}</td>
                       <td className="px-6 py-4 text-sm">{formatDate(v.startDate)} – {formatDate(v.endDate)}</td>
-                      <td className="px-6 py-4 text-sm text-right">{formatCurrency(v.vacationValue)}</td>
-                      <td className="px-6 py-4 text-sm text-right">{formatCurrency(v.bonusValue)}</td>
                       <td className="px-6 py-4 text-sm text-right font-semibold">{formatCurrency(v.totalPaid)}</td>
                       <td className="px-6 py-4 text-sm">{v.paymentDate ? formatDate(v.paymentDate) : '—'}</td>
                       <td className="px-6 py-4 text-sm text-muted-foreground max-w-[200px] truncate">{v.notes || '—'}</td>
                     </tr>
                   ))}
-                  {filteredVacations.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhum registro encontrado.</td></tr>}
+                  {filteredVacations.length === 0 && <tr><td colSpan={5} className="px-6 py-12 text-center text-meta">Nenhum registro encontrado.</td></tr>}
                 </tbody>
               </table>
             </div>

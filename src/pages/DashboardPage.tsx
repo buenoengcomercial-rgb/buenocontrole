@@ -6,7 +6,7 @@ import { useProjectData } from '@/context/ProjectContext';
 import { formatCurrency } from '@/lib/format';
 import { calculate13thDailyCost } from '@/types/employee';
 import { daysUntilExpiry } from '@/types/safety';
-import { TrendingUp, Users, Shield, Palmtree, AlertTriangle, Package, DollarSign, Stethoscope, GraduationCap, FileText, HardHat, Receipt } from 'lucide-react';
+import { TrendingUp, Users, Shield, Palmtree, AlertTriangle, Package, DollarSign, Stethoscope, GraduationCap, FileText, HardHat, Receipt, CheckCircle2, Clock, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Link } from 'react-router-dom';
 
@@ -33,6 +33,13 @@ export default function DashboardPage() {
   const expiringTrainings = useMemo(() => trainings.filter(t => daysUntilExpiry(t.expiryDate) <= 30), [trainings]);
   const expiringProjectDocs = useMemo(() => projectDocuments.filter(d => d.expiryDate && daysUntilExpiry(d.expiryDate) <= 30), [projectDocuments]);
   const totalMaterialsMonth = useMemo(() => purchases.filter(p => p.date.startsWith(currentMonth)).reduce((s, p) => s + p.finalPrice, 0), [purchases, currentMonth]);
+
+  // DAS status
+  const dasCurrentMonth = useMemo(() => dasExpenses.find(d => d.month === currentMonth), [dasExpenses, currentMonth]);
+  // INSS/FGTS status
+  const chargesCurrentMonth = useMemo(() => charges.filter(c => c.month === currentMonth), [charges, currentMonth]);
+  const inssPending = chargesCurrentMonth.filter(c => !c.paid && c.inssValue > 0).length;
+  const fgtsPending = chargesCurrentMonth.filter(c => !c.paid && c.fgtsValue > 0).length;
 
   const projectCostData = useMemo(() => {
     const activeProjectCount = projects.length || 1;
@@ -80,6 +87,28 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <h1>Dashboard Geral</h1>
 
+      {/* Color Legend */}
+      <div className="bg-card rounded-xl p-4 shadow-card">
+        <div className="flex items-center gap-2 mb-3">
+          <Info className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">Legenda dos Indicadores</span>
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-success" />
+            <span className="text-sm text-muted-foreground">Regular / Pago / Dentro do prazo</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-warning" />
+            <span className="text-sm text-muted-foreground">Atenção / Prazo próximo</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-destructive" />
+            <span className="text-sm text-muted-foreground">Vencido / Pendente</span>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {kpis.map(kpi => (
           <div key={kpi.label} className={`rounded-xl p-6 shadow-card ${kpi.accent ? 'bg-primary text-primary-foreground' : 'bg-card'}`}>
@@ -90,6 +119,51 @@ export default function DashboardPage() {
             <p className="text-2xl font-semibold tracking-tight">{kpi.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Payment Status Indicators */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link to="/financeiro/das" className="bg-card rounded-xl p-4 shadow-card hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">DAS</span>
+            <Receipt className="w-4 h-4 text-muted-foreground" />
+          </div>
+          {dasCurrentMonth ? (
+            dasCurrentMonth.paid
+              ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
+              : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Sem registro neste mês</span>
+          )}
+        </Link>
+
+        <Link to="/colaboradores/encargos" className="bg-card rounded-xl p-4 shadow-card hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">INSS</span>
+            <Shield className="w-4 h-4 text-muted-foreground" />
+          </div>
+          {chargesCurrentMonth.length > 0 ? (
+            inssPending > 0
+              ? <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />{inssPending} Pendente(s)</span>
+              : <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Todos Pagos</span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Sem registro neste mês</span>
+          )}
+        </Link>
+
+        <Link to="/colaboradores/encargos" className="bg-card rounded-xl p-4 shadow-card hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">FGTS</span>
+            <Shield className="w-4 h-4 text-muted-foreground" />
+          </div>
+          {chargesCurrentMonth.length > 0 ? (
+            fgtsPending > 0
+              ? <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />{fgtsPending} Pendente(s)</span>
+              : <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Todos Pagos</span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Sem registro neste mês</span>
+          )}
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
