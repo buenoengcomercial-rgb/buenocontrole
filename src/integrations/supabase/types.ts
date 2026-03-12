@@ -90,40 +90,40 @@ export type Database = {
       }
       company_charges: {
         Row: {
+          charge_type: string
           created_at: string
           due_date: string
-          fgts_value: number
           id: string
-          inss_value: number
           month: string
           notes: string
           paid: boolean
           payment_date: string | null
           updated_at: string
+          value: number
         }
         Insert: {
+          charge_type?: string
           created_at?: string
           due_date: string
-          fgts_value?: number
           id?: string
-          inss_value?: number
           month: string
           notes?: string
           paid?: boolean
           payment_date?: string | null
           updated_at?: string
+          value?: number
         }
         Update: {
+          charge_type?: string
           created_at?: string
           due_date?: string
-          fgts_value?: number
           id?: string
-          inss_value?: number
           month?: string
           notes?: string
           paid?: boolean
           payment_date?: string | null
           updated_at?: string
+          value?: number
         }
         Relationships: []
       }
