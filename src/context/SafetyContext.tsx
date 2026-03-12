@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import type { PayrollCharge, Vacation, EmployeeDocument, EPIDelivery, ASO, Training } from '@/types/safety';
 
 interface SafetyState {
@@ -8,6 +9,7 @@ interface SafetyState {
   epiDeliveries: EPIDelivery[];
   asos: ASO[];
   trainings: Training[];
+  loading: boolean;
   addCharge: (c: Omit<PayrollCharge, 'id' | 'createdAt'>) => void;
   updateCharge: (c: PayrollCharge) => void;
   deleteCharge: (id: string) => void;
@@ -28,92 +30,157 @@ interface SafetyState {
 }
 
 const SafetyContext = createContext<SafetyState | null>(null);
-const genId = () => crypto.randomUUID();
-const now = () => new Date().toISOString();
 
-const SAMPLE_CHARGES: PayrollCharge[] = [
-  { id: '1', employeeId: '1', month: '2025-02', inssValue: 385, fgtsValue: 280, dueDate: '2025-03-07', paid: true, paidValue: 665, paymentDate: '2025-03-05', createdAt: '2025-02-28' },
-  { id: '2', employeeId: '2', month: '2025-02', inssValue: 352, fgtsValue: 256, dueDate: '2025-03-07', paid: false, paidValue: 0, paymentDate: '', createdAt: '2025-02-28' },
-];
-
-const SAMPLE_ASOS: ASO[] = [
-  { id: '1', employeeId: '1', type: 'periodico', examDate: '2025-01-15', expiryDate: '2026-01-15', fileName: 'aso_joao.pdf', createdAt: '2025-01-15' },
-  { id: '2', employeeId: '3', type: 'admissional', examDate: '2024-01-10', expiryDate: '2025-04-10', fileName: 'aso_carlos.pdf', createdAt: '2024-01-10' },
-];
-
-const SAMPLE_TRAININGS: Training[] = [
-  { id: '1', employeeId: '1', trainingType: 'NR10', trainingDate: '2024-06-15', expiryDate: '2026-06-15', fileName: 'nr10_joao.pdf', createdAt: '2024-06-15' },
-  { id: '2', employeeId: '2', trainingType: 'NR35', trainingDate: '2024-09-01', expiryDate: '2025-04-01', fileName: 'nr35_maria.pdf', createdAt: '2024-09-01' },
-];
+function mapCharge(r: any): PayrollCharge {
+  return { id: r.id, employeeId: r.employee_id, month: r.month, inssValue: Number(r.inss_value), fgtsValue: Number(r.fgts_value), dueDate: r.due_date || '', paid: r.paid, paidValue: Number(r.paid_value), paymentDate: r.payment_date || '', createdAt: r.created_at };
+}
+function mapVacation(r: any): Vacation {
+  return { id: r.id, employeeId: r.employee_id, startDate: r.start_date, endDate: r.end_date, status: r.status as Vacation['status'], vacationValue: Number(r.vacation_value), bonusValue: Number(r.bonus_value), totalPaid: Number(r.total_paid), paymentDate: r.payment_date || '', notes: r.notes, createdAt: r.created_at };
+}
+function mapDoc(r: any): EmployeeDocument {
+  return { id: r.id, employeeId: r.employee_id, type: r.type as EmployeeDocument['type'], completed: r.completed, date: r.date, fileName: r.file_name, createdAt: r.created_at };
+}
+function mapEPI(r: any): EPIDelivery {
+  return { id: r.id, employeeId: r.employee_id, epiType: r.epi_type, unit: r.unit, deliveryDate: r.delivery_date, quantity: Number(r.quantity), notes: r.notes, fileName: r.file_name, createdAt: r.created_at };
+}
+function mapASO(r: any): ASO {
+  return { id: r.id, employeeId: r.employee_id, type: r.type as ASO['type'], examDate: r.exam_date, expiryDate: r.expiry_date, fileName: r.file_name, createdAt: r.created_at };
+}
+function mapTraining(r: any): Training {
+  return { id: r.id, employeeId: r.employee_id, trainingType: r.training_type, trainingDate: r.training_date, expiryDate: r.expiry_date, fileName: r.file_name, createdAt: r.created_at };
+}
 
 export function SafetyProvider({ children }: { children: React.ReactNode }) {
-  const [charges, setCharges] = useState<PayrollCharge[]>(SAMPLE_CHARGES);
+  const [charges, setCharges] = useState<PayrollCharge[]>([]);
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [epiDeliveries, setEPIDeliveries] = useState<EPIDelivery[]>([]);
-  const [asos, setASOs] = useState<ASO[]>(SAMPLE_ASOS);
-  const [trainings, setTrainings] = useState<Training[]>(SAMPLE_TRAININGS);
+  const [asos, setASOs] = useState<ASO[]>([]);
+  const [trainings, setTrainings] = useState<Training[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addCharge = useCallback((c: Omit<PayrollCharge, 'id' | 'createdAt'>) => {
-    setCharges(prev => [...prev, { ...c, id: genId(), createdAt: now() }]);
+  useEffect(() => {
+    Promise.all([
+      supabase.from('payroll_charges').select('*').then(({ data }) => setCharges((data || []).map(mapCharge))),
+      supabase.from('vacations').select('*').then(({ data }) => setVacations((data || []).map(mapVacation))),
+      supabase.from('employee_documents').select('*').then(({ data }) => setDocuments((data || []).map(mapDoc))),
+      supabase.from('epi_deliveries').select('*').then(({ data }) => setEPIDeliveries((data || []).map(mapEPI))),
+      supabase.from('asos').select('*').then(({ data }) => setASOs((data || []).map(mapASO))),
+      supabase.from('trainings').select('*').then(({ data }) => setTrainings((data || []).map(mapTraining))),
+    ]).finally(() => setLoading(false));
   }, []);
-  const updateCharge = useCallback((c: PayrollCharge) => {
+
+  // Charges
+  const addCharge = useCallback(async (c: Omit<PayrollCharge, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('payroll_charges').insert({
+      employee_id: c.employeeId, month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
+      due_date: c.dueDate || null, paid: c.paid, paid_value: c.paidValue, payment_date: c.paymentDate || null,
+    }).select().single();
+    if (data) setCharges(prev => [...prev, mapCharge(data)]);
+  }, []);
+  const updateCharge = useCallback(async (c: PayrollCharge) => {
+    await supabase.from('payroll_charges').update({
+      employee_id: c.employeeId, month: c.month, inss_value: c.inssValue, fgts_value: c.fgtsValue,
+      due_date: c.dueDate || null, paid: c.paid, paid_value: c.paidValue, payment_date: c.paymentDate || null,
+    }).eq('id', c.id);
     setCharges(prev => prev.map(x => x.id === c.id ? c : x));
   }, []);
-  const deleteCharge = useCallback((id: string) => {
+  const deleteCharge = useCallback(async (id: string) => {
+    await supabase.from('payroll_charges').delete().eq('id', id);
     setCharges(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addVacation = useCallback((v: Omit<Vacation, 'id' | 'createdAt'>) => {
-    setVacations(prev => [...prev, { ...v, id: genId(), createdAt: now() }]);
+  // Vacations
+  const addVacation = useCallback(async (v: Omit<Vacation, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('vacations').insert({
+      employee_id: v.employeeId, start_date: v.startDate, end_date: v.endDate, status: v.status,
+      vacation_value: v.vacationValue, bonus_value: v.bonusValue, total_paid: v.totalPaid,
+      payment_date: v.paymentDate || null, notes: v.notes,
+    }).select().single();
+    if (data) setVacations(prev => [...prev, mapVacation(data)]);
   }, []);
-  const updateVacation = useCallback((v: Vacation) => {
+  const updateVacation = useCallback(async (v: Vacation) => {
+    await supabase.from('vacations').update({
+      employee_id: v.employeeId, start_date: v.startDate, end_date: v.endDate, status: v.status,
+      vacation_value: v.vacationValue, bonus_value: v.bonusValue, total_paid: v.totalPaid,
+      payment_date: v.paymentDate || null, notes: v.notes,
+    }).eq('id', v.id);
     setVacations(prev => prev.map(x => x.id === v.id ? v : x));
   }, []);
-  const deleteVacation = useCallback((id: string) => {
+  const deleteVacation = useCallback(async (id: string) => {
+    await supabase.from('vacations').delete().eq('id', id);
     setVacations(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addDocument = useCallback((d: Omit<EmployeeDocument, 'id' | 'createdAt'>) => {
-    setDocuments(prev => [...prev, { ...d, id: genId(), createdAt: now() }]);
+  // Documents
+  const addDocument = useCallback(async (d: Omit<EmployeeDocument, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('employee_documents').insert({
+      employee_id: d.employeeId, type: d.type, completed: d.completed, date: d.date, file_name: d.fileName,
+    }).select().single();
+    if (data) setDocuments(prev => [...prev, mapDoc(data)]);
   }, []);
-  const updateDocument = useCallback((d: EmployeeDocument) => {
+  const updateDocument = useCallback(async (d: EmployeeDocument) => {
+    await supabase.from('employee_documents').update({
+      employee_id: d.employeeId, type: d.type, completed: d.completed, date: d.date, file_name: d.fileName,
+    }).eq('id', d.id);
     setDocuments(prev => prev.map(x => x.id === d.id ? d : x));
   }, []);
-  const deleteDocument = useCallback((id: string) => {
+  const deleteDocument = useCallback(async (id: string) => {
+    await supabase.from('employee_documents').delete().eq('id', id);
     setDocuments(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addEPIDelivery = useCallback((e: Omit<EPIDelivery, 'id' | 'createdAt'>) => {
-    setEPIDeliveries(prev => [...prev, { ...e, id: genId(), createdAt: now() }]);
+  // EPI
+  const addEPIDelivery = useCallback(async (e: Omit<EPIDelivery, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('epi_deliveries').insert({
+      employee_id: e.employeeId, epi_type: e.epiType, unit: e.unit, delivery_date: e.deliveryDate, quantity: e.quantity, notes: e.notes, file_name: e.fileName,
+    }).select().single();
+    if (data) setEPIDeliveries(prev => [...prev, mapEPI(data)]);
   }, []);
-  const deleteEPIDelivery = useCallback((id: string) => {
+  const deleteEPIDelivery = useCallback(async (id: string) => {
+    await supabase.from('epi_deliveries').delete().eq('id', id);
     setEPIDeliveries(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addASO = useCallback((a: Omit<ASO, 'id' | 'createdAt'>) => {
-    setASOs(prev => [...prev, { ...a, id: genId(), createdAt: now() }]);
+  // ASO
+  const addASO = useCallback(async (a: Omit<ASO, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('asos').insert({
+      employee_id: a.employeeId, type: a.type, exam_date: a.examDate, expiry_date: a.expiryDate, file_name: a.fileName,
+    }).select().single();
+    if (data) setASOs(prev => [...prev, mapASO(data)]);
   }, []);
-  const updateASO = useCallback((a: ASO) => {
+  const updateASO = useCallback(async (a: ASO) => {
+    await supabase.from('asos').update({
+      employee_id: a.employeeId, type: a.type, exam_date: a.examDate, expiry_date: a.expiryDate, file_name: a.fileName,
+    }).eq('id', a.id);
     setASOs(prev => prev.map(x => x.id === a.id ? a : x));
   }, []);
-  const deleteASO = useCallback((id: string) => {
+  const deleteASO = useCallback(async (id: string) => {
+    await supabase.from('asos').delete().eq('id', id);
     setASOs(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addTraining = useCallback((t: Omit<Training, 'id' | 'createdAt'>) => {
-    setTrainings(prev => [...prev, { ...t, id: genId(), createdAt: now() }]);
+  // Training
+  const addTraining = useCallback(async (t: Omit<Training, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('trainings').insert({
+      employee_id: t.employeeId, training_type: t.trainingType, training_date: t.trainingDate, expiry_date: t.expiryDate, file_name: t.fileName,
+    }).select().single();
+    if (data) setTrainings(prev => [...prev, mapTraining(data)]);
   }, []);
-  const updateTraining = useCallback((t: Training) => {
+  const updateTraining = useCallback(async (t: Training) => {
+    await supabase.from('trainings').update({
+      employee_id: t.employeeId, training_type: t.trainingType, training_date: t.trainingDate, expiry_date: t.expiryDate, file_name: t.fileName,
+    }).eq('id', t.id);
     setTrainings(prev => prev.map(x => x.id === t.id ? t : x));
   }, []);
-  const deleteTraining = useCallback((id: string) => {
+  const deleteTraining = useCallback(async (id: string) => {
+    await supabase.from('trainings').delete().eq('id', id);
     setTrainings(prev => prev.filter(x => x.id !== id));
   }, []);
 
   return (
     <SafetyContext.Provider value={{
-      charges, vacations, documents, epiDeliveries, asos, trainings,
+      charges, vacations, documents, epiDeliveries, asos, trainings, loading,
       addCharge, updateCharge, deleteCharge,
       addVacation, updateVacation, deleteVacation,
       addDocument, updateDocument, deleteDocument,

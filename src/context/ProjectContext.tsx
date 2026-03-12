@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense } from '@/types/project';
 
 interface ProjectState {
@@ -8,6 +9,7 @@ interface ProjectState {
   projectDocuments: ProjectDocument[];
   measurements: Measurement[];
   dasExpenses: DASExpense[];
+  loading: boolean;
   addProject: (p: Omit<Project, 'id' | 'createdAt'>) => void;
   updateProject: (p: Project) => void;
   deleteProject: (id: string) => void;
@@ -27,129 +29,146 @@ interface ProjectState {
 }
 
 const ProjectContext = createContext<ProjectState | null>(null);
-const genId = () => crypto.randomUUID();
-const now = () => new Date().toISOString();
 
-const SAMPLE_PROJECTS: Project[] = [
-  {
-    id: 'p1',
-    name: 'Edifício Residencial Horizonte',
-    client: 'Construtora ABC',
-    city: 'São Paulo',
-    address: 'Av. Paulista, 1500',
-    responsible: 'João Silva',
-    startDate: '2025-01-15',
-    expectedEndDate: '2025-12-30',
-    contractValue: 850000,
-    notes: 'Instalações elétricas e hidráulicas',
-    createdAt: '2025-01-10',
-  },
-  {
-    id: 'p2',
-    name: 'Subestação Industrial Beta',
-    client: 'Indústria Beta S/A',
-    city: 'Guarulhos',
-    address: 'Rod. Presidente Dutra, km 220',
-    responsible: 'Maria Santos',
-    startDate: '2025-02-01',
-    expectedEndDate: '2025-08-15',
-    contractValue: 320000,
-    notes: 'Montagem de subestação 13.8kV',
-    createdAt: '2025-01-25',
-  },
-];
-
-const SAMPLE_ALLOCATIONS: WorkAllocation[] = (() => {
-  const allocs: WorkAllocation[] = [];
-  let id = 1;
-  for (let d = 3; d <= 7; d++) {
-    const date = `2025-03-${String(d).padStart(2, '0')}`;
-    allocs.push({ id: String(id++), employeeId: '1', projectId: 'p1', date, worked: true, interior: false, createdAt: now() });
-    allocs.push({ id: String(id++), employeeId: '2', projectId: 'p1', date, worked: true, interior: false, createdAt: now() });
-    allocs.push({ id: String(id++), employeeId: '3', projectId: 'p2', date, worked: true, interior: true, createdAt: now() });
-  }
-  return allocs;
-})();
-
-const SAMPLE_OUTSOURCED: OutsourcedService[] = [
-  { id: 'o1', projectId: 'p1', date: '2025-03-05', company: 'Terraplanagem Rápida', cnpj: '55.666.777/0001-88', description: 'Serviço de escavação', value: 15000, invoiceNumber: 'NF-T001', fileName: '', createdAt: now() },
-];
-
-const SAMPLE_MEASUREMENTS: Measurement[] = [
-  { id: 'm1', projectId: 'p1', number: 1, date: '2025-02-28', description: 'Medição inicial - fundações', value: 120000, percentExecuted: 14.1, status: 'paga', createdAt: now() },
-  { id: 'm2', projectId: 'p1', number: 2, date: '2025-03-15', description: 'Instalações elétricas fase 1', value: 85000, percentExecuted: 24.1, status: 'aprovada', createdAt: now() },
-];
-
-const SAMPLE_DAS: DASExpense[] = [
-  { id: 'das1', month: '2025-02', dueDate: '2025-02-20', value: 4500, paid: true, createdAt: now() },
-  { id: 'das2', month: '2025-03', dueDate: '2025-03-20', value: 4800, paid: false, createdAt: now() },
-];
+function mapProject(r: any): Project {
+  return { id: r.id, name: r.name, client: r.client, city: r.city, address: r.address, responsible: r.responsible, startDate: r.start_date, expectedEndDate: r.expected_end_date, contractValue: Number(r.contract_value), notes: r.notes, createdAt: r.created_at };
+}
+function mapAllocation(r: any): WorkAllocation {
+  return { id: r.id, employeeId: r.employee_id, projectId: r.project_id, date: r.date, worked: r.worked, interior: r.interior, createdAt: r.created_at };
+}
+function mapOutsourced(r: any): OutsourcedService {
+  return { id: r.id, projectId: r.project_id, date: r.date, company: r.company, cnpj: r.cnpj, description: r.description, value: Number(r.value), invoiceNumber: r.invoice_number, fileName: r.file_name, createdAt: r.created_at };
+}
+function mapProjectDoc(r: any): ProjectDocument {
+  return { id: r.id, projectId: r.project_id, type: r.type as ProjectDocument['type'], description: r.description, documentDate: r.document_date, expiryDate: r.expiry_date || '', fileName: r.file_name, createdAt: r.created_at };
+}
+function mapMeasurement(r: any): Measurement {
+  return { id: r.id, projectId: r.project_id, number: r.number, date: r.date, description: r.description, value: Number(r.value), percentExecuted: Number(r.percent_executed), status: r.status as Measurement['status'], createdAt: r.created_at };
+}
+function mapDAS(r: any): DASExpense {
+  return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, createdAt: r.created_at };
+}
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(SAMPLE_PROJECTS);
-  const [allocations, setAllocations] = useState<WorkAllocation[]>(SAMPLE_ALLOCATIONS);
-  const [outsourcedServices, setOutsourcedServices] = useState<OutsourcedService[]>(SAMPLE_OUTSOURCED);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [allocations, setAllocations] = useState<WorkAllocation[]>([]);
+  const [outsourcedServices, setOutsourcedServices] = useState<OutsourcedService[]>([]);
   const [projectDocuments, setProjectDocuments] = useState<ProjectDocument[]>([]);
-  const [measurements, setMeasurements] = useState<Measurement[]>(SAMPLE_MEASUREMENTS);
-  const [dasExpenses, setDASExpenses] = useState<DASExpense[]>(SAMPLE_DAS);
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [dasExpenses, setDASExpenses] = useState<DASExpense[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addProject = useCallback((p: Omit<Project, 'id' | 'createdAt'>) => {
-    setProjects(prev => [...prev, { ...p, id: genId(), createdAt: now() }]);
+  useEffect(() => {
+    Promise.all([
+      supabase.from('projects').select('*').then(({ data }) => setProjects((data || []).map(mapProject))),
+      supabase.from('work_allocations').select('*').then(({ data }) => setAllocations((data || []).map(mapAllocation))),
+      supabase.from('outsourced_services').select('*').then(({ data }) => setOutsourcedServices((data || []).map(mapOutsourced))),
+      supabase.from('project_documents').select('*').then(({ data }) => setProjectDocuments((data || []).map(mapProjectDoc))),
+      supabase.from('measurements').select('*').then(({ data }) => setMeasurements((data || []).map(mapMeasurement))),
+      supabase.from('das_expenses').select('*').then(({ data }) => setDASExpenses((data || []).map(mapDAS))),
+    ]).finally(() => setLoading(false));
   }, []);
-  const updateProject = useCallback((p: Project) => {
+
+  const addProject = useCallback(async (p: Omit<Project, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('projects').insert({
+      name: p.name, client: p.client, city: p.city, address: p.address, responsible: p.responsible,
+      start_date: p.startDate, expected_end_date: p.expectedEndDate, contract_value: p.contractValue, notes: p.notes,
+    }).select().single();
+    if (data) setProjects(prev => [...prev, mapProject(data)]);
+  }, []);
+  const updateProject = useCallback(async (p: Project) => {
+    await supabase.from('projects').update({
+      name: p.name, client: p.client, city: p.city, address: p.address, responsible: p.responsible,
+      start_date: p.startDate, expected_end_date: p.expectedEndDate, contract_value: p.contractValue, notes: p.notes,
+    }).eq('id', p.id);
     setProjects(prev => prev.map(x => x.id === p.id ? p : x));
   }, []);
-  const deleteProject = useCallback((id: string) => {
+  const deleteProject = useCallback(async (id: string) => {
+    await supabase.from('projects').delete().eq('id', id);
     setProjects(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addAllocation = useCallback((a: Omit<WorkAllocation, 'id' | 'createdAt'>) => {
-    setAllocations(prev => [...prev, { ...a, id: genId(), createdAt: now() }]);
+  const addAllocation = useCallback(async (a: Omit<WorkAllocation, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('work_allocations').insert({
+      employee_id: a.employeeId, project_id: a.projectId, date: a.date, worked: a.worked, interior: a.interior,
+    }).select().single();
+    if (data) setAllocations(prev => [...prev, mapAllocation(data)]);
   }, []);
-  const deleteAllocation = useCallback((id: string) => {
+  const deleteAllocation = useCallback(async (id: string) => {
+    await supabase.from('work_allocations').delete().eq('id', id);
     setAllocations(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addOutsourcedService = useCallback((s: Omit<OutsourcedService, 'id' | 'createdAt'>) => {
-    setOutsourcedServices(prev => [...prev, { ...s, id: genId(), createdAt: now() }]);
+  const addOutsourcedService = useCallback(async (s: Omit<OutsourcedService, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('outsourced_services').insert({
+      project_id: s.projectId, date: s.date, company: s.company, cnpj: s.cnpj, description: s.description,
+      value: s.value, invoice_number: s.invoiceNumber, file_name: s.fileName,
+    }).select().single();
+    if (data) setOutsourcedServices(prev => [...prev, mapOutsourced(data)]);
   }, []);
-  const deleteOutsourcedService = useCallback((id: string) => {
+  const deleteOutsourcedService = useCallback(async (id: string) => {
+    await supabase.from('outsourced_services').delete().eq('id', id);
     setOutsourcedServices(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addProjectDocument = useCallback((d: Omit<ProjectDocument, 'id' | 'createdAt'>) => {
-    setProjectDocuments(prev => [...prev, { ...d, id: genId(), createdAt: now() }]);
+  const addProjectDocument = useCallback(async (d: Omit<ProjectDocument, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('project_documents').insert({
+      project_id: d.projectId, type: d.type, description: d.description, document_date: d.documentDate,
+      expiry_date: d.expiryDate || null, file_name: d.fileName,
+    }).select().single();
+    if (data) setProjectDocuments(prev => [...prev, mapProjectDoc(data)]);
   }, []);
-  const updateProjectDocument = useCallback((d: ProjectDocument) => {
+  const updateProjectDocument = useCallback(async (d: ProjectDocument) => {
+    await supabase.from('project_documents').update({
+      project_id: d.projectId, type: d.type, description: d.description, document_date: d.documentDate,
+      expiry_date: d.expiryDate || null, file_name: d.fileName,
+    }).eq('id', d.id);
     setProjectDocuments(prev => prev.map(x => x.id === d.id ? d : x));
   }, []);
-  const deleteProjectDocument = useCallback((id: string) => {
+  const deleteProjectDocument = useCallback(async (id: string) => {
+    await supabase.from('project_documents').delete().eq('id', id);
     setProjectDocuments(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addMeasurement = useCallback((m: Omit<Measurement, 'id' | 'createdAt'>) => {
-    setMeasurements(prev => [...prev, { ...m, id: genId(), createdAt: now() }]);
+  const addMeasurement = useCallback(async (m: Omit<Measurement, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('measurements').insert({
+      project_id: m.projectId, number: m.number, date: m.date, description: m.description,
+      value: m.value, percent_executed: m.percentExecuted, status: m.status,
+    }).select().single();
+    if (data) setMeasurements(prev => [...prev, mapMeasurement(data)]);
   }, []);
-  const updateMeasurement = useCallback((m: Measurement) => {
+  const updateMeasurement = useCallback(async (m: Measurement) => {
+    await supabase.from('measurements').update({
+      project_id: m.projectId, number: m.number, date: m.date, description: m.description,
+      value: m.value, percent_executed: m.percentExecuted, status: m.status,
+    }).eq('id', m.id);
     setMeasurements(prev => prev.map(x => x.id === m.id ? m : x));
   }, []);
-  const deleteMeasurement = useCallback((id: string) => {
+  const deleteMeasurement = useCallback(async (id: string) => {
+    await supabase.from('measurements').delete().eq('id', id);
     setMeasurements(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addDASExpense = useCallback((d: Omit<DASExpense, 'id' | 'createdAt'>) => {
-    setDASExpenses(prev => [...prev, { ...d, id: genId(), createdAt: now() }]);
+  const addDASExpense = useCallback(async (d: Omit<DASExpense, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('das_expenses').insert({
+      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid,
+    }).select().single();
+    if (data) setDASExpenses(prev => [...prev, mapDAS(data)]);
   }, []);
-  const updateDASExpense = useCallback((d: DASExpense) => {
+  const updateDASExpense = useCallback(async (d: DASExpense) => {
+    await supabase.from('das_expenses').update({
+      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid,
+    }).eq('id', d.id);
     setDASExpenses(prev => prev.map(x => x.id === d.id ? d : x));
   }, []);
-  const deleteDASExpense = useCallback((id: string) => {
+  const deleteDASExpense = useCallback(async (id: string) => {
+    await supabase.from('das_expenses').delete().eq('id', id);
     setDASExpenses(prev => prev.filter(x => x.id !== id));
   }, []);
 
   return (
     <ProjectContext.Provider value={{
-      projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses,
+      projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, loading,
       addProject, updateProject, deleteProject,
       addAllocation, deleteAllocation,
       addOutsourcedService, deleteOutsourcedService,
