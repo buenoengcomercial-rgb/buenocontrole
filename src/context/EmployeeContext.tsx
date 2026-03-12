@@ -104,13 +104,13 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
     if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
   }, [employees, advances]);
 
-  const addAdvanceManual = useCallback(async (employeeId: string, month: string, value: number) => {
+  const addAdvanceManual = useCallback(async (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => {
     const exists = advances.find(a => a.employeeId === employeeId && a.month === month);
     if (exists) return;
     const [y, m] = month.split('-').map(Number);
-    const payDate = getAdvancePaymentDate(y, m);
+    const payDate = paymentDate || getAdvancePaymentDate(y, m).toISOString().slice(0, 10);
     const { data } = await supabase.from('salary_advances').insert({
-      employee_id: employeeId, month, value, payment_date: payDate.toISOString().slice(0, 10),
+      employee_id: employeeId, month, value, payment_date: payDate, notes: notes || '',
     }).select().single();
     if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
   }, [advances]);

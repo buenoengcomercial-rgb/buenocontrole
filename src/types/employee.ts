@@ -30,6 +30,7 @@ export interface SalaryAdvance {
   month: string; // YYYY-MM
   value: number;
   paymentDate: string;
+  notes: string;
   createdAt: string;
 }
 
