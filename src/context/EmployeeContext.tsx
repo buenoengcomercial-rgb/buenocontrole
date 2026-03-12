@@ -25,7 +25,7 @@ interface EmployeeState {
 const EmployeeContext = createContext<EmployeeState | null>(null);
 
 function mapEmployee(r: any): Employee {
-  return { id: r.id, name: r.name, cpf: r.cpf, role: r.role, grossSalary: Number(r.gross_salary), admissionDate: r.admission_date, phone: r.phone, status: r.status as Employee['status'], createdAt: r.created_at };
+  return { id: r.id, name: r.name, cpf: r.cpf, role: r.role, grossSalary: Number(r.gross_salary), admissionDate: r.admission_date, phone: r.phone, pixKeyType: r.pix_key_type || '', pixKey: r.pix_key || '', status: r.status as Employee['status'], createdAt: r.created_at };
 }
 function mapWorkDay(r: any): WorkDay {
   return { id: r.id, employeeId: r.employee_id, date: r.date, worked: r.worked, interior: r.interior, mealVoucherValue: Number(r.meal_voucher_value), absenceType: r.absence_type || '', absenceReason: r.absence_reason || '', absenceNotes: r.absence_notes || '' };
