@@ -116,6 +116,7 @@ export default function EmployeeReportsPage() {
           <TabsTrigger value="payments">Pagamentos</TabsTrigger>
           <TabsTrigger value="advances">Adiantamentos</TabsTrigger>
           <TabsTrigger value="vouchers">Vale Alimentação</TabsTrigger>
+          <TabsTrigger value="ferias">Férias Pagas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="payments" className="space-y-3">
