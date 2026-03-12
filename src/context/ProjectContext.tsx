@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense } from '@/types/project';
+import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense, ProjectPurchase } from '@/types/project';
 
 interface ProjectState {
   projects: Project[];
@@ -9,6 +9,7 @@ interface ProjectState {
   projectDocuments: ProjectDocument[];
   measurements: Measurement[];
   dasExpenses: DASExpense[];
+  projectPurchases: ProjectPurchase[];
   loading: boolean;
   addProject: (p: Omit<Project, 'id' | 'createdAt'>) => void;
   updateProject: (p: Project) => void;
@@ -26,6 +27,8 @@ interface ProjectState {
   addDASExpense: (d: Omit<DASExpense, 'id' | 'createdAt'>) => void;
   updateDASExpense: (d: DASExpense) => void;
   deleteDASExpense: (id: string) => void;
+  addProjectPurchase: (p: Omit<ProjectPurchase, 'id' | 'createdAt'>) => void;
+  deleteProjectPurchase: (id: string) => void;
 }
 
 const ProjectContext = createContext<ProjectState | null>(null);
@@ -48,6 +51,9 @@ function mapMeasurement(r: any): Measurement {
 function mapDAS(r: any): DASExpense {
   return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, createdAt: r.created_at };
 }
+function mapProjectPurchase(r: any): ProjectPurchase {
+  return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), description: r.description, notes: r.notes, createdAt: r.created_at };
+}
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -56,6 +62,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projectDocuments, setProjectDocuments] = useState<ProjectDocument[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [dasExpenses, setDASExpenses] = useState<DASExpense[]>([]);
+  const [projectPurchases, setProjectPurchases] = useState<ProjectPurchase[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,6 +73,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('project_documents').select('*').then(({ data }) => setProjectDocuments((data || []).map(mapProjectDoc))),
       supabase.from('measurements').select('*').then(({ data }) => setMeasurements((data || []).map(mapMeasurement))),
       supabase.from('das_expenses').select('*').then(({ data }) => setDASExpenses((data || []).map(mapDAS))),
+      supabase.from('project_purchases').select('*').then(({ data }) => setProjectPurchases((data || []).map(mapProjectPurchase))),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -166,15 +174,29 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setDASExpenses(prev => prev.filter(x => x.id !== id));
   }, []);
 
+  const addProjectPurchase = useCallback(async (p: Omit<ProjectPurchase, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('project_purchases').insert({
+      project_id: p.projectId, supplier_id: p.supplierId || null, material_id: p.materialId || null,
+      date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
+      description: p.description, notes: p.notes,
+    }).select().single();
+    if (data) setProjectPurchases(prev => [...prev, mapProjectPurchase(data)]);
+  }, []);
+  const deleteProjectPurchase = useCallback(async (id: string) => {
+    await supabase.from('project_purchases').delete().eq('id', id);
+    setProjectPurchases(prev => prev.filter(x => x.id !== id));
+  }, []);
+
   return (
     <ProjectContext.Provider value={{
-      projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, loading,
+      projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, projectPurchases, loading,
       addProject, updateProject, deleteProject,
       addAllocation, deleteAllocation,
       addOutsourcedService, deleteOutsourcedService,
       addProjectDocument, updateProjectDocument, deleteProjectDocument,
       addMeasurement, updateMeasurement, deleteMeasurement,
       addDASExpense, updateDASExpense, deleteDASExpense,
+      addProjectPurchase, deleteProjectPurchase,
     }}>
       {children}
     </ProjectContext.Provider>

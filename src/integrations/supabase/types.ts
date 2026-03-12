@@ -589,6 +589,70 @@ export type Database = {
           },
         ]
       }
+      project_purchases: {
+        Row: {
+          created_at: string
+          date: string
+          description: string
+          id: string
+          invoice_number: string
+          material_id: string | null
+          notes: string
+          project_id: string
+          supplier_id: string | null
+          total_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string
+          id?: string
+          invoice_number?: string
+          material_id?: string | null
+          notes?: string
+          project_id: string
+          supplier_id?: string | null
+          total_value?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          invoice_number?: string
+          material_id?: string | null
+          notes?: string
+          project_id?: string
+          supplier_id?: string | null
+          total_value?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_purchases_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_purchases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           address: string

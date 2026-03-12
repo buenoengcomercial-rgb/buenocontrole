@@ -100,3 +100,16 @@ export interface DASExpense {
   paid: boolean;
   createdAt: string;
 }
+
+export interface ProjectPurchase {
+  id: string;
+  projectId: string;
+  supplierId: string | null;
+  materialId: string | null;
+  date: string;
+  invoiceNumber: string;
+  totalValue: number;
+  description: string;
+  notes: string;
+  createdAt: string;
+}
