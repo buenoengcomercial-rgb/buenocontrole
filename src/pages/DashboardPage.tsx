@@ -145,13 +145,15 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-foreground">INSS</span>
             <Shield className="w-4 h-4 text-muted-foreground" />
           </div>
-          {chargeCurrentMonth ? (
-            chargeCurrentMonth.paid
-              ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
-              : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Sem registro neste mês</span>
-          )}
+          {(() => {
+            const inssCharge = chargesCurrentMonth.find(c => c.chargeType === 'INSS');
+            if (inssCharge) {
+              return inssCharge.paid
+                ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
+                : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>;
+            }
+            return <span className="text-xs text-muted-foreground">Sem registro neste mês</span>;
+          })()}
         </Link>
 
         <Link to="/colaboradores/encargos" className="bg-card rounded-xl p-4 shadow-card hover:shadow-md transition-shadow">
