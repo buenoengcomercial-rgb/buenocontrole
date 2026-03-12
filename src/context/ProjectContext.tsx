@@ -28,6 +28,7 @@ interface ProjectState {
   updateDASExpense: (d: DASExpense) => void;
   deleteDASExpense: (id: string) => void;
   addProjectPurchase: (p: Omit<ProjectPurchase, 'id' | 'createdAt'>) => void;
+  updateProjectPurchase: (p: ProjectPurchase) => void;
   deleteProjectPurchase: (id: string) => void;
 }
 
@@ -52,7 +53,7 @@ function mapDAS(r: any): DASExpense {
   return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, createdAt: r.created_at };
 }
 function mapProjectPurchase(r: any): ProjectPurchase {
-  return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), description: r.description, notes: r.notes, createdAt: r.created_at };
+  return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), freightValue: Number(r.freight_value || 0), icmsValue: Number(r.icms_value || 0), description: r.description, notes: r.notes, createdAt: r.created_at };
 }
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
@@ -178,9 +179,19 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase.from('project_purchases').insert({
       project_id: p.projectId, supplier_id: p.supplierId || null, material_id: p.materialId || null,
       date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
+      freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
       description: p.description, notes: p.notes,
     }).select().single();
     if (data) setProjectPurchases(prev => [...prev, mapProjectPurchase(data)]);
+  }, []);
+  const updateProjectPurchase = useCallback(async (p: ProjectPurchase) => {
+    await supabase.from('project_purchases').update({
+      supplier_id: p.supplierId || null, material_id: p.materialId || null,
+      date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
+      freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
+      description: p.description, notes: p.notes,
+    }).eq('id', p.id);
+    setProjectPurchases(prev => prev.map(x => x.id === p.id ? p : x));
   }, []);
   const deleteProjectPurchase = useCallback(async (id: string) => {
     await supabase.from('project_purchases').delete().eq('id', id);
@@ -196,7 +207,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       addProjectDocument, updateProjectDocument, deleteProjectDocument,
       addMeasurement, updateMeasurement, deleteMeasurement,
       addDASExpense, updateDASExpense, deleteDASExpense,
-      addProjectPurchase, deleteProjectPurchase,
+      addProjectPurchase, updateProjectPurchase, deleteProjectPurchase,
     }}>
       {children}
     </ProjectContext.Provider>

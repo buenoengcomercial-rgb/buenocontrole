@@ -594,6 +594,8 @@ export type Database = {
           created_at: string
           date: string
           description: string
+          freight_value: number
+          icms_value: number
           id: string
           invoice_number: string
           material_id: string | null
@@ -607,6 +609,8 @@ export type Database = {
           created_at?: string
           date: string
           description?: string
+          freight_value?: number
+          icms_value?: number
           id?: string
           invoice_number?: string
           material_id?: string | null
@@ -620,6 +624,8 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string
+          freight_value?: number
+          icms_value?: number
           id?: string
           invoice_number?: string
           material_id?: string | null
