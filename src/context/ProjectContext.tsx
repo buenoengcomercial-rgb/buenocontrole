@@ -53,7 +53,7 @@ function mapDAS(r: any): DASExpense {
   return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, createdAt: r.created_at };
 }
 function mapProjectPurchase(r: any): ProjectPurchase {
-  return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), description: r.description, notes: r.notes, createdAt: r.created_at };
+  return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), freightValue: Number(r.freight_value || 0), icmsValue: Number(r.icms_value || 0), description: r.description, notes: r.notes, createdAt: r.created_at };
 }
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
