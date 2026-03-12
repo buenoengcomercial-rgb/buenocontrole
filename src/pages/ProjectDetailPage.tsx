@@ -31,6 +31,7 @@ export default function ProjectDetailPage() {
   const projOutsourced = outsourcedServices.filter(s => s.projectId === id);
   const projDocs = projectDocuments.filter(d => d.projectId === id);
   const projMeasurements = measurements.filter(m => m.projectId === id);
+  const projProjectPurchases = projectPurchases.filter(pp => pp.projectId === id);
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
