@@ -43,16 +43,6 @@ export default function EmployeeDashboardPage() {
     [vacationsMonth]
   );
 
-  // 13th salary
-  const thirteenthData = useMemo(() =>
-    activeEmployees.map(e => ({
-      id: e.id,
-      name: e.name,
-      value: calculate13thSalary(e.grossSalary, e.admissionDate, currentYear),
-    })),
-    [activeEmployees, currentYear]
-  );
-  const total13th = useMemo(() => thirteenthData.reduce((s, d) => s + d.value, 0), [thirteenthData]);
 
   const kpis = [
     { label: 'Salário Bruto (Pago)', value: formatCurrency(totalGrossMonth), icon: DollarSign, accent: true },
