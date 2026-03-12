@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { calculateAdvance, getSalaryPaymentDate } from '@/types/employee';
+import type { SalaryPayment } from '@/types/employee';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,12 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCard, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 
+const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'] as const;
+
 export default function PaymentsPage() {
-  const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, addPayment, deleteAdvance, deletePayment } = useEmployeeData();
+  const { employees, advances, payments, generateAdvance, addAdvanceManual, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
 
   // Advance generation
@@ -48,38 +51,61 @@ export default function PaymentsPage() {
     toast.success(`${count} adiantamentos gerados.`);
   };
 
-  // Salary payment
+  // Salary payment form
   const [payOpen, setPayOpen] = useState(false);
-  const [payForm, setPayForm] = useState({ employeeId: '', month: '', otherDiscounts: 0, otherAdditions: 0 });
+  const [payForm, setPayForm] = useState({
+    employeeId: '', month: '', otherDiscounts: 0, otherAdditions: 0,
+    paidValue: '' as number | '', paymentDate: '', paymentMethod: 'PIX', notes: '',
+  });
+
+  // Edit payment
+  const [editOpen, setEditOpen] = useState(false);
+  const [editPayment, setEditPayment] = useState<SalaryPayment | null>(null);
+
+  const selectedEmp = useMemo(() => employees.find(e => e.id === payForm.employeeId), [payForm.employeeId, employees]);
 
   const payPreview = useMemo(() => {
-    if (!payForm.employeeId || !payForm.month) return null;
-    const emp = employees.find(e => e.id === payForm.employeeId);
-    if (!emp) return null;
-    const adv = advances.find(a => a.employeeId === payForm.employeeId && a.month === payForm.month);
-    const advDiscount = adv?.value || 0;
-    const net = emp.grossSalary - advDiscount - payForm.otherDiscounts + payForm.otherAdditions;
+    if (!selectedEmp || !payForm.month) return null;
+    const empAdvances = advances.filter(a => a.employeeId === payForm.employeeId && a.month === payForm.month);
+    const totalAdvances = empAdvances.reduce((s, a) => s + a.value, 0);
+    const netSalary = selectedEmp.grossSalary - totalAdvances - payForm.otherDiscounts + payForm.otherAdditions;
     const [y, m] = payForm.month.split('-').map(Number);
-    const payDate = getSalaryPaymentDate(y, m + 1);
-    return { grossSalary: emp.grossSalary, advDiscount, net, payDate: payDate.toISOString().slice(0, 10) };
-  }, [payForm, employees, advances]);
+    const defaultDate = getSalaryPaymentDate(y, m + 1).toISOString().slice(0, 10);
+    return { grossSalary: selectedEmp.grossSalary, totalAdvances, netSalary, defaultDate };
+  }, [payForm, selectedEmp, advances]);
 
   const handlePayment = () => {
     if (!payPreview || !payForm.employeeId) return;
     const exists = payments.find(p => p.employeeId === payForm.employeeId && p.month === payForm.month);
     if (exists) { toast.error('Pagamento já registrado para este mês.'); return; }
+    const paidValue = payForm.paidValue !== '' ? Number(payForm.paidValue) : payPreview.netSalary;
     addPayment({
       employeeId: payForm.employeeId,
       month: payForm.month,
       grossSalary: payPreview.grossSalary,
-      advanceDiscount: payPreview.advDiscount,
+      advanceDiscount: payPreview.totalAdvances,
       otherDiscounts: payForm.otherDiscounts,
       otherAdditions: payForm.otherAdditions,
-      netSalary: payPreview.net,
-      paymentDate: payPreview.payDate,
+      netSalary: paidValue,
+      paymentDate: payForm.paymentDate || payPreview.defaultDate,
+      paymentMethod: payForm.paymentMethod,
+      notes: payForm.notes,
     });
     toast.success('Pagamento registrado.');
     setPayOpen(false);
+    setPayForm({ employeeId: '', month: '', otherDiscounts: 0, otherAdditions: 0, paidValue: '', paymentDate: '', paymentMethod: 'PIX', notes: '' });
+  };
+
+  const openEdit = (p: SalaryPayment) => {
+    setEditPayment({ ...p });
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editPayment) return;
+    updatePayment(editPayment);
+    toast.success('Pagamento atualizado.');
+    setEditOpen(false);
   };
 
   // Filter
@@ -90,6 +116,7 @@ export default function PaymentsPage() {
 
   // Expand advance details
   const [expandedAdvance, setExpandedAdvance] = useState<string | null>(null);
+  const [expandedPayment, setExpandedPayment] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -103,9 +130,10 @@ export default function PaymentsPage() {
 
         <TabsContent value="salaries" className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <Dialog open={payOpen} onOpenChange={setPayOpen}>
+            {/* Register Payment Dialog */}
+            <Dialog open={payOpen} onOpenChange={(open) => { setPayOpen(open); if (!open) setPayForm({ employeeId: '', month: '', otherDiscounts: 0, otherAdditions: 0, paidValue: '', paymentDate: '', paymentMethod: 'PIX', notes: '' }); }}>
               <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Registrar Pagamento</Button></DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
+              <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Registrar Pagamento de Salário</DialogTitle></DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -118,24 +146,64 @@ export default function PaymentsPage() {
                     </div>
                     <div><label className="label-caps mb-1 block">Mês Referência</label><Input type="month" value={payForm.month} onChange={e => setPayForm(f => ({ ...f, month: e.target.value }))} /></div>
                   </div>
+
+                  {/* PIX info */}
+                  {selectedEmp && selectedEmp.pixKey && (
+                    <div className="bg-accent/30 rounded-lg p-3 flex items-start gap-3">
+                      <KeyRound className="w-4 h-4 mt-0.5 text-primary" />
+                      <div className="text-sm">
+                        <p className="font-medium">{selectedEmp.name}</p>
+                        <p className="text-muted-foreground">PIX ({selectedEmp.pixKeyType}): <span className="font-mono font-medium text-foreground">{selectedEmp.pixKey}</span></p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4">
                     <div><label className="label-caps mb-1 block">Outros Descontos</label><Input type="number" min={0} step={0.01} value={payForm.otherDiscounts || ''} onChange={e => setPayForm(f => ({ ...f, otherDiscounts: Number(e.target.value) }))} /></div>
                     <div><label className="label-caps mb-1 block">Outros Adicionais</label><Input type="number" min={0} step={0.01} value={payForm.otherAdditions || ''} onChange={e => setPayForm(f => ({ ...f, otherAdditions: Number(e.target.value) }))} /></div>
                   </div>
+
+                  {/* Summary */}
                   {payPreview && (
                     <div className="bg-muted rounded-lg p-4 space-y-2 text-sm">
                       <div className="flex justify-between"><span>Salário Bruto</span><strong>{formatCurrency(payPreview.grossSalary)}</strong></div>
-                      <div className="flex justify-between text-destructive"><span>(-) Adiantamento</span><strong>{formatCurrency(payPreview.advDiscount)}</strong></div>
+                      <div className="flex justify-between text-destructive"><span>(-) Adiantamentos</span><strong>{formatCurrency(payPreview.totalAdvances)}</strong></div>
                       {payForm.otherDiscounts > 0 && <div className="flex justify-between text-destructive"><span>(-) Outros descontos</span><strong>{formatCurrency(payForm.otherDiscounts)}</strong></div>}
                       {payForm.otherAdditions > 0 && <div className="flex justify-between text-success"><span>(+) Adicionais</span><strong>{formatCurrency(payForm.otherAdditions)}</strong></div>}
-                      <div className="border-t border-border pt-2 flex justify-between text-base font-semibold"><span>Valor Líquido</span><span>{formatCurrency(payPreview.net)}</span></div>
-                      <div className="flex justify-between text-meta"><span>Data de pagamento (5° dia útil)</span><span>{formatDate(payPreview.payDate)}</span></div>
+                      <div className="border-t border-border pt-2 flex justify-between text-base font-semibold">
+                        <span>Valor a Pagar (calculado)</span>
+                        <span>{formatCurrency(payPreview.netSalary)}</span>
+                      </div>
                     </div>
                   )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="label-caps mb-1 block">Valor Pago</label>
+                      <Input type="number" min={0} step={0.01} value={payForm.paidValue} onChange={e => setPayForm(f => ({ ...f, paidValue: e.target.value ? Number(e.target.value) : '' }))} placeholder={payPreview ? formatCurrency(payPreview.netSalary) : '0,00'} />
+                    </div>
+                    <div>
+                      <label className="label-caps mb-1 block">Data do Pagamento</label>
+                      <Input type="date" value={payForm.paymentDate} onChange={e => setPayForm(f => ({ ...f, paymentDate: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="label-caps mb-1 block">Forma de Pagamento</label>
+                    <Select value={payForm.paymentMethod} onValueChange={v => setPayForm(f => ({ ...f, paymentMethod: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="label-caps mb-1 block">Observação</label>
+                    <Textarea value={payForm.notes} onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))} placeholder="Informações adicionais sobre o pagamento..." className="min-h-[60px]" />
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setPayOpen(false)}>Cancelar</Button>
-                  <Button onClick={handlePayment} disabled={!payPreview}>Registrar</Button>
+                  <Button onClick={handlePayment} disabled={!payPreview}>Confirmar Pagamento</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -143,39 +211,56 @@ export default function PaymentsPage() {
 
           <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
 
-          <div className="bg-card rounded-xl shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="bg-muted">
-                  <th className="label-caps text-left px-6 py-3">Colaborador</th>
-                  <th className="label-caps text-left px-6 py-3">Mês Ref.</th>
-                  <th className="label-caps text-right px-6 py-3">Bruto</th>
-                  <th className="label-caps text-right px-6 py-3">Adiant.</th>
-                  <th className="label-caps text-right px-6 py-3">Líquido</th>
-                  <th className="label-caps text-left px-6 py-3">Data Pgto</th>
-                  <th className="label-caps text-right px-6 py-3">Ações</th>
-                </tr></thead>
-                <tbody>
-                  {filteredPayments.map(p => {
-                    const emp = employees.find(e => e.id === p.employeeId);
-                    return (
-                      <tr key={p.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
-                        <td className="px-6 py-4 text-sm font-medium">{emp?.name || '—'}</td>
-                        <td className="px-6 py-4 text-sm">{p.month}</td>
-                        <td className="px-6 py-4 text-sm text-right">{formatCurrency(p.grossSalary)}</td>
-                        <td className="px-6 py-4 text-sm text-right text-destructive">{formatCurrency(p.advanceDiscount)}</td>
-                        <td className="px-6 py-4 text-sm text-right font-semibold">{formatCurrency(p.netSalary)}</td>
-                        <td className="px-6 py-4 text-sm">{formatDate(p.paymentDate)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <button onClick={() => { deletePayment(p.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filteredPayments.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhum pagamento encontrado.</td></tr>}
-                </tbody>
-              </table>
-            </div>
+          {/* Payments list as expandable cards */}
+          <div className="space-y-3">
+            {filteredPayments.map(p => {
+              const emp = employees.find(e => e.id === p.employeeId);
+              const isExpanded = expandedPayment === p.id;
+              return (
+                <div key={p.id} className="bg-card rounded-xl shadow-card overflow-hidden">
+                  <div className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-row-hover transition-colors" onClick={() => setExpandedPayment(isExpanded ? null : p.id)}>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium">{emp?.name || '—'}</span>
+                      <span className="text-xs text-muted-foreground">{p.month}</span>
+                      {p.paymentMethod && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{p.paymentMethod}</span>}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-semibold">{formatCurrency(p.netSalary)}</span>
+                      <span className="text-xs text-muted-foreground">{formatDate(p.paymentDate)}</span>
+                      {p.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />}
+                      <button onClick={(e) => { e.stopPropagation(); openEdit(p); }} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); deletePayment(p.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="px-6 pb-4 space-y-3 border-t border-border pt-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        <div><span className="label-caps text-xs block">Bruto</span><span>{formatCurrency(p.grossSalary)}</span></div>
+                        <div><span className="label-caps text-xs block">Adiantamento</span><span className="text-destructive">{formatCurrency(p.advanceDiscount)}</span></div>
+                        <div><span className="label-caps text-xs block">Outros Desc.</span><span>{formatCurrency(p.otherDiscounts)}</span></div>
+                        <div><span className="label-caps text-xs block">Adicionais</span><span>{formatCurrency(p.otherAdditions)}</span></div>
+                      </div>
+                      {emp?.pixKey && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <KeyRound className="w-3.5 h-3.5" />
+                          PIX ({emp.pixKeyType}): <span className="font-mono font-medium text-foreground">{emp.pixKey}</span>
+                        </div>
+                      )}
+                      {p.notes && (
+                        <div>
+                          <span className="label-caps text-xs">Observação</span>
+                          <p className="text-sm text-muted-foreground mt-1">{p.notes}</p>
+                        </div>
+                      )}
+                      <AttachedDocuments entityType="salary_payment" entityId={p.id} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {filteredPayments.length === 0 && (
+              <div className="bg-card rounded-xl shadow-card px-6 py-12 text-center text-meta">Nenhum pagamento encontrado.</div>
+            )}
           </div>
         </TabsContent>
 
@@ -249,6 +334,53 @@ export default function PaymentsPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Pagamento</DialogTitle></DialogHeader>
+          {editPayment && (() => {
+            const emp = employees.find(e => e.id === editPayment.employeeId);
+            return (
+              <div className="grid gap-4 py-4">
+                <div className="text-sm font-medium">{emp?.name} — {editPayment.month}</div>
+                {emp?.pixKey && (
+                  <div className="bg-accent/30 rounded-lg p-3 flex items-start gap-3 text-sm">
+                    <KeyRound className="w-4 h-4 mt-0.5 text-primary" />
+                    <span>PIX ({emp.pixKeyType}): <span className="font-mono font-medium">{emp.pixKey}</span></span>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label-caps mb-1 block">Valor Pago</label>
+                    <Input type="number" min={0} step={0.01} value={editPayment.netSalary} onChange={e => setEditPayment(p => p ? { ...p, netSalary: Number(e.target.value) } : p)} />
+                  </div>
+                  <div>
+                    <label className="label-caps mb-1 block">Data do Pagamento</label>
+                    <Input type="date" value={editPayment.paymentDate} onChange={e => setEditPayment(p => p ? { ...p, paymentDate: e.target.value } : p)} />
+                  </div>
+                </div>
+                <div>
+                  <label className="label-caps mb-1 block">Forma de Pagamento</label>
+                  <Select value={editPayment.paymentMethod || 'PIX'} onValueChange={v => setEditPayment(p => p ? { ...p, paymentMethod: v } : p)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{PAYMENT_METHODS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="label-caps mb-1 block">Observação</label>
+                  <Textarea value={editPayment.notes} onChange={e => setEditPayment(p => p ? { ...p, notes: e.target.value } : p)} className="min-h-[60px]" />
+                </div>
+                <AttachedDocuments entityType="salary_payment" entityId={editPayment.id} />
+              </div>
+            );
+          })()}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit}>Salvar Alterações</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

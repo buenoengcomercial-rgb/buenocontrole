@@ -18,6 +18,7 @@ interface EmployeeState {
   generateAdvance: (employeeId: string, month: string) => void;
   addAdvanceManual: (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => void;
   addPayment: (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => void;
+  updatePayment: (p: SalaryPayment) => void;
   deletePayment: (id: string) => void;
   deleteAdvance: (id: string) => void;
 }
@@ -34,7 +35,7 @@ function mapAdvance(r: any): SalaryAdvance {
   return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, notes: r.notes || '', createdAt: r.created_at };
 }
 function mapPayment(r: any): SalaryPayment {
-  return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, createdAt: r.created_at };
+  return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, paymentMethod: r.payment_method || '', notes: r.notes || '', createdAt: r.created_at };
 }
 
 export function EmployeeProvider({ children }: { children: React.ReactNode }) {
@@ -119,8 +120,17 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
     const { data } = await supabase.from('salary_payments').insert({
       employee_id: p.employeeId, month: p.month, gross_salary: p.grossSalary, advance_discount: p.advanceDiscount,
       other_discounts: p.otherDiscounts, other_additions: p.otherAdditions, net_salary: p.netSalary, payment_date: p.paymentDate,
+      payment_method: p.paymentMethod || '', notes: p.notes || '',
     }).select().single();
     if (data) setPayments(prev => [...prev, mapPayment(data)]);
+  }, []);
+  const updatePayment = useCallback(async (p: SalaryPayment) => {
+    await supabase.from('salary_payments').update({
+      gross_salary: p.grossSalary, advance_discount: p.advanceDiscount,
+      other_discounts: p.otherDiscounts, other_additions: p.otherAdditions, net_salary: p.netSalary,
+      payment_date: p.paymentDate, payment_method: p.paymentMethod || '', notes: p.notes || '',
+    }).eq('id', p.id);
+    setPayments(prev => prev.map(x => x.id === p.id ? p : x));
   }, []);
   const deletePayment = useCallback(async (id: string) => {
     await supabase.from('salary_payments').delete().eq('id', id);
@@ -136,7 +146,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
       employees, workDays, advances, payments, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addWorkDay, updateWorkDay, deleteWorkDay,
-      generateAdvance, addAdvanceManual, addPayment, deletePayment, deleteAdvance,
+      generateAdvance, addAdvanceManual, addPayment, updatePayment, deletePayment, deleteAdvance,
     }}>
       {children}
     </EmployeeContext.Provider>
