@@ -119,3 +119,37 @@ export interface ProjectPurchase {
   notes: string;
   createdAt: string;
 }
+
+export type EquipmentType = 'máquina' | 'ferramenta' | 'equipamento';
+export type BillingType = 'hora' | 'diária' | 'semanal' | 'mensal' | 'valor_fechado';
+
+export const EQUIPMENT_TYPES: { value: EquipmentType; label: string }[] = [
+  { value: 'máquina', label: 'Máquina' },
+  { value: 'ferramenta', label: 'Ferramenta' },
+  { value: 'equipamento', label: 'Equipamento' },
+];
+
+export const BILLING_TYPES: { value: BillingType; label: string }[] = [
+  { value: 'hora', label: 'Por hora' },
+  { value: 'diária', label: 'Por diária' },
+  { value: 'semanal', label: 'Semanal' },
+  { value: 'mensal', label: 'Mensal' },
+  { value: 'valor_fechado', label: 'Valor fechado' },
+];
+
+export interface EquipmentRental {
+  id: string;
+  projectId: string;
+  equipmentName: string;
+  equipmentType: EquipmentType;
+  supplier: string;
+  billingType: BillingType;
+  unitValue: number;
+  quantity: number;
+  totalValue: number;
+  startDate: string;
+  endDate: string;
+  invoiceNumber: string;
+  notes: string;
+  createdAt: string;
+}
