@@ -3,12 +3,14 @@ import { useEmployeeData } from '@/context/EmployeeContext';
 import { calculateAdvance, getSalaryPaymentDate } from '@/types/employee';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, DollarSign, ArrowUpCircle } from 'lucide-react';
+import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function PaymentsPage() {
   const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, addPayment, deleteAdvance, deletePayment } = useEmployeeData();
@@ -18,18 +20,23 @@ export default function PaymentsPage() {
   const [advMonth, setAdvMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [advEmployee, setAdvEmployee] = useState('');
   const [advCustomValue, setAdvCustomValue] = useState<number | ''>('');
+  const [advNotes, setAdvNotes] = useState('');
+  const [advPayDate, setAdvPayDate] = useState('');
 
   const handleGenerateAdvance = () => {
     if (!advEmployee) { toast.error('Selecione um colaborador.'); return; }
     const exists = advances.find(a => a.employeeId === advEmployee && a.month === advMonth);
     if (exists) { toast.error('Adiantamento já gerado para este mês.'); return; }
     if (advCustomValue && advCustomValue > 0) {
-      addAdvanceManual(advEmployee, advMonth, advCustomValue);
+      addAdvanceManual(advEmployee, advMonth, advCustomValue, advNotes, advPayDate || undefined);
     } else {
-      generateAdvance(advEmployee, advMonth);
+      const emp = activeEmployees.find(e => e.id === advEmployee);
+      if (emp) addAdvanceManual(advEmployee, advMonth, calculateAdvance(emp.grossSalary), advNotes, advPayDate || undefined);
     }
     toast.success('Adiantamento gerado.');
     setAdvCustomValue('');
+    setAdvNotes('');
+    setAdvPayDate('');
   };
 
   const handleGenerateAllAdvances = () => {
@@ -80,6 +87,9 @@ export default function PaymentsPage() {
 
   const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredPayments = useMemo(() => payments.filter(p => p.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, filterMonth]);
+
+  // Expand advance details
+  const [expandedAdvance, setExpandedAdvance] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -170,54 +180,72 @@ export default function PaymentsPage() {
         </TabsContent>
 
         <TabsContent value="advances" className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <div><label className="label-caps mb-1 block">Mês</label><Input type="month" value={advMonth} onChange={e => setAdvMonth(e.target.value)} className="w-[180px]" /></div>
-            <div className="flex-1 min-w-[200px]">
-              <label className="label-caps mb-1 block">Colaborador</label>
-              <Select value={advEmployee} onValueChange={setAdvEmployee}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
-              </Select>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 items-end">
+              <div><label className="label-caps mb-1 block">Mês</label><Input type="month" value={advMonth} onChange={e => setAdvMonth(e.target.value)} className="w-[180px]" /></div>
+              <div className="flex-1 min-w-[200px]">
+                <label className="label-caps mb-1 block">Colaborador</label>
+                <Select value={advEmployee} onValueChange={setAdvEmployee}>
+                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="label-caps mb-1 block">Valor (vazio = 40%)</label>
+                <Input type="number" min={0} step={0.01} value={advCustomValue} onChange={e => setAdvCustomValue(e.target.value ? Number(e.target.value) : '')} placeholder="Automático 40%" className="w-[180px]" />
+              </div>
+              <div>
+                <label className="label-caps mb-1 block">Data do Pagamento</label>
+                <Input type="date" value={advPayDate} onChange={e => setAdvPayDate(e.target.value)} className="w-[180px]" />
+              </div>
             </div>
             <div>
-              <label className="label-caps mb-1 block">Valor (vazio = 40%)</label>
-              <Input type="number" min={0} step={0.01} value={advCustomValue} onChange={e => setAdvCustomValue(e.target.value ? Number(e.target.value) : '')} placeholder="Automático 40%" className="w-[180px]" />
+              <label className="label-caps mb-1 block">Observações</label>
+              <Textarea value={advNotes} onChange={e => setAdvNotes(e.target.value)} placeholder="Motivo, referência do pagamento, ajustes..." className="min-h-[60px]" />
             </div>
-            <Button onClick={handleGenerateAdvance}>Gerar Adiantamento</Button>
-            <Button variant="outline" onClick={handleGenerateAllAdvances}>Gerar Todos (40%)</Button>
+            <div className="flex gap-2">
+              <Button onClick={handleGenerateAdvance}>Gerar Adiantamento</Button>
+              <Button variant="outline" onClick={handleGenerateAllAdvances}>Gerar Todos (40%)</Button>
+            </div>
           </div>
 
           <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
 
-          <div className="bg-card rounded-xl shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="bg-muted">
-                  <th className="label-caps text-left px-6 py-3">Colaborador</th>
-                  <th className="label-caps text-left px-6 py-3">Mês Ref.</th>
-                  <th className="label-caps text-right px-6 py-3">Valor</th>
-                  <th className="label-caps text-left px-6 py-3">Data Pgto</th>
-                  <th className="label-caps text-right px-6 py-3">Ações</th>
-                </tr></thead>
-                <tbody>
-                  {filteredAdvances.map(a => {
-                    const emp = employees.find(e => e.id === a.employeeId);
-                    return (
-                      <tr key={a.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
-                        <td className="px-6 py-4 text-sm font-medium">{emp?.name || '—'}</td>
-                        <td className="px-6 py-4 text-sm">{a.month}</td>
-                        <td className="px-6 py-4 text-sm text-right">{formatCurrency(a.value)}</td>
-                        <td className="px-6 py-4 text-sm">{formatDate(a.paymentDate)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <button onClick={() => { deleteAdvance(a.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filteredAdvances.length === 0 && <tr><td colSpan={5} className="px-6 py-12 text-center text-meta">Nenhum adiantamento encontrado.</td></tr>}
-                </tbody>
-              </table>
-            </div>
+          <div className="space-y-3">
+            {filteredAdvances.map(a => {
+              const emp = employees.find(e => e.id === a.employeeId);
+              const isExpanded = expandedAdvance === a.id;
+              return (
+                <div key={a.id} className="bg-card rounded-xl shadow-card overflow-hidden">
+                  <div className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-row-hover transition-colors" onClick={() => setExpandedAdvance(isExpanded ? null : a.id)}>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium">{emp?.name || '—'}</span>
+                      <span className="text-xs text-muted-foreground">{a.month}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-semibold">{formatCurrency(a.value)}</span>
+                      <span className="text-xs text-muted-foreground">{formatDate(a.paymentDate)}</span>
+                      {a.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />}
+                      <button onClick={(e) => { e.stopPropagation(); deleteAdvance(a.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="px-6 pb-4 space-y-3 border-t border-border pt-3">
+                      {a.notes && (
+                        <div>
+                          <span className="label-caps text-xs">Observações</span>
+                          <p className="text-sm text-muted-foreground mt-1">{a.notes}</p>
+                        </div>
+                      )}
+                      <AttachedDocuments entityType="advance" entityId={a.id} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {filteredAdvances.length === 0 && (
+              <div className="bg-card rounded-xl shadow-card px-6 py-12 text-center text-meta">Nenhum adiantamento encontrado.</div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
