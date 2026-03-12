@@ -88,6 +88,45 @@ export type Database = {
         }
         Relationships: []
       }
+      company_charges: {
+        Row: {
+          created_at: string
+          due_date: string
+          fgts_value: number
+          id: string
+          inss_value: number
+          month: string
+          notes: string
+          paid: boolean
+          payment_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_date: string
+          fgts_value?: number
+          id?: string
+          inss_value?: number
+          month: string
+          notes?: string
+          paid?: boolean
+          payment_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string
+          fgts_value?: number
+          id?: string
+          inss_value?: number
+          month?: string
+          notes?: string
+          paid?: boolean
+          payment_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       das_expenses: {
         Row: {
           created_at: string
