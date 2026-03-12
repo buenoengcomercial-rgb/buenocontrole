@@ -4,6 +4,10 @@ export interface PayrollCharge {
   month: string; // YYYY-MM
   inssValue: number;
   fgtsValue: number;
+  dueDate: string;
+  paid: boolean;
+  paidValue: number;
+  paymentDate: string;
   createdAt: string;
 }
 
@@ -14,7 +18,7 @@ export interface Vacation {
   endDate: string;
   status: 'em_ferias' | 'concluidas';
   vacationValue: number;
-  bonusValue: number; // 1/3 adicional
+  bonusValue: number;
   totalPaid: number;
   paymentDate: string;
   notes: string;
