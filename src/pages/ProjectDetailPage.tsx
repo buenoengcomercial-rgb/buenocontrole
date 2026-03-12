@@ -129,10 +129,11 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     { name: 'Materiais', value: totalMaterials + totalProjectPurchases },
     { name: 'Mão de Obra', value: laborCost },
     { name: 'Terceirizados', value: totalOutsourced },
+    { name: 'Aluguéis', value: totalRentals },
     { name: 'Documentação', value: totalDocsCost },
     { name: 'DAS Proporcional', value: dasCost },
   ].filter(d => d.value > 0);
-  const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(340, 70%, 50%)', 'hsl(280, 60%, 50%)'];
+  const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(25, 95%, 53%)', 'hsl(340, 70%, 50%)', 'hsl(280, 60%, 50%)'];
 
   // Cost evolution by month
   const costEvolution = useMemo(() => {
