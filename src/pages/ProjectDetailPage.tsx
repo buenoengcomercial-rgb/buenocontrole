@@ -100,7 +100,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount;
   }, [dasExpenses, activeProjectCount]);
 
-  const totalCost = totalMaterials + totalOutsourced + laborCost + dasCost;
+  const totalCost = totalMaterials + totalOutsourced + laborCost + dasCost + chargesCost;
 
   // Revenue from approved/paid measurements
   const totalReceived = useMemo(() => {
