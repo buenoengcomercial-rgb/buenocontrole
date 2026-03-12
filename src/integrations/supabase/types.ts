@@ -549,35 +549,47 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          doc_notes: string
           document_date: string
           expiry_date: string | null
           file_name: string
           id: string
+          payment_date: string | null
+          payment_status: string
           project_id: string
           type: string
           updated_at: string
+          value: number
         }
         Insert: {
           created_at?: string
           description?: string
+          doc_notes?: string
           document_date: string
           expiry_date?: string | null
           file_name?: string
           id?: string
+          payment_date?: string | null
+          payment_status?: string
           project_id: string
           type: string
           updated_at?: string
+          value?: number
         }
         Update: {
           created_at?: string
           description?: string
+          doc_notes?: string
           document_date?: string
           expiry_date?: string | null
           file_name?: string
           id?: string
+          payment_date?: string | null
+          payment_status?: string
           project_id?: string
           type?: string
           updated_at?: string
+          value?: number
         }
         Relationships: [
           {
