@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense, ProjectPurchase } from '@/types/project';
+import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense, ProjectPurchase, EquipmentRental } from '@/types/project';
 
 interface ProjectState {
   projects: Project[];
@@ -10,6 +10,7 @@ interface ProjectState {
   measurements: Measurement[];
   dasExpenses: DASExpense[];
   projectPurchases: ProjectPurchase[];
+  equipmentRentals: EquipmentRental[];
   loading: boolean;
   addProject: (p: Omit<Project, 'id' | 'createdAt'>) => void;
   updateProject: (p: Project) => void;
@@ -30,6 +31,9 @@ interface ProjectState {
   addProjectPurchase: (p: Omit<ProjectPurchase, 'id' | 'createdAt'>) => void;
   updateProjectPurchase: (p: ProjectPurchase) => void;
   deleteProjectPurchase: (id: string) => void;
+  addEquipmentRental: (r: Omit<EquipmentRental, 'id' | 'createdAt'>) => void;
+  updateEquipmentRental: (r: EquipmentRental) => void;
+  deleteEquipmentRental: (id: string) => void;
 }
 
 const ProjectContext = createContext<ProjectState | null>(null);
@@ -55,6 +59,9 @@ function mapDAS(r: any): DASExpense {
 function mapProjectPurchase(r: any): ProjectPurchase {
   return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), freightValue: Number(r.freight_value || 0), icmsValue: Number(r.icms_value || 0), description: r.description, notes: r.notes, createdAt: r.created_at };
 }
+function mapEquipmentRental(r: any): EquipmentRental {
+  return { id: r.id, projectId: r.project_id, equipmentName: r.equipment_name, equipmentType: r.equipment_type, supplier: r.supplier, billingType: r.billing_type, unitValue: Number(r.unit_value), quantity: Number(r.quantity), totalValue: Number(r.total_value), startDate: r.start_date, endDate: r.end_date || '', invoiceNumber: r.invoice_number, notes: r.notes, createdAt: r.created_at };
+}
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -64,6 +71,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [dasExpenses, setDASExpenses] = useState<DASExpense[]>([]);
   const [projectPurchases, setProjectPurchases] = useState<ProjectPurchase[]>([]);
+  const [equipmentRentals, setEquipmentRentals] = useState<EquipmentRental[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -75,6 +83,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       supabase.from('measurements').select('*').then(({ data }) => setMeasurements((data || []).map(mapMeasurement))),
       supabase.from('das_expenses').select('*').then(({ data }) => setDASExpenses((data || []).map(mapDAS))),
       supabase.from('project_purchases').select('*').then(({ data }) => setProjectPurchases((data || []).map(mapProjectPurchase))),
+      supabase.from('equipment_rentals').select('*').then(({ data }) => setEquipmentRentals((data || []).map(mapEquipmentRental))),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -200,9 +209,32 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setProjectPurchases(prev => prev.filter(x => x.id !== id));
   }, []);
 
+  const addEquipmentRental = useCallback(async (r: Omit<EquipmentRental, 'id' | 'createdAt'>) => {
+    const { data } = await supabase.from('equipment_rentals').insert({
+      project_id: r.projectId, equipment_name: r.equipmentName, equipment_type: r.equipmentType,
+      supplier: r.supplier, billing_type: r.billingType, unit_value: r.unitValue,
+      quantity: r.quantity, total_value: r.totalValue, start_date: r.startDate,
+      end_date: r.endDate || null, invoice_number: r.invoiceNumber, notes: r.notes,
+    }).select().single();
+    if (data) setEquipmentRentals(prev => [...prev, mapEquipmentRental(data)]);
+  }, []);
+  const updateEquipmentRental = useCallback(async (r: EquipmentRental) => {
+    await supabase.from('equipment_rentals').update({
+      equipment_name: r.equipmentName, equipment_type: r.equipmentType,
+      supplier: r.supplier, billing_type: r.billingType, unit_value: r.unitValue,
+      quantity: r.quantity, total_value: r.totalValue, start_date: r.startDate,
+      end_date: r.endDate || null, invoice_number: r.invoiceNumber, notes: r.notes,
+    }).eq('id', r.id);
+    setEquipmentRentals(prev => prev.map(x => x.id === r.id ? r : x));
+  }, []);
+  const deleteEquipmentRental = useCallback(async (id: string) => {
+    await supabase.from('equipment_rentals').delete().eq('id', id);
+    setEquipmentRentals(prev => prev.filter(x => x.id !== id));
+  }, []);
+
   return (
     <ProjectContext.Provider value={{
-      projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, projectPurchases, loading,
+      projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, projectPurchases, equipmentRentals, loading,
       addProject, updateProject, deleteProject,
       addAllocation, deleteAllocation,
       addOutsourcedService, deleteOutsourcedService,
@@ -210,6 +242,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       addMeasurement, updateMeasurement, deleteMeasurement,
       addDASExpense, updateDASExpense, deleteDASExpense,
       addProjectPurchase, updateProjectPurchase, deleteProjectPurchase,
+      addEquipmentRental, updateEquipmentRental, deleteEquipmentRental,
     }}>
       {children}
     </ProjectContext.Provider>
