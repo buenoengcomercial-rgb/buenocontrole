@@ -55,7 +55,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
 
   const addEmployee = useCallback(async (e: Omit<Employee, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('employees').insert({
-      name: e.name, cpf: e.cpf, role: e.role, gross_salary: e.grossSalary, admission_date: e.admissionDate, phone: e.phone, status: e.status,
+      name: e.name, cpf: e.cpf, role: e.role, gross_salary: e.grossSalary, admission_date: e.admissionDate, phone: e.phone, status: e.status, pix_key_type: e.pixKeyType, pix_key: e.pixKey,
     }).select().single();
     if (data) setEmployees(prev => [...prev, mapEmployee(data)]);
   }, []);
