@@ -82,15 +82,17 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
       if (!a.worked) return;
       const emp = employees.find((e: any) => e.id === a.employeeId);
       if (!emp) return;
-      const month = a.date.slice(0, 7);
-      const empCharges = charges.filter((c: any) => c.employeeId === a.employeeId && c.month === month);
-      const monthlyCharges = empCharges.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
-      const dailyCost = (emp.grossSalary + monthlyCharges) / 22;
+      const dailyCost = emp.grossSalary / 22;
       const thirteenthDaily = calculate13thDailyCost(emp.grossSalary);
       total += dailyCost + thirteenthDaily;
     });
     return total;
-  }, [allocations, employees, charges]);
+  }, [allocations, employees]);
+
+  const chargesCost = useMemo(() => {
+    const totalCharges = charges.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
+    return totalCharges / (allProjects.length || 1);
+  }, [charges, allProjects]);
 
   // DAS proportional
   const activeProjectCount = allProjects.length || 1;
@@ -98,7 +100,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount;
   }, [dasExpenses, activeProjectCount]);
 
-  const totalCost = totalMaterials + totalOutsourced + laborCost + dasCost;
+  const totalCost = totalMaterials + totalOutsourced + laborCost + dasCost + chargesCost;
 
   // Revenue from approved/paid measurements
   const totalReceived = useMemo(() => {
@@ -138,9 +140,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
       if (!emp) return;
       const m = a.date.slice(0, 7);
       if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
-      const empC = charges.filter((c: any) => c.employeeId === a.employeeId && c.month === m);
-      const mc = empC.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
-      months[m].maoDeObra += (emp.grossSalary + mc) / 22 + calculate13thDailyCost(emp.grossSalary);
+      months[m].maoDeObra += emp.grossSalary / 22 + calculate13thDailyCost(emp.grossSalary);
     });
     outsourced.forEach((s: any) => {
       const m = s.date.slice(0, 7);
@@ -569,20 +569,22 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
       if (!a.worked) return;
       const emp = employees.find((e: any) => e.id === a.employeeId);
       if (!emp) return;
-      const month = a.date.slice(0, 7);
-      const empCharges = charges.filter((c: any) => c.employeeId === a.employeeId && c.month === month);
-      const monthlyCharges = empCharges.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
-      const dailyCost = (emp.grossSalary + monthlyCharges) / 22;
+      const dailyCost = emp.grossSalary / 22;
       const thirteenthDaily = calculate13thDailyCost(emp.grossSalary);
       total += dailyCost + thirteenthDaily;
     });
     return total;
-  }, [allocations, employees, charges]);
+  }, [allocations, employees]);
+
+  const chargesCost = useMemo(() => {
+    const totalCharges = charges.reduce((s: number, c: any) => s + c.inssValue + c.fgtsValue, 0);
+    return totalCharges / (allProjects.length || 1);
+  }, [charges, allProjects]);
 
   const activeProjectCount = allProjects.length || 1;
   const dasCost = useMemo(() => dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount, [dasExpenses, activeProjectCount]);
 
-  const totalCost = totalMaterials + totalOutsourced + laborCost + dasCost;
+  const totalCost = totalMaterials + totalOutsourced + laborCost + dasCost + chargesCost;
   const profit = project.contractValue - totalCost;
 
   return (

@@ -1,15 +1,17 @@
-export interface PayrollCharge {
+export interface CompanyCharge {
   id: string;
-  employeeId: string;
   month: string; // YYYY-MM
   inssValue: number;
   fgtsValue: number;
   dueDate: string;
-  paid: boolean;
-  paidValue: number;
   paymentDate: string;
+  paid: boolean;
+  notes: string;
   createdAt: string;
 }
+
+/** @deprecated Use CompanyCharge instead */
+export type PayrollCharge = CompanyCharge;
 
 export interface Vacation {
   id: string;
