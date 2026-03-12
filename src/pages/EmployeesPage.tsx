@@ -16,6 +16,7 @@ const emptyForm: { name: string; cpf: string; role: string; grossSalary: number;
 export default function EmployeesPage() {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployeeData();
   const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
