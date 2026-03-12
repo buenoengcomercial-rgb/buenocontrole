@@ -121,7 +121,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
 
   // Pie chart data
   const pieData = [
-    { name: 'Materiais', value: totalMaterials },
+    { name: 'Materiais', value: totalMaterials + totalProjectPurchases },
     { name: 'Mão de Obra', value: laborCost },
     { name: 'Terceirizados', value: totalOutsourced },
     { name: 'DAS Proporcional', value: dasCost },
