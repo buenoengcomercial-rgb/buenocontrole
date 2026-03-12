@@ -28,6 +28,7 @@ interface ProjectState {
   updateDASExpense: (d: DASExpense) => void;
   deleteDASExpense: (id: string) => void;
   addProjectPurchase: (p: Omit<ProjectPurchase, 'id' | 'createdAt'>) => void;
+  updateProjectPurchase: (p: ProjectPurchase) => void;
   deleteProjectPurchase: (id: string) => void;
 }
 
