@@ -16,7 +16,7 @@ interface EmployeeState {
   updateWorkDay: (w: WorkDay) => void;
   deleteWorkDay: (id: string) => void;
   generateAdvance: (employeeId: string, month: string) => void;
-  addAdvanceManual: (employeeId: string, month: string, value: number) => void;
+  addAdvanceManual: (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => void;
   addPayment: (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => void;
   deletePayment: (id: string) => void;
   deleteAdvance: (id: string) => void;
@@ -31,7 +31,7 @@ function mapWorkDay(r: any): WorkDay {
   return { id: r.id, employeeId: r.employee_id, date: r.date, worked: r.worked, interior: r.interior, mealVoucherValue: Number(r.meal_voucher_value), absenceType: r.absence_type || '', absenceReason: r.absence_reason || '', absenceNotes: r.absence_notes || '' };
 }
 function mapAdvance(r: any): SalaryAdvance {
-  return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, createdAt: r.created_at };
+  return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, notes: r.notes || '', createdAt: r.created_at };
 }
 function mapPayment(r: any): SalaryPayment {
   return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, createdAt: r.created_at };
@@ -104,13 +104,13 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
     if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
   }, [employees, advances]);
 
-  const addAdvanceManual = useCallback(async (employeeId: string, month: string, value: number) => {
+  const addAdvanceManual = useCallback(async (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => {
     const exists = advances.find(a => a.employeeId === employeeId && a.month === month);
     if (exists) return;
     const [y, m] = month.split('-').map(Number);
-    const payDate = getAdvancePaymentDate(y, m);
+    const payDate = paymentDate || getAdvancePaymentDate(y, m).toISOString().slice(0, 10);
     const { data } = await supabase.from('salary_advances').insert({
-      employee_id: employeeId, month, value, payment_date: payDate.toISOString().slice(0, 10),
+      employee_id: employeeId, month, value, payment_date: payDate, notes: notes || '',
     }).select().single();
     if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
   }, [advances]);

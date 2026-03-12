@@ -794,6 +794,7 @@ export type Database = {
           employee_id: string
           id: string
           month: string
+          notes: string
           payment_date: string
           value: number
         }
@@ -802,6 +803,7 @@ export type Database = {
           employee_id: string
           id?: string
           month: string
+          notes?: string
           payment_date: string
           value?: number
         }
@@ -810,6 +812,7 @@ export type Database = {
           employee_id?: string
           id?: string
           month?: string
+          notes?: string
           payment_date?: string
           value?: number
         }
