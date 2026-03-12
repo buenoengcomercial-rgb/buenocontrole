@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense } from '@/types/project';
+import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense, ProjectPurchase } from '@/types/project';
 
 interface ProjectState {
   projects: Project[];
