@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { EmployeeDocument } from '@/types/safety';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function DocumentacaoPage() {
   const { employees } = useEmployeeData();
