@@ -61,7 +61,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   }, []);
   const updateEmployee = useCallback(async (e: Employee) => {
     await supabase.from('employees').update({
-      name: e.name, cpf: e.cpf, role: e.role, gross_salary: e.grossSalary, admission_date: e.admissionDate, phone: e.phone, status: e.status,
+      name: e.name, cpf: e.cpf, role: e.role, gross_salary: e.grossSalary, admission_date: e.admissionDate, phone: e.phone, status: e.status, pix_key_type: e.pixKeyType, pix_key: e.pixKey,
     }).eq('id', e.id);
     setEmployees(prev => prev.map(x => x.id === e.id ? e : x));
   }, []);

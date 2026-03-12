@@ -80,7 +80,22 @@ export default function EmployeesPage() {
                   </Select>
                 </div>
               </div>
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="label-caps mb-1 block">Tipo Chave PIX</label>
+                  <Select value={form.pixKeyType} onValueChange={v => setForm(f => ({ ...f, pixKeyType: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CPF">CPF</SelectItem>
+                      <SelectItem value="CNPJ">CNPJ</SelectItem>
+                      <SelectItem value="Telefone">Telefone</SelectItem>
+                      <SelectItem value="E-mail">E-mail</SelectItem>
+                      <SelectItem value="Chave Aleatória">Chave Aleatória</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><label className="label-caps mb-1 block">Chave PIX</label><Input value={form.pixKey} onChange={e => setForm(f => ({ ...f, pixKey: e.target.value }))} placeholder="Informe a chave PIX" /></div>
+              </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
               <Button onClick={handleSubmit}>{editId ? 'Salvar' : 'Cadastrar'}</Button>
