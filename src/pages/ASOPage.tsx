@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatDate } from '@/lib/format';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function ASOPage() {
   const { employees } = useEmployeeData();
@@ -135,7 +136,8 @@ export default function ASOPage() {
               {asos.map(a => {
                 const days = daysUntilExpiry(a.expiryDate);
                 return (
-                  <tr key={a.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                  <React.Fragment key={a.id}>
+                  <tr className="border-b border-border hover:bg-row-hover transition-colors duration-150">
                     <td className="px-6 py-4 text-sm font-medium">{empName(a.employeeId)}</td>
                     <td className="px-6 py-4 text-sm">{asoTypeLabel(a.type)}</td>
                     <td className="px-6 py-4 text-sm">{formatDate(a.examDate)}</td>
@@ -152,6 +154,8 @@ export default function ASOPage() {
                       </div>
                     </td>
                   </tr>
+                  <tr><td colSpan={6} className="px-6 py-2 bg-muted/30"><AttachedDocuments entityType="aso" entityId={a.id} /></td></tr>
+                  </React.Fragment>
                 );
               })}
               {asos.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-meta">Nenhum ASO registrado.</td></tr>}

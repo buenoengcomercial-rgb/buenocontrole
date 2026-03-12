@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatDate } from '@/lib/format';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function EPIPage() {
   const { employees } = useEmployeeData();
@@ -124,7 +125,8 @@ export default function EPIPage() {
             </thead>
             <tbody>
               {filtered.map(e => (
-                <tr key={e.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                <React.Fragment key={e.id}>
+                <tr className="border-b border-border hover:bg-row-hover transition-colors duration-150">
                   <td className="px-6 py-4 text-sm font-medium">{empName(e.employeeId)}</td>
                   <td className="px-6 py-4 text-sm">{e.epiType}</td>
                   <td className="px-6 py-4 text-sm">{formatDate(e.deliveryDate)}</td>
@@ -135,6 +137,8 @@ export default function EPIPage() {
                     <button onClick={() => { deleteEPIDelivery(e.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
                   </td>
                 </tr>
+                <tr><td colSpan={7} className="px-6 py-2 bg-muted/30"><AttachedDocuments entityType="epi" entityId={e.id} /></td></tr>
+                </React.Fragment>
               ))}
               {filtered.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhuma entrega registrada.</td></tr>}
             </tbody>

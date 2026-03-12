@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatDate } from '@/lib/format';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Pencil, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function TreinamentosPage() {
   const { employees } = useEmployeeData();
@@ -133,7 +134,8 @@ export default function TreinamentosPage() {
               {trainings.map(t => {
                 const days = daysUntilExpiry(t.expiryDate);
                 return (
-                  <tr key={t.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                  <React.Fragment key={t.id}>
+                  <tr className="border-b border-border hover:bg-row-hover transition-colors duration-150">
                     <td className="px-6 py-4 text-sm font-medium">{empName(t.employeeId)}</td>
                     <td className="px-6 py-4 text-sm">{t.trainingType}</td>
                     <td className="px-6 py-4 text-sm">{formatDate(t.trainingDate)}</td>
@@ -150,6 +152,8 @@ export default function TreinamentosPage() {
                       </div>
                     </td>
                   </tr>
+                  <tr><td colSpan={6} className="px-6 py-2 bg-muted/30"><AttachedDocuments entityType="training" entityId={t.id} /></td></tr>
+                  </React.Fragment>
                 );
               })}
               {trainings.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-meta">Nenhum treinamento registrado.</td></tr>}

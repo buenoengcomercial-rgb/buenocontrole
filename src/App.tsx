@@ -7,6 +7,7 @@ import { AppProvider } from "@/context/AppContext";
 import { EmployeeProvider } from "@/context/EmployeeContext";
 import { SafetyProvider } from "@/context/SafetyContext";
 import { ProjectProvider } from "@/context/ProjectContext";
+import { AttachmentProvider } from "@/context/AttachmentContext";
 import AppShell from "@/components/AppShell";
 import DashboardPage from "@/pages/DashboardPage";
 import SuppliersPage from "@/pages/SuppliersPage";
@@ -41,6 +42,7 @@ const App = () => (
         <EmployeeProvider>
           <SafetyProvider>
             <ProjectProvider>
+              <AttachmentProvider>
               <BrowserRouter>
                 <AppShell>
                   <Routes>
@@ -68,6 +70,7 @@ const App = () => (
                   </Routes>
                 </AppShell>
               </BrowserRouter>
+              </AttachmentProvider>
             </ProjectProvider>
           </SafetyProvider>
         </EmployeeProvider>

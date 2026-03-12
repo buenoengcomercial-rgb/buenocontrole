@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import type { Employee } from '@/types/employee';
 import { EMPLOYEE_STATUSES } from '@/types/employee';
@@ -7,14 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 const emptyForm: { name: string; cpf: string; role: string; grossSalary: number; admissionDate: string; phone: string; status: 'ativo' | 'desligado' } = { name: '', cpf: '', role: '', grossSalary: 0, admissionDate: '', phone: '', status: 'ativo' };
 
 export default function EmployeesPage() {
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployeeData();
   const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -107,7 +109,8 @@ export default function EmployeesPage() {
             </thead>
             <tbody>
               {filtered.map(e => (
-                <tr key={e.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                <React.Fragment key={e.id}>
+                <tr className="border-b border-border hover:bg-row-hover transition-colors duration-150">
                   <td className="px-6 py-4 text-sm font-medium">{e.name}</td>
                   <td className="px-6 py-4 text-sm">{e.cpf}</td>
                   <td className="px-6 py-4 text-sm">{e.role}</td>
@@ -119,11 +122,16 @@ export default function EmployeesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-1">
+                      <button onClick={() => setExpandedId(expandedId === e.id ? null : e.id)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground">{expandedId === e.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</button>
                       <button onClick={() => handleOpen(e)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                       <button onClick={() => { deleteEmployee(e.id); toast.success('Colaborador removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
+                {expandedId === e.id && (
+                  <tr><td colSpan={6} className="px-6 py-4 bg-muted/30"><AttachedDocuments entityType="employee" entityId={e.id} /></td></tr>
+                )}
+                </React.Fragment>
               ))}
               {filtered.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-meta">Nenhum colaborador encontrado.</td></tr>}
             </tbody>

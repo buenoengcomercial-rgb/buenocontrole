@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatDate } from '@/lib/format';
@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { EmployeeDocument } from '@/types/safety';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function DocumentacaoPage() {
   const { employees } = useEmployeeData();
@@ -112,7 +113,8 @@ export default function DocumentacaoPage() {
             </thead>
             <tbody>
               {filtered.map(d => (
-                <tr key={d.id} className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                <React.Fragment key={d.id}>
+                <tr className="border-b border-border hover:bg-row-hover transition-colors duration-150">
                   <td className="px-6 py-4 text-sm font-medium">{empName(d.employeeId)}</td>
                   <td className="px-6 py-4 text-sm">{docTypeLabel(d.type)}</td>
                   <td className="px-6 py-4 text-sm">{d.date ? formatDate(d.date) : '—'}</td>
@@ -126,6 +128,8 @@ export default function DocumentacaoPage() {
                     <button onClick={() => { deleteDocument(d.id); toast.success('Documento removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
                   </td>
                 </tr>
+                <tr><td colSpan={6} className="px-6 py-2 bg-muted/30"><AttachedDocuments entityType="employee_doc" entityId={d.id} /></td></tr>
+                </React.Fragment>
               ))}
               {filtered.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-meta">Nenhum documento registrado.</td></tr>}
             </tbody>

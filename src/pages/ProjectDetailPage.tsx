@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProjectData } from '@/context/ProjectContext';
 import { useEmployeeData } from '@/context/EmployeeContext';
@@ -10,6 +10,7 @@ import { calculate13thDailyCost } from '@/types/employee';
 import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES } from '@/types/project';
 import type { ProjectDocType, MeasurementStatus, Measurement } from '@/types/project';
 import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil } from 'lucide-react';
+import AttachedDocuments from '@/components/AttachedDocuments';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
 type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'docs' | 'measurements' | 'costs';
@@ -335,7 +336,8 @@ function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }:
           </tr></thead>
           <tbody>
             {measurements.sort((a, b) => a.number - b.number).map((m) => (
-              <tr key={m.id} className="border-b border-border">
+              <React.Fragment key={m.id}>
+              <tr className="border-b border-border">
                 <td className="px-4 py-3 font-medium">#{m.number}</td>
                 <td className="px-4 py-3">{formatDate(m.date)}</td>
                 <td className="px-4 py-3">{m.description}</td>
@@ -349,6 +351,8 @@ function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }:
                   </div>
                 </td>
               </tr>
+              <tr><td colSpan={7} className="px-4 py-2 bg-muted/30"><AttachedDocuments entityType="measurement" entityId={m.id} /></td></tr>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -476,13 +480,16 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
           <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Empresa</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-right px-4 py-3">Valor</th><th className="px-4 py-3"></th></tr></thead>
           <tbody>
             {services.map((s: any) => (
-              <tr key={s.id} className="border-b border-border">
+              <React.Fragment key={s.id}>
+              <tr className="border-b border-border">
                 <td className="px-4 py-3">{formatDate(s.date)}</td>
                 <td className="px-4 py-3">{s.company}</td>
                 <td className="px-4 py-3">{s.description}</td>
                 <td className="px-4 py-3 text-right font-medium">{formatCurrency(s.value)}</td>
                 <td className="px-4 py-3"><button onClick={() => onDelete(s.id)} className="text-destructive"><Trash2 className="w-3.5 h-3.5" /></button></td>
               </tr>
+              <tr><td colSpan={5} className="px-4 py-2 bg-muted/30"><AttachedDocuments entityType="outsourced" entityId={s.id} /></td></tr>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -528,17 +535,20 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
           const expiring = days !== null && days <= 30;
           const expired = days !== null && days < 0;
           return (
-            <div key={d.id} className="bg-card rounded-xl p-4 shadow-card flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs bg-secondary px-2 py-0.5 rounded font-medium">{d.type}</span>
-                  {expired && <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Vencido</span>}
-                  {expiring && !expired && <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{days}d</span>}
+            <div key={d.id} className="bg-card rounded-xl p-4 shadow-card space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-secondary px-2 py-0.5 rounded font-medium">{d.type}</span>
+                    {expired && <span className="text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Vencido</span>}
+                    {expiring && !expired && <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{days}d</span>}
+                  </div>
+                  <p className="text-sm mt-1">{d.description || '—'}</p>
+                  <p className="text-muted-foreground text-xs">{d.documentDate && formatDate(d.documentDate)} {d.expiryDate && `→ ${formatDate(d.expiryDate)}`}</p>
                 </div>
-                <p className="text-sm mt-1">{d.description || '—'}</p>
-                <p className="text-muted-foreground text-xs">{d.documentDate && formatDate(d.documentDate)} {d.expiryDate && `→ ${formatDate(d.expiryDate)}`}</p>
+                <button onClick={() => onDelete(d.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></button>
               </div>
-              <button onClick={() => onDelete(d.id)} className="text-destructive"><Trash2 className="w-4 h-4" /></button>
+              <AttachedDocuments entityType="project_doc" entityId={d.id} />
             </div>
           );
         })}
