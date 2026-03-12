@@ -96,6 +96,7 @@ export default function EmployeesPage() {
                 </div>
                 <div><label className="label-caps mb-1 block">Chave PIX</label><Input value={form.pixKey} onChange={e => setForm(f => ({ ...f, pixKey: e.target.value }))} placeholder="Informe a chave PIX" /></div>
               </div>
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
               <Button onClick={handleSubmit}>{editId ? 'Salvar' : 'Cadastrar'}</Button>
