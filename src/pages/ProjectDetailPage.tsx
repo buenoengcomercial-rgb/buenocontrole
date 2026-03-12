@@ -637,8 +637,9 @@ function DocsTab({ projectId, docs, onAdd, onDelete }: any) {
 }
 
 /* ── Costs Tab ── */
-function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects }: any) {
+function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects, projectPurchases }: any) {
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
+  const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue, 0);
   const totalOutsourced = outsourced.reduce((s: number, sv: any) => s + sv.value, 0);
 
   const laborCost = useMemo(() => {
@@ -662,7 +663,7 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
   const activeProjectCount = allProjects.length || 1;
   const dasCost = useMemo(() => dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount, [dasExpenses, activeProjectCount]);
 
-  const totalCost = totalMaterials + totalOutsourced + laborCost + dasCost + chargesCost;
+  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost;
   const profit = project.contractValue - totalCost;
 
   return (
