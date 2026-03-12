@@ -480,13 +480,16 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
           <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Empresa</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-right px-4 py-3">Valor</th><th className="px-4 py-3"></th></tr></thead>
           <tbody>
             {services.map((s: any) => (
-              <tr key={s.id} className="border-b border-border">
+              <React.Fragment key={s.id}>
+              <tr className="border-b border-border">
                 <td className="px-4 py-3">{formatDate(s.date)}</td>
                 <td className="px-4 py-3">{s.company}</td>
                 <td className="px-4 py-3">{s.description}</td>
                 <td className="px-4 py-3 text-right font-medium">{formatCurrency(s.value)}</td>
                 <td className="px-4 py-3"><button onClick={() => onDelete(s.id)} className="text-destructive"><Trash2 className="w-3.5 h-3.5" /></button></td>
               </tr>
+              <tr><td colSpan={5} className="px-4 py-2 bg-muted/30"><AttachedDocuments entityType="outsourced" entityId={s.id} /></td></tr>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
