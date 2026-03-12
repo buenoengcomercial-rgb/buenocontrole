@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, Pencil, AlertTriangle, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { AttachedDocuments } from '@/components/AttachedDocuments';
+import AttachedDocuments from '@/components/AttachedDocuments';
 import type { Vacation } from '@/types/safety';
 
 const defaultForm = {
