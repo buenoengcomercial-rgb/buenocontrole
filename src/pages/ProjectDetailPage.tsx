@@ -719,11 +719,12 @@ function DocsTab({ projectId, docs, onAdd, onUpdate, onDelete }: any) {
 }
 
 /* ── Costs Tab ── */
-function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects, projectPurchases, projectDocs }: any) {
+function CostsTab({ project, allocations, employees, purchases, outsourced, charges, dasExpenses, allProjects, projectPurchases, projectDocs, rentals }: any) {
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
   const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0), 0);
   const totalOutsourced = outsourced.reduce((s: number, sv: any) => s + sv.value, 0);
   const totalDocsCost = (projectDocs || []).reduce((s: number, d: any) => s + (d.value || 0), 0);
+  const totalRentals = (rentals || []).reduce((s: number, r: any) => s + r.totalValue, 0);
 
   const laborCost = useMemo(() => {
     let total = 0;
@@ -746,15 +747,16 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
   const activeProjectCount = allProjects.length || 1;
   const dasCost = useMemo(() => dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount, [dasExpenses, activeProjectCount]);
 
-  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost;
+  const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost + totalRentals;
   const profit = project.contractValue - totalCost;
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Materiais / Compras</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalMaterials + totalProjectPurchases)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Mão de Obra</span><p className="text-xl font-semibold mt-1">{formatCurrency(laborCost)}</p><p className="text-xs text-muted-foreground">Inclui 13º proporcional</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Terceirizados</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalOutsourced)}</p></div>
+        <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Aluguéis</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalRentals)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Documentação</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalDocsCost)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">DAS Proporcional</span><p className="text-xl font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
         <div className="bg-primary text-primary-foreground rounded-xl p-5 shadow-card"><span className="label-caps text-xs text-primary-foreground/70">Custo Total</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalCost)}</p></div>
@@ -766,6 +768,138 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
           <p className="text-muted-foreground text-xs mt-1">Contrato: {formatCurrency(project.contractValue)} — Custo: {formatCurrency(totalCost)}</p>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Rentals Tab ── */
+function RentalsTab({ projectId, rentals, onAdd, onUpdate, onDelete }: { projectId: string; rentals: EquipmentRental[]; onAdd: any; onUpdate: any; onDelete: any }) {
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const emptyForm = { equipmentName: '', equipmentType: 'máquina' as EquipmentType, supplier: '', billingType: 'diária' as BillingType, unitValue: 0, quantity: 0, totalValue: 0, startDate: '', endDate: '', invoiceNumber: '', notes: '' };
+  const [form, setForm] = useState(emptyForm);
+
+  const totalRentals = rentals.reduce((s, r) => s + r.totalValue, 0);
+
+  const billingLabel = (bt: BillingType) => BILLING_TYPES.find(b => b.value === bt)?.label || bt;
+  const equipLabel = (et: EquipmentType) => EQUIPMENT_TYPES.find(e => e.value === et)?.label || et;
+
+  const handleCalcTotal = (unitValue: number, quantity: number, billingType: BillingType) => {
+    if (billingType === 'valor_fechado') return unitValue;
+    return unitValue * quantity;
+  };
+
+  const updateFormField = (field: string, value: any) => {
+    const updated = { ...form, [field]: value };
+    if (['unitValue', 'quantity', 'billingType'].includes(field)) {
+      updated.totalValue = handleCalcTotal(
+        field === 'unitValue' ? value : updated.unitValue,
+        field === 'quantity' ? value : updated.quantity,
+        field === 'billingType' ? value : updated.billingType
+      );
+    }
+    setForm(updated);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editId) {
+      const existing = rentals.find(r => r.id === editId)!;
+      onUpdate({ ...existing, ...form });
+      setEditId(null);
+    } else {
+      onAdd({ ...form, projectId });
+    }
+    setForm(emptyForm);
+    setShowForm(false);
+  };
+
+  const handleEdit = (r: EquipmentRental) => {
+    setEditId(r.id);
+    setForm({ equipmentName: r.equipmentName, equipmentType: r.equipmentType, supplier: r.supplier, billingType: r.billingType, unitValue: r.unitValue, quantity: r.quantity, totalValue: r.totalValue, startDate: r.startDate, endDate: r.endDate, invoiceNumber: r.invoiceNumber, notes: r.notes });
+    setShowForm(true);
+  };
+
+  const sorted = [...rentals].sort((a, b) => b.startDate.localeCompare(a.startDate));
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Total Aluguéis</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalRentals)}</p></div>
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Qtd. Equipamentos</span><p className="text-xl font-semibold mt-1">{rentals.length}</p></div>
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Fornecedores</span><p className="text-xl font-semibold mt-1">{new Set(rentals.map(r => r.supplier).filter(Boolean)).size}</p></div>
+      </div>
+
+      <div className="flex justify-end">
+        <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
+          <Plus className="w-4 h-4" /> Novo Aluguel
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label className="label-caps block mb-1">Nome do Equipamento *</label><input required value={form.equipmentName} onChange={e => updateFormField('equipmentName', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Tipo *</label>
+            <select value={form.equipmentType} onChange={e => updateFormField('equipmentType', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              {EQUIPMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <div><label className="label-caps block mb-1">Fornecedor *</label><input required value={form.supplier} onChange={e => updateFormField('supplier', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Forma de Cobrança *</label>
+            <select value={form.billingType} onChange={e => updateFormField('billingType', e.target.value as BillingType)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              {BILLING_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+          </div>
+          <div><label className="label-caps block mb-1">{form.billingType === 'valor_fechado' ? 'Valor Total (R$)' : `Valor por ${billingLabel(form.billingType).replace('Por ', '')} (R$)`} *</label><input type="number" step="0.01" required value={form.unitValue || ''} onChange={e => updateFormField('unitValue', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          {form.billingType !== 'valor_fechado' && (
+            <div><label className="label-caps block mb-1">Quantidade *</label><input type="number" step="0.01" required value={form.quantity || ''} onChange={e => updateFormField('quantity', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          )}
+          <div><label className="label-caps block mb-1">Valor Total (R$)</label><input type="number" step="0.01" value={form.totalValue || ''} onChange={e => updateFormField('totalValue', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm bg-muted" /></div>
+          <div><label className="label-caps block mb-1">Data Início *</label><input type="date" required value={form.startDate} onChange={e => updateFormField('startDate', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Data Término</label><input type="date" value={form.endDate} onChange={e => updateFormField('endDate', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={e => updateFormField('invoiceNumber', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div className="md:col-span-2"><label className="label-caps block mb-1">Observações</label><textarea value={form.notes} onChange={e => updateFormField('notes', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm min-h-[60px]" /></div>
+          <div className="flex items-end gap-2">
+            <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Atualizar' : 'Salvar'}</button>
+            {editId && <button type="button" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(false); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
+          </div>
+        </form>
+      )}
+
+      {sorted.length > 0 && (
+        <div className="space-y-2">
+          {sorted.map((r) => (
+            <div key={r.id} className="bg-card rounded-xl p-4 shadow-card space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">{r.equipmentName}</span>
+                    <span className="text-xs bg-secondary px-2 py-0.5 rounded font-medium">{equipLabel(r.equipmentType)}</span>
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-medium">{billingLabel(r.billingType)}</span>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    {r.supplier && <span>Fornecedor: {r.supplier} · </span>}
+                    {formatDate(r.startDate)}{r.endDate && ` → ${formatDate(r.endDate)}`}
+                  </p>
+                  <div className="flex items-center gap-4 text-sm">
+                    {r.billingType !== 'valor_fechado' && <span className="text-muted-foreground">{formatCurrency(r.unitValue)} × {r.quantity}</span>}
+                    <span className="font-semibold">{formatCurrency(r.totalValue)}</span>
+                  </div>
+                  {r.invoiceNumber && <p className="text-xs text-muted-foreground">NF: {r.invoiceNumber}</p>}
+                  {r.notes && <p className="text-xs text-muted-foreground">{r.notes}</p>}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleEdit(r)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => onDelete(r.id)} className="text-destructive p-1.5 rounded-md hover:bg-destructive/10"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              </div>
+              <AttachedDocuments entityType="equipment_rental" entityId={r.id} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {rentals.length === 0 && !showForm && <p className="text-muted-foreground text-center py-8">Nenhum aluguel de equipamento registrado.</p>}
     </div>
   );
 }
