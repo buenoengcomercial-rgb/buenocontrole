@@ -4,6 +4,7 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import type { DASExpense } from '@/types/project';
 import { Plus, Trash2, Pencil, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function DASPage() {
   const { dasExpenses, addDASExpense, updateDASExpense, deleteDASExpense } = useProjectData();
