@@ -24,7 +24,7 @@ export default function ProjectReportsPage() {
 
       let laborCost = 0;
       const activeProjectCount = projects.length || 1;
-      const monthlyChargesTotal = charges.reduce((s, c) => s + c.inssValue + c.fgtsValue, 0);
+      const monthlyChargesTotal = charges.reduce((s, c) => s + c.value, 0);
       const chargesPerProject = monthlyChargesTotal / activeProjectCount;
       projAllocations.forEach(a => {
         const emp = employees.find(e => e.id === a.employeeId);

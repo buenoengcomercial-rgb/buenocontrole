@@ -42,7 +42,7 @@ export default function DashboardPage() {
   const projectCostData = useMemo(() => {
     const activeProjectCount = projects.length || 1;
     const totalDAS = dasExpenses.reduce((s, d) => s + d.value, 0);
-    const totalChargesAll = charges.reduce((s, c) => s + c.inssValue + c.fgtsValue, 0);
+    const totalChargesAll = charges.reduce((s, c) => s + c.value, 0);
     return projects.map(p => {
       const projAllocs = allocations.filter(a => a.projectId === p.id && a.worked);
       const projPurchases = purchases.filter(pu => pu.city === p.city);
