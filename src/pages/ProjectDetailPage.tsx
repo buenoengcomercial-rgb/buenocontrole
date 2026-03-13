@@ -608,6 +608,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.icmsValue ? formatCurrency(p.icmsValue) : '—'}</td>
                     <td className="px-4 py-3 text-right font-medium">{formatCurrency(itemTotal)}</td>
                     <td className="px-4 py-3 text-right flex justify-end gap-1">
+                      <button onClick={() => setExpandedPurchaseId(expandedPurchaseId === p.id ? null : p.id)} className="p-1 rounded hover:bg-accent" title="Anexar documentos"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
                       <button onClick={() => handleEdit(p)} className="p-1 rounded hover:bg-primary/10"><Pencil className="w-4 h-4 text-primary" /></button>
                       <button onClick={() => onDelete(p.id)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-4 h-4 text-destructive" /></button>
                     </td>
