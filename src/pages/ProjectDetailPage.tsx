@@ -623,7 +623,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               {purchases.map((p: any) =>
             <tr key={p.id} className="border-b border-border">
                   <td className="px-4 py-3">{formatDate(p.date)}</td>
-                  <td className="px-4 py-3">{materials.find((m: any) => m.id === p.materialId)?.name || '—'}</td>
+                  <td className="px-4 py-3">{materials.find((m: any) => m.id === p.materialId)?.name || '—'} {(() => { const mat = materials.find((m: any) => m.id === p.materialId); return mat?.category ? <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-xs font-medium ml-1">{mat.category}</span> : null; })()}</td>
                   <td className="px-4 py-3">{suppliers.find((s: any) => s.id === p.supplierId)?.name || '—'}</td>
                   <td className="px-4 py-3 text-right font-medium">{formatCurrency(p.finalPrice)}</td>
                 </tr>

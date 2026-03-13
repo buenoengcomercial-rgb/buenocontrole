@@ -123,7 +123,7 @@ export default function MaterialsPage() {
                 <Select value={form.category} onValueChange={v => set('category', v)}>
                   <SelectTrigger className="mt-1 shadow-input focus:shadow-input-focus"><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {MATERIAL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
