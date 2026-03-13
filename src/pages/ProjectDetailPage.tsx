@@ -18,8 +18,8 @@ type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' 
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{id: string;}>();
-  const { projects, updateProject, allocations, addAllocation, deleteAllocation, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, updateProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase, equipmentRentals, addEquipmentRental, updateEquipmentRental, deleteEquipmentRental } = useProjectData();
-  const { employees } = useEmployeeData();
+  const { projects, updateProject, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, updateProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase, equipmentRentals, addEquipmentRental, updateEquipmentRental, deleteEquipmentRental } = useProjectData();
+  const { employees, workDays, addWorkDay, deleteWorkDay } = useEmployeeData();
   const { purchases, suppliers, materials } = useAppData();
   const { charges } = useSafetyData();
   const [tab, setTab] = useState<Tab>('dashboard');
@@ -27,7 +27,7 @@ export default function ProjectDetailPage() {
   const project = projects.find((p) => p.id === id);
   if (!project) return <div className="p-8 text-center"><p className="text-muted-foreground">Obra não encontrada.</p><Link to="/obras" className="text-primary text-sm">← Voltar</Link></div>;
 
-  const projAllocations = allocations.filter((a) => a.projectId === id);
+  const projAllocations = workDays.filter((w) => w.projectId === id);
   const projPurchases = purchases.filter((p) => p.city === project.city);
   const projOutsourced = outsourcedServices.filter((s) => s.projectId === id);
   const projDocs = projectDocuments.filter((d) => d.projectId === id);
@@ -66,7 +66,7 @@ export default function ProjectDetailPage() {
 
       {tab === 'dashboard' && <DashboardTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} measurements={projMeasurements} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
       {tab === 'measurements' && <MeasurementsTab projectId={id!} measurements={projMeasurements} onAdd={addMeasurement} onUpdate={updateMeasurement} onDelete={deleteMeasurement} />}
-      {tab === 'allocations' && <AllocationsTab projectId={id!} allocations={projAllocations} employees={employees} onAdd={addAllocation} onDelete={deleteAllocation} />}
+      {tab === 'allocations' && <AllocationsTab projectId={id!} allocations={projAllocations} employees={employees} onAdd={addWorkDay} onDelete={deleteWorkDay} />}
       {tab === 'materials' && <MaterialsTab projectId={id!} purchases={projPurchases} suppliers={suppliers} materials={materials} projectPurchases={projProjectPurchases} onAdd={addProjectPurchase} onUpdate={updateProjectPurchase} onDelete={deleteProjectPurchase} />}
       {tab === 'outsourced' && <OutsourcedTab projectId={id!} services={projOutsourced} onAdd={addOutsourcedService} onDelete={deleteOutsourcedService} />}
       {tab === 'rentals' && <RentalsTab projectId={id!} rentals={projRentals} onAdd={addEquipmentRental} onUpdate={updateEquipmentRental} onDelete={deleteEquipmentRental} />}
@@ -375,33 +375,96 @@ function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }:
 
 /* ── Allocations Tab ── */
 function AllocationsTab({ projectId, allocations, employees, onAdd, onDelete }: any) {
-  const [form, setForm] = useState({ employeeId: '', date: '', worked: true, interior: false });
+  const [form, setForm] = useState({ employeeId: '', date: '', interior: false });
   const [showForm, setShowForm] = useState(false);
+
+  const activeEmployees = useMemo(() => employees.filter((e: any) => e.status === 'ativo'), [employees]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd({ ...form, projectId });
-    setForm({ employeeId: '', date: '', worked: true, interior: false });
+    const exists = allocations.find((a: any) => a.employeeId === form.employeeId && a.date === form.date);
+    if (exists) { return; }
+    onAdd({ employeeId: form.employeeId, projectId, date: form.date, worked: true, interior: form.interior, absenceType: '', absenceReason: '', absenceNotes: '' });
+    setForm({ employeeId: '', date: '', interior: false });
     setShowForm(false);
+  };
+
+  // Batch add
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchDate, setBatchDate] = useState('');
+  const [batchEntries, setBatchEntries] = useState<Record<string, { selected: boolean; interior: boolean }>>({});
+
+  const initBatch = () => {
+    const entries: Record<string, { selected: boolean; interior: boolean }> = {};
+    activeEmployees.forEach((e: any) => { entries[e.id] = { selected: true, interior: false }; });
+    setBatchEntries(entries);
+    setBatchDate(new Date().toISOString().slice(0, 10));
+    setBatchOpen(true);
+  };
+
+  const handleBatchSubmit = () => {
+    if (!batchDate) return;
+    Object.entries(batchEntries).forEach(([empId, entry]) => {
+      if (!entry.selected) return;
+      const exists = allocations.find((a: any) => a.employeeId === empId && a.date === batchDate);
+      if (!exists) {
+        onAdd({ employeeId: empId, projectId, date: batchDate, worked: true, interior: entry.interior, absenceType: '', absenceReason: '', absenceNotes: '' });
+      }
+    });
+    setBatchOpen(false);
   };
 
   const grouped = useMemo(() => {
     const g: Record<string, typeof allocations> = {};
-    allocations.forEach((a: any) => {if (!g[a.date]) g[a.date] = [];g[a.date].push(a);});
+    allocations.filter((a: any) => a.worked).forEach((a: any) => {if (!g[a.date]) g[a.date] = [];g[a.date].push(a);});
     return Object.entries(g).sort(([a], [b]) => b.localeCompare(a));
   }, [allocations]);
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <button onClick={initBatch} className="flex items-center gap-2 px-4 py-2 border border-input rounded-lg text-sm font-medium hover:bg-muted">Registro em Lote</button>
         <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Registrar Presença</button>
       </div>
+
+      {batchOpen && (
+        <div className="bg-card rounded-xl p-4 shadow-card space-y-4">
+          <h3 className="font-semibold text-sm">Registro em Lote</h3>
+          <div><label className="label-caps block mb-1">Data</label><input type="date" value={batchDate} onChange={e => setBatchDate(e.target.value)} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div className="space-y-2">
+            {activeEmployees.map((emp: any) => {
+              const entry = batchEntries[emp.id] || { selected: true, interior: false };
+              const exists = batchDate ? allocations.find((a: any) => a.employeeId === emp.id && a.date === batchDate) : false;
+              return (
+                <div key={emp.id} className={`flex items-center justify-between py-2 border-b border-border ${exists ? 'opacity-50' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <input type="checkbox" checked={entry.selected && !exists} disabled={!!exists} onChange={e => setBatchEntries(prev => ({ ...prev, [emp.id]: { ...entry, selected: e.target.checked } }))} />
+                    <span className="text-sm font-medium">{emp.name}</span>
+                    {exists && <span className="text-xs text-muted-foreground">(já registrado)</span>}
+                  </div>
+                  {!exists && entry.selected && (
+                    <label className="flex items-center gap-1.5 text-xs">
+                      <input type="checkbox" checked={entry.interior} onChange={e => setBatchEntries(prev => ({ ...prev, [emp.id]: { ...entry, interior: e.target.checked } }))} />
+                      Interior
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setBatchOpen(false)} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>
+            <button onClick={handleBatchSubmit} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar Todos</button>
+          </div>
+        </div>
+      )}
+
       {showForm &&
       <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card flex flex-wrap gap-3 items-end">
           <div><label className="label-caps block mb-1">Colaborador</label>
             <select required value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
               <option value="">Selecione</option>
-              {employees.filter((e: any) => e.status === 'ativo').map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              {activeEmployees.map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </div>
           <div><label className="label-caps block mb-1">Data</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
@@ -425,7 +488,7 @@ function AllocationsTab({ projectId, allocations, employees, onAdd, onDelete }: 
           </div>
         </div>
       )}
-      {allocations.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhuma alocação registrada.</p>}
+      {allocations.filter((a: any) => a.worked).length === 0 && <p className="text-muted-foreground text-center py-8">Nenhuma presença registrada.</p>}
     </div>);
 
 }
