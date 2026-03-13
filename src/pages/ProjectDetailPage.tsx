@@ -483,6 +483,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
     setShowForm(true);
   };
 
+  const [expandedPurchaseId, setExpandedPurchaseId] = useState<string | null>(null);
   const sorted = [...(projectPurchases || [])].sort((a: any, b: any) => b.date.localeCompare(a.date));
 
   return (
