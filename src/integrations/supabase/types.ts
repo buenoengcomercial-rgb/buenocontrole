@@ -1151,6 +1151,7 @@ export type Database = {
           id: string
           interior: boolean
           meal_voucher_value: number
+          project_id: string | null
           worked: boolean
         }
         Insert: {
@@ -1163,6 +1164,7 @@ export type Database = {
           id?: string
           interior?: boolean
           meal_voucher_value?: number
+          project_id?: string | null
           worked?: boolean
         }
         Update: {
@@ -1175,6 +1177,7 @@ export type Database = {
           id?: string
           interior?: boolean
           meal_voucher_value?: number
+          project_id?: string | null
           worked?: boolean
         }
         Relationships: [
@@ -1183,6 +1186,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_days_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]

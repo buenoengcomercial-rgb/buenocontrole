@@ -29,7 +29,7 @@ function mapEmployee(r: any): Employee {
   return { id: r.id, name: r.name, cpf: r.cpf, role: r.role, grossSalary: Number(r.gross_salary), admissionDate: r.admission_date, phone: r.phone, pixKeyType: r.pix_key_type || '', pixKey: r.pix_key || '', status: r.status as Employee['status'], createdAt: r.created_at };
 }
 function mapWorkDay(r: any): WorkDay {
-  return { id: r.id, employeeId: r.employee_id, date: r.date, worked: r.worked, interior: r.interior, mealVoucherValue: Number(r.meal_voucher_value), absenceType: r.absence_type || '', absenceReason: r.absence_reason || '', absenceNotes: r.absence_notes || '' };
+  return { id: r.id, employeeId: r.employee_id, projectId: r.project_id || null, date: r.date, worked: r.worked, interior: r.interior, mealVoucherValue: Number(r.meal_voucher_value), absenceType: r.absence_type || '', absenceReason: r.absence_reason || '', absenceNotes: r.absence_notes || '' };
 }
 function mapAdvance(r: any): SalaryAdvance {
   return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, notes: r.notes || '', createdAt: r.created_at };
@@ -74,7 +74,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   const addWorkDay = useCallback(async (w: Omit<WorkDay, 'id' | 'mealVoucherValue'>) => {
     const mealVoucherValue = w.absenceType === 'falta_justificada' ? 0 : calculateMealVoucher(w.worked, w.interior);
     const { data } = await supabase.from('work_days').insert({
-      employee_id: w.employeeId, date: w.date, worked: w.worked, interior: w.interior, meal_voucher_value: mealVoucherValue,
+      employee_id: w.employeeId, project_id: w.projectId || null, date: w.date, worked: w.worked, interior: w.interior, meal_voucher_value: mealVoucherValue,
       absence_type: w.absenceType || '', absence_reason: w.absenceReason || '', absence_notes: w.absenceNotes || '',
     }).select().single();
     if (data) setWorkDays(prev => [...prev, mapWorkDay(data)]);
@@ -82,7 +82,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   const updateWorkDay = useCallback(async (w: WorkDay) => {
     const mealVoucherValue = w.absenceType === 'falta_justificada' ? 0 : calculateMealVoucher(w.worked, w.interior);
     await supabase.from('work_days').update({
-      employee_id: w.employeeId, date: w.date, worked: w.worked, interior: w.interior, meal_voucher_value: mealVoucherValue,
+      employee_id: w.employeeId, project_id: w.projectId || null, date: w.date, worked: w.worked, interior: w.interior, meal_voucher_value: mealVoucherValue,
       absence_type: w.absenceType || '', absence_reason: w.absenceReason || '', absence_notes: w.absenceNotes || '',
     }).eq('id', w.id);
     setWorkDays(prev => prev.map(x => x.id === w.id ? { ...w, mealVoucherValue } : x));
