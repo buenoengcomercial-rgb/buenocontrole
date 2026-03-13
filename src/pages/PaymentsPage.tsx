@@ -16,7 +16,7 @@ import AttachedDocuments from '@/components/AttachedDocuments';
 const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'] as const;
 
 export default function PaymentsPage() {
-  const { employees, advances, payments, generateAdvance, addAdvanceManual, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
+  const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
 
   // Advance generation
@@ -54,7 +54,7 @@ export default function PaymentsPage() {
   // Salary payment form
   const [payOpen, setPayOpen] = useState(false);
   const [payForm, setPayForm] = useState({
-    employeeId: '', month: '', otherDiscounts: 0, otherAdditions: 0,
+    employeeId: '', month: '', inssDiscount: 0, absenceDiscount: 0, otherDiscounts: 0, otherAdditions: 0,
     paidValue: '' as number | '', paymentDate: '', paymentMethod: 'PIX', notes: '',
   });
 
@@ -64,14 +64,21 @@ export default function PaymentsPage() {
 
   const selectedEmp = useMemo(() => employees.find(e => e.id === payForm.employeeId), [payForm.employeeId, employees]);
 
+  // Calculate absence days for selected employee/month
+  const absenceDays = useMemo(() => {
+    if (!payForm.employeeId || !payForm.month) return 0;
+    return workDays.filter(w => w.employeeId === payForm.employeeId && w.date.startsWith(payForm.month) && !w.worked).length;
+  }, [payForm.employeeId, payForm.month, workDays]);
+
   const payPreview = useMemo(() => {
     if (!selectedEmp || !payForm.month) return null;
     const empAdvances = advances.filter(a => a.employeeId === payForm.employeeId && a.month === payForm.month);
     const totalAdvances = empAdvances.reduce((s, a) => s + a.value, 0);
-    const netSalary = selectedEmp.grossSalary - totalAdvances - payForm.otherDiscounts + payForm.otherAdditions;
+    const totalDiscounts = payForm.inssDiscount + payForm.absenceDiscount + payForm.otherDiscounts;
+    const netSalary = selectedEmp.grossSalary - totalAdvances - totalDiscounts + payForm.otherAdditions;
     const [y, m] = payForm.month.split('-').map(Number);
     const defaultDate = getSalaryPaymentDate(y, m + 1).toISOString().slice(0, 10);
-    return { grossSalary: selectedEmp.grossSalary, totalAdvances, netSalary, defaultDate };
+    return { grossSalary: selectedEmp.grossSalary, totalAdvances, totalDiscounts, netSalary, defaultDate };
   }, [payForm, selectedEmp, advances]);
 
   const handlePayment = () => {
@@ -84,7 +91,7 @@ export default function PaymentsPage() {
       month: payForm.month,
       grossSalary: payPreview.grossSalary,
       advanceDiscount: payPreview.totalAdvances,
-      otherDiscounts: payForm.otherDiscounts,
+      otherDiscounts: payForm.inssDiscount + payForm.absenceDiscount + payForm.otherDiscounts,
       otherAdditions: payForm.otherAdditions,
       netSalary: paidValue,
       paymentDate: payForm.paymentDate || payPreview.defaultDate,
@@ -93,8 +100,10 @@ export default function PaymentsPage() {
     });
     toast.success('Pagamento registrado.');
     setPayOpen(false);
-    setPayForm({ employeeId: '', month: '', otherDiscounts: 0, otherAdditions: 0, paidValue: '', paymentDate: '', paymentMethod: 'PIX', notes: '' });
+    resetPayForm();
   };
+
+  const resetPayForm = () => setPayForm({ employeeId: '', month: '', inssDiscount: 0, absenceDiscount: 0, otherDiscounts: 0, otherAdditions: 0, paidValue: '', paymentDate: '', paymentMethod: 'PIX', notes: '' });
 
   const openEdit = (p: SalaryPayment) => {
     setEditPayment({ ...p });
@@ -130,8 +139,7 @@ export default function PaymentsPage() {
 
         <TabsContent value="salaries" className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 items-end">
-            {/* Register Payment Dialog */}
-            <Dialog open={payOpen} onOpenChange={(open) => { setPayOpen(open); if (!open) setPayForm({ employeeId: '', month: '', otherDiscounts: 0, otherAdditions: 0, paidValue: '', paymentDate: '', paymentMethod: 'PIX', notes: '' }); }}>
+            <Dialog open={payOpen} onOpenChange={(open) => { setPayOpen(open); if (!open) resetPayForm(); }}>
               <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Registrar Pagamento</Button></DialogTrigger>
               <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Registrar Pagamento de Salário</DialogTitle></DialogHeader>
@@ -158,9 +166,25 @@ export default function PaymentsPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className="label-caps mb-1 block">Outros Descontos</label><Input type="number" min={0} step={0.01} value={payForm.otherDiscounts || ''} onChange={e => setPayForm(f => ({ ...f, otherDiscounts: Number(e.target.value) }))} /></div>
-                    <div><label className="label-caps mb-1 block">Outros Adicionais</label><Input type="number" min={0} step={0.01} value={payForm.otherAdditions || ''} onChange={e => setPayForm(f => ({ ...f, otherAdditions: Number(e.target.value) }))} /></div>
+                  {/* Discounts */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="label-caps mb-1 block">Desconto INSS</label>
+                      <Input type="number" min={0} step={0.01} value={payForm.inssDiscount || ''} onChange={e => setPayForm(f => ({ ...f, inssDiscount: Number(e.target.value) || 0 }))} />
+                    </div>
+                    <div>
+                      <label className="label-caps mb-1 block">Desc. Faltas {absenceDays > 0 && <span className="text-destructive">({absenceDays}d)</span>}</label>
+                      <Input type="number" min={0} step={0.01} value={payForm.absenceDiscount || ''} onChange={e => setPayForm(f => ({ ...f, absenceDiscount: Number(e.target.value) || 0 }))} />
+                    </div>
+                    <div>
+                      <label className="label-caps mb-1 block">Outros Descontos</label>
+                      <Input type="number" min={0} step={0.01} value={payForm.otherDiscounts || ''} onChange={e => setPayForm(f => ({ ...f, otherDiscounts: Number(e.target.value) || 0 }))} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="label-caps mb-1 block">Outros Adicionais</label>
+                    <Input type="number" min={0} step={0.01} value={payForm.otherAdditions || ''} onChange={e => setPayForm(f => ({ ...f, otherAdditions: Number(e.target.value) || 0 }))} />
                   </div>
 
                   {/* Summary */}
@@ -168,11 +192,13 @@ export default function PaymentsPage() {
                     <div className="bg-muted rounded-lg p-4 space-y-2 text-sm">
                       <div className="flex justify-between"><span>Salário Bruto</span><strong>{formatCurrency(payPreview.grossSalary)}</strong></div>
                       <div className="flex justify-between text-destructive"><span>(-) Adiantamentos</span><strong>{formatCurrency(payPreview.totalAdvances)}</strong></div>
+                      {payForm.inssDiscount > 0 && <div className="flex justify-between text-destructive"><span>(-) INSS</span><strong>{formatCurrency(payForm.inssDiscount)}</strong></div>}
+                      {payForm.absenceDiscount > 0 && <div className="flex justify-between text-destructive"><span>(-) Faltas</span><strong>{formatCurrency(payForm.absenceDiscount)}</strong></div>}
                       {payForm.otherDiscounts > 0 && <div className="flex justify-between text-destructive"><span>(-) Outros descontos</span><strong>{formatCurrency(payForm.otherDiscounts)}</strong></div>}
                       {payForm.otherAdditions > 0 && <div className="flex justify-between text-success"><span>(+) Adicionais</span><strong>{formatCurrency(payForm.otherAdditions)}</strong></div>}
                       <div className="border-t border-border pt-2 flex justify-between text-base font-semibold">
                         <span>Valor a Pagar (calculado)</span>
-                        <span>{formatCurrency(payPreview.netSalary)}</span>
+                        <span className={payPreview.netSalary < 0 ? 'text-destructive' : ''}>{formatCurrency(payPreview.netSalary)}</span>
                       </div>
                     </div>
                   )}
@@ -237,7 +263,7 @@ export default function PaymentsPage() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                         <div><span className="label-caps text-xs block">Bruto</span><span>{formatCurrency(p.grossSalary)}</span></div>
                         <div><span className="label-caps text-xs block">Adiantamento</span><span className="text-destructive">{formatCurrency(p.advanceDiscount)}</span></div>
-                        <div><span className="label-caps text-xs block">Outros Desc.</span><span>{formatCurrency(p.otherDiscounts)}</span></div>
+                        <div><span className="label-caps text-xs block">Descontos</span><span className="text-destructive">{formatCurrency(p.otherDiscounts)}</span></div>
                         <div><span className="label-caps text-xs block">Adicionais</span><span>{formatCurrency(p.otherAdditions)}</span></div>
                       </div>
                       {emp?.pixKey && (

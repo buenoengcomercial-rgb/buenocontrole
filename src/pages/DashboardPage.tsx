@@ -12,16 +12,23 @@ import { Link } from 'react-router-dom';
 
 export default function DashboardPage() {
   const { purchases } = useAppData();
-  const { employees, workDays } = useEmployeeData();
+  const { employees, workDays, payments, advances } = useEmployeeData();
   const { charges, vacations, asos, trainings } = useSafetyData();
   const { projects, allocations, outsourcedServices, projectDocuments, dasExpenses } = useProjectData();
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const activeEmployees = employees.filter(e => e.status === 'ativo');
 
-  const totalPayroll = useMemo(() => activeEmployees.reduce((s, e) => s + e.grossSalary, 0), [activeEmployees]);
-  const totalCharges = useMemo(() => charges.filter(c => c.month === currentMonth).reduce((s, c) => s + c.value, 0), [charges, currentMonth]);
+  // Folha de pagamento = salários pagos + adiantamentos + férias + vale alimentação
+  const totalSalariesPaid = useMemo(() => payments.filter(p => p.month === currentMonth).reduce((s, p) => s + p.netSalary, 0), [payments, currentMonth]);
+  const totalAdvancesPaid = useMemo(() => advances.filter(a => a.month === currentMonth).reduce((s, a) => s + a.value, 0), [advances, currentMonth]);
+  const totalVacationsPaid = useMemo(() => {
+    return vacations.filter(v => v.paymentDate && v.paymentDate.startsWith(currentMonth)).reduce((s, v) => s + v.totalPaid, 0);
+  }, [vacations, currentMonth]);
   const totalMealVoucher = useMemo(() => workDays.filter(w => w.date.startsWith(currentMonth)).reduce((s, w) => s + w.mealVoucherValue, 0), [workDays, currentMonth]);
+  const totalPayroll = useMemo(() => totalSalariesPaid + totalAdvancesPaid + totalVacationsPaid + totalMealVoucher, [totalSalariesPaid, totalAdvancesPaid, totalVacationsPaid, totalMealVoucher]);
+
+  const totalCharges = useMemo(() => charges.filter(c => c.month === currentMonth).reduce((s, c) => s + c.value, 0), [charges, currentMonth]);
   const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === currentMonth).reduce((s, d) => s + d.value, 0), [dasExpenses, currentMonth]);
 
   const onVacation = useMemo(() => {
@@ -36,7 +43,6 @@ export default function DashboardPage() {
 
   // DAS status
   const dasCurrentMonth = useMemo(() => dasExpenses.find(d => d.month === currentMonth), [dasExpenses, currentMonth]);
-  // INSS/FGTS status (individual records per type)
   const chargesCurrentMonth = useMemo(() => charges.filter(c => c.month === currentMonth), [charges, currentMonth]);
 
   const projectCostData = useMemo(() => {
@@ -79,7 +85,7 @@ export default function DashboardPage() {
   }, [projects, allocations, purchases, outsourcedServices, employees, charges, dasExpenses]);
 
   const kpis = [
-    { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true },
+    { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Adiant: ${formatCurrency(totalAdvancesPaid)}` },
     { label: 'Encargos (INSS+FGTS)', value: formatCurrency(totalCharges), icon: Shield },
     { label: 'Vale Alimentação', value: formatCurrency(totalMealVoucher), icon: HardHat },
     { label: 'DAS do Mês', value: formatCurrency(totalDASMonth), icon: Receipt },
@@ -120,6 +126,7 @@ export default function DashboardPage() {
               <kpi.icon className={`w-5 h-5 ${kpi.accent ? 'text-primary-foreground/50' : 'text-muted-foreground'}`} />
             </div>
             <p className="text-2xl font-semibold tracking-tight">{kpi.value}</p>
+            {'subtitle' in kpi && kpi.subtitle && <p className={`text-xs mt-1 ${kpi.accent ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>{kpi.subtitle}</p>}
           </div>
         ))}
       </div>
@@ -184,7 +191,6 @@ export default function DashboardPage() {
         <div className="bg-card rounded-xl p-6 shadow-card">
           <h2 className="mb-4">Custo por Obra</h2>
 
-          {/* Cost chart legend */}
           <div className="flex flex-wrap gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'hsl(142 76% 36%)' }} />
@@ -200,7 +206,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Status per project */}
           <div className="flex flex-wrap gap-2 mb-4">
             {projectCostData.map(p => {
               const statusColor = p.percentUsed > 100 ? 'bg-destructive/10 text-destructive' : p.percentUsed > 70 ? 'bg-warning/20 text-warning' : 'bg-success/10 text-success';
