@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, AlertCircle, Building2, Umbrella, UserX, Calendar } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Building2, Umbrella, UserX, Calendar, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+import type { WorkDay } from '@/types/employee';
 
 const ABSENCE_TYPES = [
   { value: 'falta', label: 'Falta' },
