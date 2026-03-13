@@ -347,7 +347,7 @@ export default function WorkDaysPage() {
 
       {/* Employee cards */}
       <div className="space-y-4">
-        {groupedByEmployee.map(({ employee, days, totalVoucher: empVoucher, workedCount, absenceCount: empAbsences }) => {
+        {groupedByEmployee.map(({ employee, days, vacDays, totalVoucher: empVoucher, workedCount, absenceCount: empAbsences }) => {
           if (!employee) return null;
           return (
             <div key={employee.id} className="bg-card rounded-xl shadow-card overflow-hidden">
