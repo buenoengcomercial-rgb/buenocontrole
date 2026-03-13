@@ -10,7 +10,7 @@ import { calculate13thDailyCost } from '@/types/employee';
 import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES, EQUIPMENT_TYPES, BILLING_TYPES } from '@/types/project';
 import { MATERIAL_CATEGORIES, UNITS } from '@/types';
 import type { ProjectDocType, MeasurementStatus, Measurement, EquipmentRental, EquipmentType, BillingType } from '@/types/project';
-import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck } from 'lucide-react';
+import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck, Paperclip } from 'lucide-react';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
@@ -435,7 +435,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', invoiceNumber: '', totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '' };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '' };
   const [form, setForm] = useState(emptyForm);
 
   // Quick-add supplier
@@ -478,10 +478,12 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
 
   const handleEdit = (p: any) => {
     setEditId(p.id);
-    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', invoiceNumber: p.invoiceNumber, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes });
+    const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
+    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes });
     setShowForm(true);
   };
 
+  const [expandedPurchaseId, setExpandedPurchaseId] = useState<string | null>(null);
   const sorted = [...(projectPurchases || [])].sort((a: any, b: any) => b.date.localeCompare(a.date));
 
   return (
@@ -568,6 +570,12 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
           <div><label className="label-caps block mb-1">Valor Total NF (R$) *</label><input type="number" required min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Valor Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Categoria</label>
+            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <option value="">Selecione</option>
+              {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
           <div><label className="label-caps block mb-1">Descrição *</label><input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div className="flex items-end gap-2">
@@ -600,11 +608,12 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.icmsValue ? formatCurrency(p.icmsValue) : '—'}</td>
                     <td className="px-4 py-3 text-right font-medium">{formatCurrency(itemTotal)}</td>
                     <td className="px-4 py-3 text-right flex justify-end gap-1">
+                      <button onClick={() => setExpandedPurchaseId(expandedPurchaseId === p.id ? null : p.id)} className="p-1 rounded hover:bg-accent" title="Anexar documentos"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
                       <button onClick={() => handleEdit(p)} className="p-1 rounded hover:bg-primary/10"><Pencil className="w-4 h-4 text-primary" /></button>
                       <button onClick={() => onDelete(p.id)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-4 h-4 text-destructive" /></button>
                     </td>
                   </tr>
-                  <tr><td colSpan={11} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>
+                  {expandedPurchaseId === p.id && <tr><td colSpan={11} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
                 </React.Fragment>);
 
             })}
