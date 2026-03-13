@@ -17,6 +17,7 @@ export default function EncargosPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [filterType, setFilterType] = useState<'all' | ChargeType>('all');
+  const [attachOpenId, setAttachOpenId] = useState<string | null>(null);
   const [form, setForm] = useState({
     chargeType: 'INSS' as ChargeType,
     month: new Date().toISOString().slice(0, 7),
