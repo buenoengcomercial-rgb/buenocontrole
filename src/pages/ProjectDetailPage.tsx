@@ -27,7 +27,6 @@ export default function ProjectDetailPage() {
   const project = projects.find((p) => p.id === id);
   if (!project) return <div className="p-8 text-center"><p className="text-muted-foreground">Obra não encontrada.</p><Link to="/obras" className="text-primary text-sm">← Voltar</Link></div>;
 
-  const { workDays, addWorkDay, deleteWorkDay } = useEmployeeData();
   const projAllocations = workDays.filter((w) => w.projectId === id);
   const projPurchases = purchases.filter((p) => p.city === project.city);
   const projOutsourced = outsourcedServices.filter((s) => s.projectId === id);
