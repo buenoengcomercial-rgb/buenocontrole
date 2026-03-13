@@ -17,34 +17,34 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs';
 
 export default function ProjectDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{id: string;}>();
   const { projects, updateProject, allocations, addAllocation, deleteAllocation, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, updateProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase, equipmentRentals, addEquipmentRental, updateEquipmentRental, deleteEquipmentRental } = useProjectData();
   const { employees } = useEmployeeData();
   const { purchases, suppliers, materials } = useAppData();
   const { charges } = useSafetyData();
   const [tab, setTab] = useState<Tab>('dashboard');
 
-  const project = projects.find(p => p.id === id);
+  const project = projects.find((p) => p.id === id);
   if (!project) return <div className="p-8 text-center"><p className="text-muted-foreground">Obra não encontrada.</p><Link to="/obras" className="text-primary text-sm">← Voltar</Link></div>;
 
-  const projAllocations = allocations.filter(a => a.projectId === id);
-  const projPurchases = purchases.filter(p => p.city === project.city);
-  const projOutsourced = outsourcedServices.filter(s => s.projectId === id);
-  const projDocs = projectDocuments.filter(d => d.projectId === id);
-  const projMeasurements = measurements.filter(m => m.projectId === id);
-  const projProjectPurchases = projectPurchases.filter(pp => pp.projectId === id);
-  const projRentals = equipmentRentals.filter(r => r.projectId === id);
+  const projAllocations = allocations.filter((a) => a.projectId === id);
+  const projPurchases = purchases.filter((p) => p.city === project.city);
+  const projOutsourced = outsourcedServices.filter((s) => s.projectId === id);
+  const projDocs = projectDocuments.filter((d) => d.projectId === id);
+  const projMeasurements = measurements.filter((m) => m.projectId === id);
+  const projProjectPurchases = projectPurchases.filter((pp) => pp.projectId === id);
+  const projRentals = equipmentRentals.filter((r) => r.projectId === id);
 
-  const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-    { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { key: 'measurements', label: 'Medições', icon: Ruler },
-    { key: 'allocations', label: 'Colaboradores', icon: Users },
-    { key: 'materials', label: 'Materiais', icon: Package },
-    { key: 'outsourced', label: 'Terceirizados', icon: Wrench },
-    { key: 'rentals', label: 'Aluguéis', icon: Truck },
-    { key: 'docs', label: 'Documentação', icon: FileText },
-    { key: 'costs', label: 'Custos', icon: DollarSign },
-  ];
+  const tabs: {key: Tab;label: string;icon: React.ElementType;}[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { key: 'measurements', label: 'Medições', icon: Ruler },
+  { key: 'allocations', label: 'Colaboradores', icon: Users },
+  { key: 'materials', label: 'Materiais', icon: Package },
+  { key: 'outsourced', label: 'Terceirizados', icon: Wrench },
+  { key: 'rentals', label: 'Aluguéis', icon: Truck },
+  { key: 'docs', label: 'Documentação', icon: FileText },
+  { key: 'costs', label: 'Custos', icon: DollarSign }];
+
 
   return (
     <div className="space-y-6">
@@ -57,11 +57,11 @@ export default function ProjectDetailPage() {
       </div>
 
       <div className="flex gap-1 overflow-x-auto border-b border-border pb-px">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+        {tabs.map((t) =>
+        <button key={t.key} onClick={() => setTab(t.key)} className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${tab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
             <t.icon className="w-4 h-4" /> {t.label}
           </button>
-        ))}
+        )}
       </div>
 
       {tab === 'dashboard' && <DashboardTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} measurements={projMeasurements} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
@@ -72,8 +72,8 @@ export default function ProjectDetailPage() {
       {tab === 'rentals' && <RentalsTab projectId={id!} rentals={projRentals} onAdd={addEquipmentRental} onUpdate={updateEquipmentRental} onDelete={deleteEquipmentRental} />}
       {tab === 'docs' && <DocsTab projectId={id!} docs={projDocs} onAdd={addProjectDocument} onUpdate={updateProjectDocument} onDelete={deleteProjectDocument} />}
       {tab === 'costs' && <CostsTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
-    </div>
-  );
+    </div>);
+
 }
 
 /* ── Dashboard Tab ── */
@@ -112,9 +112,9 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
 
   // Revenue from approved/paid measurements
   const totalReceived = useMemo(() => {
-    return measurements
-      .filter((m: any) => m.status === 'aprovada' || m.status === 'paga')
-      .reduce((s: number, m: any) => s + m.value, 0);
+    return measurements.
+    filter((m: any) => m.status === 'aprovada' || m.status === 'paga').
+    reduce((s: number, m: any) => s + m.value, 0);
   }, [measurements]);
 
   const totalPaid = useMemo(() => {
@@ -122,23 +122,23 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
   }, [measurements]);
 
   const profit = totalReceived - totalCost;
-  const margin = totalReceived > 0 ? (profit / totalReceived) * 100 : 0;
-  const executionPercent = project.contractValue > 0 ? (totalCost / project.contractValue) * 100 : 0;
+  const margin = totalReceived > 0 ? profit / totalReceived * 100 : 0;
+  const executionPercent = project.contractValue > 0 ? totalCost / project.contractValue * 100 : 0;
 
   // Pie chart data
   const pieData = [
-    { name: 'Materiais', value: totalMaterials + totalProjectPurchases },
-    { name: 'Mão de Obra', value: laborCost },
-    { name: 'Terceirizados', value: totalOutsourced },
-    { name: 'Aluguéis', value: totalRentals },
-    { name: 'Documentação', value: totalDocsCost },
-    { name: 'DAS Proporcional', value: dasCost },
-  ].filter(d => d.value > 0);
+  { name: 'Materiais', value: totalMaterials + totalProjectPurchases },
+  { name: 'Mão de Obra', value: laborCost },
+  { name: 'Terceirizados', value: totalOutsourced },
+  { name: 'Aluguéis', value: totalRentals },
+  { name: 'Documentação', value: totalDocsCost },
+  { name: 'DAS Proporcional', value: dasCost }].
+  filter((d) => d.value > 0);
   const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(25, 95%, 53%)', 'hsl(340, 70%, 50%)', 'hsl(280, 60%, 50%)'];
 
   // Cost evolution by month
   const costEvolution = useMemo(() => {
-    const months: Record<string, { materiais: number; maoDeObra: number; terceirizados: number }> = {};
+    const months: Record<string, {materiais: number;maoDeObra: number;terceirizados: number;}> = {};
     purchases.forEach((p: any) => {
       const m = p.date.slice(0, 7);
       if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
@@ -160,7 +160,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, data]) => ({
       month: new Date(month + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
       ...data,
-      total: data.materiais + data.maoDeObra + data.terceirizados,
+      total: data.materiais + data.maoDeObra + data.terceirizados
     }));
   }, [purchases, allocations, outsourced, employees, charges]);
 
@@ -187,8 +187,8 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie */}
-        {pieData.length > 0 && (
-          <div className="bg-card rounded-xl p-6 shadow-card">
+        {pieData.length > 0 &&
+        <div className="bg-card rounded-xl p-6 shadow-card">
             <h3 className="text-sm font-semibold mb-4">Composição de Custos</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -201,18 +201,18 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
               </ResponsiveContainer>
             </div>
           </div>
-        )}
+        }
 
         {/* Cost evolution */}
-        {costEvolution.length > 0 && (
-          <div className="bg-card rounded-xl p-6 shadow-card">
+        {costEvolution.length > 0 &&
+        <div className="bg-card rounded-xl p-6 shadow-card">
             <h3 className="text-sm font-semibold mb-4">Evolução de Custos</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={costEvolution}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
-                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} />
+                  <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   <Legend />
                   <Line type="monotone" dataKey="materiais" name="Materiais" stroke="hsl(221, 83%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
@@ -223,16 +223,16 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
               </ResponsiveContainer>
             </div>
           </div>
-        )}
+        }
       </div>
 
       {/* Recent measurements */}
       <div className="bg-card rounded-xl p-6 shadow-card">
         <h3 className="text-sm font-semibold mb-4">Últimas Medições</h3>
-        {measurements.length === 0 ? <p className="text-muted-foreground text-sm">Nenhuma medição registrada.</p> : (
-          <div className="space-y-2">
-            {measurements.slice(-5).reverse().map((m: any) => (
-              <div key={m.id} className="flex items-center justify-between py-2 border-b border-border last:border-0 text-sm">
+        {measurements.length === 0 ? <p className="text-muted-foreground text-sm">Nenhuma medição registrada.</p> :
+        <div className="space-y-2">
+            {measurements.slice(-5).reverse().map((m: any) =>
+          <div key={m.id} className="flex items-center justify-between py-2 border-b border-border last:border-0 text-sm">
                 <div>
                   <span className="font-medium">Medição #{m.number}</span>
                   <span className="text-muted-foreground ml-2">{m.description}</span>
@@ -242,49 +242,49 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
                   <span className="font-medium">{formatCurrency(m.value)}</span>
                 </div>
               </div>
-            ))}
+          )}
           </div>
-        )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
-function KpiCard({ label, value, subtitle, accent, className }: { label: string; value: string; subtitle?: string; accent?: boolean; className?: string }) {
+function KpiCard({ label, value, subtitle, accent, className }: {label: string;value: string;subtitle?: string;accent?: boolean;className?: string;}) {
   return (
     <div className={`rounded-xl p-5 shadow-card ${accent ? 'bg-primary text-primary-foreground' : 'bg-card'} ${className || ''}`}>
       <span className={`label-caps text-xs ${accent ? 'text-primary-foreground/70' : ''}`}>{label}</span>
       <p className="text-xl font-semibold mt-1">{value}</p>
       {subtitle && <p className={`text-xs mt-0.5 ${accent ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>{subtitle}</p>}
-    </div>
-  );
+    </div>);
+
 }
 
-function MeasurementBadge({ status }: { status: MeasurementStatus }) {
+function MeasurementBadge({ status }: {status: MeasurementStatus;}) {
   const styles: Record<MeasurementStatus, string> = {
     pendente: 'bg-muted text-muted-foreground',
     enviada: 'bg-primary/10 text-primary',
     aprovada: 'bg-success/10 text-success',
-    paga: 'bg-success/20 text-success',
+    paga: 'bg-success/20 text-success'
   };
-  const label = MEASUREMENT_STATUSES.find(s => s.value === status)?.label || status;
+  const label = MEASUREMENT_STATUSES.find((s) => s.value === status)?.label || status;
   return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles[status]}`}>{label}</span>;
 }
 
 /* ── Measurements Tab ── */
-function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }: { projectId: string; measurements: Measurement[]; onAdd: any; onUpdate: any; onDelete: any }) {
+function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }: {projectId: string;measurements: Measurement[];onAdd: any;onUpdate: any;onDelete: any;}) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const nextNumber = measurements.length > 0 ? Math.max(...measurements.map(m => m.number)) + 1 : 1;
+  const nextNumber = measurements.length > 0 ? Math.max(...measurements.map((m) => m.number)) + 1 : 1;
   const [form, setForm] = useState({ number: nextNumber, date: '', description: '', value: 0, percentExecuted: 0, status: 'pendente' as MeasurementStatus });
 
-  const totalApproved = measurements.filter(m => m.status === 'aprovada' || m.status === 'paga').reduce((s, m) => s + m.value, 0);
+  const totalApproved = measurements.filter((m) => m.status === 'aprovada' || m.status === 'paga').reduce((s, m) => s + m.value, 0);
   const totalAll = measurements.reduce((s, m) => s + m.value, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editId) {
-      const existing = measurements.find(m => m.id === editId)!;
+      const existing = measurements.find((m) => m.id === editId)!;
       onUpdate({ ...existing, ...form });
       setEditId(null);
     } else {
@@ -309,30 +309,30 @@ function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }:
       </div>
 
       <div className="flex justify-end">
-        <button onClick={() => { setEditId(null); setForm({ number: nextNumber, date: '', description: '', value: 0, percentExecuted: 0, status: 'pendente' }); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
+        <button onClick={() => {setEditId(null);setForm({ number: nextNumber, date: '', description: '', value: 0, percentExecuted: 0, status: 'pendente' });setShowForm(!showForm);}} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
           <Plus className="w-4 h-4" /> Nova Medição
         </button>
       </div>
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div><label className="label-caps block mb-1">Nº Medição</label><input type="number" required value={form.number} onChange={e => setForm({ ...form, number: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor *</label><input type="number" step="0.01" required value={form.value || ''} onChange={e => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div className="md:col-span-2"><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">% Executado</label><input type="number" step="0.1" min="0" max="100" value={form.percentExecuted || ''} onChange={e => setForm({ ...form, percentExecuted: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+      {showForm &&
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label className="label-caps block mb-1">Nº Medição</label><input type="number" required value={form.number} onChange={(e) => setForm({ ...form, number: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Valor *</label><input type="number" step="0.01" required value={form.value || ''} onChange={(e) => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div className="md:col-span-2"><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">% Executado</label><input type="number" step="0.1" min="0" max="100" value={form.percentExecuted || ''} onChange={(e) => setForm({ ...form, percentExecuted: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div>
             <label className="label-caps block mb-1">Status</label>
-            <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as MeasurementStatus })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              {MEASUREMENT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as MeasurementStatus })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              {MEASUREMENT_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
           <div className="flex items-end gap-2">
             <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Salvar' : 'Adicionar'}</button>
-            {editId && <button type="button" onClick={() => { setEditId(null); setShowForm(false); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
+            {editId && <button type="button" onClick={() => {setEditId(null);setShowForm(false);}} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
           </div>
         </form>
-      )}
+      }
 
       <div className="bg-card rounded-xl shadow-card overflow-hidden">
         <table className="w-full text-sm">
@@ -346,8 +346,8 @@ function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }:
             <th className="px-4 py-3"></th>
           </tr></thead>
           <tbody>
-            {measurements.sort((a, b) => a.number - b.number).map((m) => (
-              <React.Fragment key={m.id}>
+            {measurements.sort((a, b) => a.number - b.number).map((m) =>
+            <React.Fragment key={m.id}>
               <tr className="border-b border-border">
                 <td className="px-4 py-3 font-medium">#{m.number}</td>
                 <td className="px-4 py-3">{formatDate(m.date)}</td>
@@ -364,13 +364,13 @@ function MeasurementsTab({ projectId, measurements, onAdd, onUpdate, onDelete }:
               </tr>
               <tr><td colSpan={7} className="px-4 py-2 bg-muted/30"><AttachedDocuments entityType="measurement" entityId={m.id} /></td></tr>
               </React.Fragment>
-            ))}
+            )}
           </tbody>
         </table>
         {measurements.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhuma medição registrada.</p>}
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 /* ── Allocations Tab ── */
@@ -387,7 +387,7 @@ function AllocationsTab({ projectId, allocations, employees, onAdd, onDelete }: 
 
   const grouped = useMemo(() => {
     const g: Record<string, typeof allocations> = {};
-    allocations.forEach((a: any) => { if (!g[a.date]) g[a.date] = []; g[a.date].push(a); });
+    allocations.forEach((a: any) => {if (!g[a.date]) g[a.date] = [];g[a.date].push(a);});
     return Object.entries(g).sort(([a], [b]) => b.localeCompare(a));
   }, [allocations]);
 
@@ -396,38 +396,38 @@ function AllocationsTab({ projectId, allocations, employees, onAdd, onDelete }: 
       <div className="flex justify-end">
         <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Registrar Presença</button>
       </div>
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card flex flex-wrap gap-3 items-end">
+      {showForm &&
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card flex flex-wrap gap-3 items-end">
           <div><label className="label-caps block mb-1">Colaborador</label>
-            <select required value={form.employeeId} onChange={e => setForm({ ...form, employeeId: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
+            <select required value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm">
               <option value="">Selecione</option>
               {employees.filter((e: any) => e.status === 'ativo').map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
           </div>
-          <div><label className="label-caps block mb-1">Data</label><input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.interior} onChange={e => setForm({ ...form, interior: e.target.checked })} /> Interior</label>
+          <div><label className="label-caps block mb-1">Data</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.interior} onChange={(e) => setForm({ ...form, interior: e.target.checked })} /> Interior</label>
           <button type="submit" className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar</button>
         </form>
-      )}
-      {grouped.map(([date, allocs]: [string, any[]]) => (
-        <div key={date} className="bg-card rounded-xl p-4 shadow-card">
+      }
+      {grouped.map(([date, allocs]: [string, any[]]) =>
+      <div key={date} className="bg-card rounded-xl p-4 shadow-card">
           <p className="font-medium text-sm mb-2">{formatDate(date)}</p>
           <div className="space-y-1">
             {allocs.map((a: any) => {
-              const emp = employees.find((e: any) => e.id === a.employeeId);
-              return (
-                <div key={a.id} className="flex items-center justify-between py-1 text-sm">
+            const emp = employees.find((e: any) => e.id === a.employeeId);
+            return (
+              <div key={a.id} className="flex items-center justify-between py-1 text-sm">
                   <span>{emp?.name || '—'} {a.interior && <span className="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded">Interior</span>}</span>
                   <button onClick={() => onDelete(a.id)} className="text-destructive hover:opacity-70"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-              );
-            })}
+                </div>);
+
+          })}
           </div>
         </div>
-      ))}
+      )}
       {allocations.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhuma alocação registrada.</p>}
-    </div>
-  );
+    </div>);
+
 }
 
 /* ── Materials Tab ── */
@@ -494,60 +494,60 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
       </div>
 
       <div className="flex justify-end">
-        <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Nova Compra</button>
+        <button onClick={() => {setEditId(null);setForm(emptyForm);setShowForm(!showForm);}} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Nova Compra</button>
       </div>
 
       {/* Quick-add supplier dialog */}
-      {showQuickSupplier && (
-        <div className="bg-accent/30 rounded-xl p-4 space-y-3 border border-border">
+      {showQuickSupplier &&
+      <div className="bg-accent/30 rounded-xl p-4 space-y-3 border border-border">
           <h4 className="text-sm font-semibold">Cadastro Rápido de Fornecedor</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label className="label-caps block mb-1">Nome *</label><input value={quickSupplier.name} onChange={e => setQuickSupplier({ ...quickSupplier, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-            <div><label className="label-caps block mb-1">CNPJ/CPF</label><input value={quickSupplier.cnpj} onChange={e => setQuickSupplier({ ...quickSupplier, cnpj: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-            <div><label className="label-caps block mb-1">Telefone</label><input value={quickSupplier.phone} onChange={e => setQuickSupplier({ ...quickSupplier, phone: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-            <div><label className="label-caps block mb-1">Observação</label><input value={quickSupplier.notes} onChange={e => setQuickSupplier({ ...quickSupplier, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Nome *</label><input value={quickSupplier.name} onChange={(e) => setQuickSupplier({ ...quickSupplier, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">CNPJ/CPF</label><input value={quickSupplier.cnpj} onChange={(e) => setQuickSupplier({ ...quickSupplier, cnpj: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Telefone</label><input value={quickSupplier.phone} onChange={(e) => setQuickSupplier({ ...quickSupplier, phone: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Observação</label><input value={quickSupplier.notes} onChange={(e) => setQuickSupplier({ ...quickSupplier, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           </div>
           <div className="flex gap-2">
             <button onClick={handleQuickSupplier} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar Fornecedor</button>
             <button onClick={() => setShowQuickSupplier(false)} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>
           </div>
         </div>
-      )}
+      }
 
       {/* Quick-add material dialog */}
-      {showQuickMaterial && (
-        <div className="bg-accent/30 rounded-xl p-4 space-y-3 border border-border">
+      {showQuickMaterial &&
+      <div className="bg-accent/30 rounded-xl p-4 space-y-3 border border-border">
           <h4 className="text-sm font-semibold">Cadastro Rápido de Material</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label className="label-caps block mb-1">Nome *</label><input value={quickMaterial.name} onChange={e => setQuickMaterial({ ...quickMaterial, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Nome *</label><input value={quickMaterial.name} onChange={(e) => setQuickMaterial({ ...quickMaterial, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
             <div><label className="label-caps block mb-1">Categoria</label>
-              <select value={quickMaterial.category} onChange={e => setQuickMaterial({ ...quickMaterial, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <select value={quickMaterial.category} onChange={(e) => setQuickMaterial({ ...quickMaterial, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
                 <option value="">Selecione</option>
-                {MATERIAL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div><label className="label-caps block mb-1">Unidade</label>
-              <select value={quickMaterial.unit} onChange={e => setQuickMaterial({ ...quickMaterial, unit: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <select value={quickMaterial.unit} onChange={(e) => setQuickMaterial({ ...quickMaterial, unit: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
                 <option value="">Selecione</option>
-                {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
-            <div><label className="label-caps block mb-1">Observação</label><input value={quickMaterial.notes} onChange={e => setQuickMaterial({ ...quickMaterial, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Observação</label><input value={quickMaterial.notes} onChange={(e) => setQuickMaterial({ ...quickMaterial, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           </div>
           <div className="flex gap-2">
             <button onClick={handleQuickMaterial} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar Material</button>
             <button onClick={() => setShowQuickMaterial(false)} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>
           </div>
         </div>
-      )}
+      }
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+      {showForm &&
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div>
             <label className="label-caps block mb-1">Fornecedor (opcional)</label>
             <div className="flex gap-1">
-              <select value={form.supplierId} onChange={e => setForm({ ...form, supplierId: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })} className="flex-1 py-2 rounded-lg border border-input bg-background text-sm px-0 mx-0">
                 <option value="">— Nenhum —</option>
                 {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -557,41 +557,41 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
           <div>
             <label className="label-caps block mb-1">Material (opcional)</label>
             <div className="flex gap-1">
-              <select value={form.materialId} onChange={e => setForm({ ...form, materialId: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <select value={form.materialId} onChange={(e) => setForm({ ...form, materialId: e.target.value })} className="flex-1 py-2 rounded-lg border-input bg-background text-sm mx-[27px] px-px border-8">
                 <option value="">— Nenhum —</option>
                 {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}{m.category ? ` (${m.category})` : ''}</option>)}
               </select>
-              <button type="button" onClick={() => setShowQuickMaterial(true)} className="px-2 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" title="Cadastro rápido"><Plus className="w-4 h-4" /></button>
+              <button type="button" onClick={() => setShowQuickMaterial(true)} className="bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors px-[12px] py-[13px] my-[3px]" title="Cadastro rápido"><Plus className="w-4 h-4" /></button>
             </div>
           </div>
-          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor Total NF (R$) *</label><input type="number" required min="0" step="0.01" value={form.totalValue || ''} onChange={e => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={e => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={e => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Descrição *</label><input required value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Valor Total NF (R$) *</label><input type="number" required min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Valor Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Descrição *</label><input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div className="flex items-end gap-2">
             <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Atualizar' : 'Salvar'}</button>
-            {editId && <button type="button" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(false); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
+            {editId && <button type="button" onClick={() => {setEditId(null);setForm(emptyForm);setShowForm(false);}} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
           </div>
         </form>
-      )}
+      }
 
       {/* Project purchases list */}
-      {sorted.length > 0 && (
-        <div className="bg-card rounded-xl shadow-card overflow-hidden">
+      {sorted.length > 0 &&
+      <div className="bg-card rounded-xl shadow-card overflow-hidden">
           <h3 className="text-sm font-semibold px-4 pt-4 pb-2">Compras e Despesas da Obra</h3>
           <table className="w-full text-sm">
             <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th><th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th><th className="label-caps text-right px-4 py-3">Valor NF</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th><th className="label-caps text-right px-4 py-3">Total</th><th className="label-caps text-right px-4 py-3">Ações</th></tr></thead>
             <tbody>
               {sorted.map((p: any) => {
-                const itemTotal = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
-                return (
+              const itemTotal = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
+              return (
                 <React.Fragment key={p.id}>
                   <tr className="border-b border-border hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">{formatDate(p.date)}</td>
                     <td className="px-4 py-3">{p.description || '—'}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">{p.supplierId ? (suppliers.find((s: any) => s.id === p.supplierId)?.name || '—') : '—'}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{p.supplierId ? suppliers.find((s: any) => s.id === p.supplierId)?.name || '—' : '—'}</td>
                     <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{p.invoiceNumber || '—'}</td>
                     <td className="px-4 py-3 text-right">{formatCurrency(p.totalValue)}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.freightValue ? formatCurrency(p.freightValue) : '—'}</td>
@@ -603,37 +603,37 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     </td>
                   </tr>
                   <tr><td colSpan={9} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>
-                </React.Fragment>
-                );
-              })}
+                </React.Fragment>);
+
+            })}
             </tbody>
           </table>
         </div>
-      )}
+      }
 
       {/* Legacy purchases by city */}
-      {purchases.length > 0 && (
-        <div className="bg-card rounded-xl shadow-card overflow-hidden">
+      {purchases.length > 0 &&
+      <div className="bg-card rounded-xl shadow-card overflow-hidden">
           <h3 className="text-sm font-semibold px-4 pt-4 pb-2">Materiais vinculados por cidade</h3>
           <table className="w-full text-sm">
             <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Material</th><th className="label-caps text-left px-4 py-3">Fornecedor</th><th className="label-caps text-right px-4 py-3">Valor</th></tr></thead>
             <tbody>
-              {purchases.map((p: any) => (
-                <tr key={p.id} className="border-b border-border">
+              {purchases.map((p: any) =>
+            <tr key={p.id} className="border-b border-border">
                   <td className="px-4 py-3">{formatDate(p.date)}</td>
                   <td className="px-4 py-3">{materials.find((m: any) => m.id === p.materialId)?.name || '—'}</td>
                   <td className="px-4 py-3">{suppliers.find((s: any) => s.id === p.supplierId)?.name || '—'}</td>
                   <td className="px-4 py-3 text-right font-medium">{formatCurrency(p.finalPrice)}</td>
                 </tr>
-              ))}
+            )}
             </tbody>
           </table>
         </div>
-      )}
+      }
 
       {sorted.length === 0 && purchases.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhuma compra registrada.</p>}
-    </div>
-  );
+    </div>);
+
 }
 
 /* ── Outsourced Tab ── */
@@ -655,23 +655,23 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
         <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps">Total Terceirizados</span><p className="text-2xl font-semibold mt-1">{formatCurrency(total)}</p></div>
         <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Adicionar</button>
       </div>
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div><label className="label-caps block mb-1">Empresa *</label><input required value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">CNPJ</label><input value={form.cnpj} onChange={e => setForm({ ...form, cnpj: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor *</label><input type="number" step="0.01" required value={form.value || ''} onChange={e => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div className="md:col-span-2"><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+      {showForm &&
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div><label className="label-caps block mb-1">Empresa *</label><input required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">CNPJ</label><input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Valor *</label><input type="number" step="0.01" required value={form.value || ''} onChange={(e) => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div className="md:col-span-2"><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div className="flex items-end"><button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar</button></div>
         </form>
-      )}
+      }
       <div className="bg-card rounded-xl shadow-card overflow-hidden">
         <table className="w-full text-sm">
           <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Empresa</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-right px-4 py-3">Valor</th><th className="px-4 py-3"></th></tr></thead>
           <tbody>
-            {services.map((s: any) => (
-              <React.Fragment key={s.id}>
+            {services.map((s: any) =>
+            <React.Fragment key={s.id}>
               <tr className="border-b border-border">
                 <td className="px-4 py-3">{formatDate(s.date)}</td>
                 <td className="px-4 py-3">{s.company}</td>
@@ -681,13 +681,13 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
               </tr>
               <tr><td colSpan={5} className="px-4 py-2 bg-muted/30"><AttachedDocuments entityType="outsourced" entityId={s.id} /></td></tr>
               </React.Fragment>
-            ))}
+            )}
           </tbody>
         </table>
         {services.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhum serviço terceirizado.</p>}
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 /* ── Docs Tab ── */
@@ -730,33 +730,33 @@ function DocsTab({ projectId, docs, onAdd, onUpdate, onDelete }: any) {
       </div>
 
       <div className="flex justify-end">
-        <button onClick={() => { setEditId(null); resetForm(); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Adicionar Documento</button>
+        <button onClick={() => {setEditId(null);resetForm();setShowForm(!showForm);}} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Adicionar Documento</button>
       </div>
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-2 gap-3">
+      {showForm &&
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-2 gap-3">
           <div><label className="label-caps block mb-1">Tipo *</label>
-            <select required value={form.type} onChange={e => setForm({ ...form, type: e.target.value as ProjectDocType })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              {PROJECT_DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            <select required value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ProjectDocType })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              {PROJECT_DOC_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-          <div><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Data do Documento</label><input type="date" value={form.documentDate} onChange={e => setForm({ ...form, documentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Data de Vencimento</label><input type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor (R$)</label><input type="number" step="0.01" value={form.value || ''} onChange={e => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" placeholder="0,00" /></div>
-          <div><label className="label-caps block mb-1">Data do Pagamento</label><input type="date" value={form.paymentDate} onChange={e => setForm({ ...form, paymentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Data do Documento</label><input type="date" value={form.documentDate} onChange={(e) => setForm({ ...form, documentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Data de Vencimento</label><input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Valor (R$)</label><input type="number" step="0.01" value={form.value || ''} onChange={(e) => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" placeholder="0,00" /></div>
+          <div><label className="label-caps block mb-1">Data do Pagamento</label><input type="date" value={form.paymentDate} onChange={(e) => setForm({ ...form, paymentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Status Pagamento</label>
-            <select value={form.paymentStatus} onChange={e => setForm({ ...form, paymentStatus: e.target.value as 'pago' | 'pendente' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+            <select value={form.paymentStatus} onChange={(e) => setForm({ ...form, paymentStatus: e.target.value as 'pago' | 'pendente' })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
               <option value="pendente">Pendente</option>
               <option value="pago">Pago</option>
             </select>
           </div>
-          <div><label className="label-caps block mb-1">Observações</label><input value={form.docNotes} onChange={e => setForm({ ...form, docNotes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Observações</label><input value={form.docNotes} onChange={(e) => setForm({ ...form, docNotes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div className="md:col-span-2 flex items-end gap-2">
             <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Atualizar' : 'Salvar'}</button>
-            {editId && <button type="button" onClick={() => { setEditId(null); resetForm(); setShowForm(false); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
+            {editId && <button type="button" onClick={() => {setEditId(null);resetForm();setShowForm(false);}} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
           </div>
         </form>
-      )}
+      }
       <div className="space-y-2">
         {docs.map((d: any) => {
           const days = d.expiryDate ? daysUntilExpiry(d.expiryDate) : null;
@@ -783,13 +783,13 @@ function DocsTab({ projectId, docs, onAdd, onUpdate, onDelete }: any) {
                 </div>
               </div>
               <AttachedDocuments entityType="project_doc" entityId={d.id} />
-            </div>
-          );
+            </div>);
+
         })}
         {docs.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhum documento cadastrado.</p>}
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 /* ── Costs Tab ── */
@@ -835,19 +835,19 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">DAS Proporcional</span><p className="text-xl font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
         <div className="bg-primary text-primary-foreground rounded-xl p-5 shadow-card"><span className="label-caps text-xs text-primary-foreground/70">Custo Total</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalCost)}</p></div>
       </div>
-      {project.contractValue > 0 && (
-        <div className={`rounded-xl p-5 shadow-card ${profit >= 0 ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'}`}>
+      {project.contractValue > 0 &&
+      <div className={`rounded-xl p-5 shadow-card ${profit >= 0 ? 'bg-success/5 border border-success/20' : 'bg-destructive/5 border border-destructive/20'}`}>
           <span className="label-caps">Lucro da Obra</span>
           <p className={`text-2xl font-bold mt-1 ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>{formatCurrency(profit)}</p>
           <p className="text-muted-foreground text-xs mt-1">Contrato: {formatCurrency(project.contractValue)} — Custo: {formatCurrency(totalCost)}</p>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 /* ── Rentals Tab ── */
-function RentalsTab({ projectId, rentals, onAdd, onUpdate, onDelete }: { projectId: string; rentals: EquipmentRental[]; onAdd: any; onUpdate: any; onDelete: any }) {
+function RentalsTab({ projectId, rentals, onAdd, onUpdate, onDelete }: {projectId: string;rentals: EquipmentRental[];onAdd: any;onUpdate: any;onDelete: any;}) {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const emptyForm = { equipmentName: '', equipmentType: 'máquina' as EquipmentType, supplier: '', billingType: 'diária' as BillingType, unitValue: 0, quantity: 0, totalValue: 0, startDate: '', endDate: '', invoiceNumber: '', notes: '' };
@@ -855,8 +855,8 @@ function RentalsTab({ projectId, rentals, onAdd, onUpdate, onDelete }: { project
 
   const totalRentals = rentals.reduce((s, r) => s + r.totalValue, 0);
 
-  const billingLabel = (bt: BillingType) => BILLING_TYPES.find(b => b.value === bt)?.label || bt;
-  const equipLabel = (et: EquipmentType) => EQUIPMENT_TYPES.find(e => e.value === et)?.label || et;
+  const billingLabel = (bt: BillingType) => BILLING_TYPES.find((b) => b.value === bt)?.label || bt;
+  const equipLabel = (et: EquipmentType) => EQUIPMENT_TYPES.find((e) => e.value === et)?.label || et;
 
   const handleCalcTotal = (unitValue: number, quantity: number, billingType: BillingType) => {
     if (billingType === 'valor_fechado') return unitValue;
@@ -878,7 +878,7 @@ function RentalsTab({ projectId, rentals, onAdd, onUpdate, onDelete }: { project
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editId) {
-      const existing = rentals.find(r => r.id === editId)!;
+      const existing = rentals.find((r) => r.id === editId)!;
       onUpdate({ ...existing, ...form });
       setEditId(null);
     } else {
@@ -901,49 +901,49 @@ function RentalsTab({ projectId, rentals, onAdd, onUpdate, onDelete }: { project
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Total Aluguéis</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalRentals)}</p></div>
         <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Qtd. Equipamentos</span><p className="text-xl font-semibold mt-1">{rentals.length}</p></div>
-        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Fornecedores</span><p className="text-xl font-semibold mt-1">{new Set(rentals.map(r => r.supplier).filter(Boolean)).size}</p></div>
+        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Fornecedores</span><p className="text-xl font-semibold mt-1">{new Set(rentals.map((r) => r.supplier).filter(Boolean)).size}</p></div>
       </div>
 
       <div className="flex justify-end">
-        <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
+        <button onClick={() => {setEditId(null);setForm(emptyForm);setShowForm(!showForm);}} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
           <Plus className="w-4 h-4" /> Novo Aluguel
         </button>
       </div>
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div><label className="label-caps block mb-1">Nome do Equipamento *</label><input required value={form.equipmentName} onChange={e => updateFormField('equipmentName', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+      {showForm &&
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label className="label-caps block mb-1">Nome do Equipamento *</label><input required value={form.equipmentName} onChange={(e) => updateFormField('equipmentName', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Tipo *</label>
-            <select value={form.equipmentType} onChange={e => updateFormField('equipmentType', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              {EQUIPMENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            <select value={form.equipmentType} onChange={(e) => updateFormField('equipmentType', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              {EQUIPMENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
-          <div><label className="label-caps block mb-1">Fornecedor *</label><input required value={form.supplier} onChange={e => updateFormField('supplier', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Fornecedor *</label><input required value={form.supplier} onChange={(e) => updateFormField('supplier', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Forma de Cobrança *</label>
-            <select value={form.billingType} onChange={e => updateFormField('billingType', e.target.value as BillingType)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              {BILLING_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            <select value={form.billingType} onChange={(e) => updateFormField('billingType', e.target.value as BillingType)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              {BILLING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
           </div>
-          <div><label className="label-caps block mb-1">{form.billingType === 'valor_fechado' ? 'Valor Total (R$)' : `Valor por ${billingLabel(form.billingType).replace('Por ', '')} (R$)`} *</label><input type="number" step="0.01" required value={form.unitValue || ''} onChange={e => updateFormField('unitValue', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          {form.billingType !== 'valor_fechado' && (
-            <div><label className="label-caps block mb-1">Quantidade *</label><input type="number" step="0.01" required value={form.quantity || ''} onChange={e => updateFormField('quantity', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          )}
-          <div><label className="label-caps block mb-1">Valor Total (R$)</label><input type="number" step="0.01" value={form.totalValue || ''} onChange={e => updateFormField('totalValue', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm bg-muted" /></div>
-          <div><label className="label-caps block mb-1">Data Início *</label><input type="date" required value={form.startDate} onChange={e => updateFormField('startDate', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Data Término</label><input type="date" value={form.endDate} onChange={e => updateFormField('endDate', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={e => updateFormField('invoiceNumber', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div className="md:col-span-2"><label className="label-caps block mb-1">Observações</label><textarea value={form.notes} onChange={e => updateFormField('notes', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm min-h-[60px]" /></div>
+          <div><label className="label-caps block mb-1">{form.billingType === 'valor_fechado' ? 'Valor Total (R$)' : `Valor por ${billingLabel(form.billingType).replace('Por ', '')} (R$)`} *</label><input type="number" step="0.01" required value={form.unitValue || ''} onChange={(e) => updateFormField('unitValue', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          {form.billingType !== 'valor_fechado' &&
+        <div><label className="label-caps block mb-1">Quantidade *</label><input type="number" step="0.01" required value={form.quantity || ''} onChange={(e) => updateFormField('quantity', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+        }
+          <div><label className="label-caps block mb-1">Valor Total (R$)</label><input type="number" step="0.01" value={form.totalValue || ''} onChange={(e) => updateFormField('totalValue', +e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm bg-muted" /></div>
+          <div><label className="label-caps block mb-1">Data Início *</label><input type="date" required value={form.startDate} onChange={(e) => updateFormField('startDate', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Data Término</label><input type="date" value={form.endDate} onChange={(e) => updateFormField('endDate', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={(e) => updateFormField('invoiceNumber', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div className="md:col-span-2"><label className="label-caps block mb-1">Observações</label><textarea value={form.notes} onChange={(e) => updateFormField('notes', e.target.value)} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm min-h-[60px]" /></div>
           <div className="flex items-end gap-2">
             <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Atualizar' : 'Salvar'}</button>
-            {editId && <button type="button" onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(false); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
+            {editId && <button type="button" onClick={() => {setEditId(null);setForm(emptyForm);setShowForm(false);}} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
           </div>
         </form>
-      )}
+      }
 
-      {sorted.length > 0 && (
-        <div className="space-y-2">
-          {sorted.map((r) => (
-            <div key={r.id} className="bg-card rounded-xl p-4 shadow-card space-y-3">
+      {sorted.length > 0 &&
+      <div className="space-y-2">
+          {sorted.map((r) =>
+        <div key={r.id} className="bg-card rounded-xl p-4 shadow-card space-y-3">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -969,11 +969,11 @@ function RentalsTab({ projectId, rentals, onAdd, onUpdate, onDelete }: { project
               </div>
               <AttachedDocuments entityType="equipment_rental" entityId={r.id} />
             </div>
-          ))}
+        )}
         </div>
-      )}
+      }
 
       {rentals.length === 0 && !showForm && <p className="text-muted-foreground text-center py-8">Nenhum aluguel de equipamento registrado.</p>}
-    </div>
-  );
+    </div>);
+
 }
