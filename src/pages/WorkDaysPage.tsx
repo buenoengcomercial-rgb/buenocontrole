@@ -530,9 +530,14 @@ export default function WorkDaysPage() {
                           </td>
                           <td className="px-6 py-3 text-sm text-right font-medium">{formatCurrency(w.mealVoucherValue)}</td>
                           <td className="px-6 py-3 text-right">
-                            <button onClick={() => { deleteWorkDay(w.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => openEdit(w)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground">
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => { deleteWorkDay(w.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
