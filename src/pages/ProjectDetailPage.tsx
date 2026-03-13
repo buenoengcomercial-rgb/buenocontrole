@@ -604,7 +604,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                       <button onClick={() => onDelete(p.id)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-4 h-4 text-destructive" /></button>
                     </td>
                   </tr>
-                  <tr><td colSpan={9} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>
+                  <tr><td colSpan={11} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>
                 </React.Fragment>);
 
             })}
