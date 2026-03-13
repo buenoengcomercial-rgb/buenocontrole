@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useProjectData } from '@/context/ProjectContext';
 import { formatCurrency, formatDate } from '@/lib/format';
-import { Plus, X, Search, Building2, MapPin } from 'lucide-react';
+import { Plus, X, Search, Building2, MapPin, Pencil } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ProjectsPage() {
-  const { projects, addProject, deleteProject } = useProjectData();
+  const { projects, addProject, updateProject, deleteProject } = useProjectData();
   const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({
     name: '', client: '', city: '', address: '', responsible: '',
@@ -21,16 +22,37 @@ export default function ProjectsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    addProject(form);
+    if (editId) {
+      const existing = projects.find(p => p.id === editId);
+      if (existing) {
+        updateProject({ ...existing, ...form });
+      }
+      setEditId(null);
+    } else {
+      addProject(form);
+    }
     setForm({ name: '', client: '', city: '', address: '', responsible: '', startDate: '', expectedEndDate: '', contractValue: 0, notes: '' });
     setShowForm(false);
+  };
+
+  const handleEdit = (e: React.MouseEvent, p: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditId(p.id);
+    setForm({
+      name: p.name, client: p.client, city: p.city, address: p.address,
+      responsible: p.responsible, startDate: p.startDate, expectedEndDate: p.expectedEndDate,
+      contractValue: p.contractValue, notes: p.notes,
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1>Obras e Projetos</h1>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+        <button onClick={() => { setEditId(null); setForm({ name: '', client: '', city: '', address: '', responsible: '', startDate: '', expectedEndDate: '', contractValue: 0, notes: '' }); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
           {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {showForm ? 'Cancelar' : 'Nova Obra'}
         </button>
@@ -38,6 +60,7 @@ export default function ProjectsPage() {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-6 shadow-card space-y-4">
+          <h3 className="text-sm font-semibold">{editId ? 'Editar Obra' : 'Nova Obra'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="label-caps block mb-1">Nome da Obra *</label><input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
             <div><label className="label-caps block mb-1">Cliente *</label><input required value={form.client} onChange={e => setForm({ ...form, client: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
@@ -49,7 +72,10 @@ export default function ProjectsPage() {
             <div><label className="label-caps block mb-1">Previsão Término</label><input type="date" value={form.expectedEndDate} onChange={e => setForm({ ...form, expectedEndDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           </div>
           <div><label className="label-caps block mb-1">Observações</label><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90">Salvar</button>
+          <div className="flex gap-2">
+            <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90">{editId ? 'Atualizar' : 'Salvar'}</button>
+            {editId && <button type="button" onClick={() => { setEditId(null); setShowForm(false); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
+          </div>
         </form>
       )}
 
@@ -60,28 +86,37 @@ export default function ProjectsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filtered.map(p => (
-          <Link key={p.id} to={`/obras/${p.id}`} className="bg-card rounded-xl p-6 shadow-card hover:shadow-md transition-shadow block">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Building2 className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm truncate">{p.name}</h3>
-                <p className="text-meta truncate">{p.client}</p>
-                <div className="flex items-center gap-1 mt-1 text-meta">
-                  <MapPin className="w-3 h-3" />
-                  <span className="text-xs">{p.city}</span>
+          <div key={p.id} className="bg-card rounded-xl p-6 shadow-card hover:shadow-md transition-shadow relative">
+            <button
+              onClick={(e) => handleEdit(e, p)}
+              className="absolute top-3 right-3 p-1.5 rounded-lg hover:bg-muted transition-colors"
+              title="Editar obra"
+            >
+              <Pencil className="w-4 h-4 text-muted-foreground hover:text-primary" />
+            </button>
+            <Link to={`/obras/${p.id}`} className="block">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Building2 className="w-5 h-5 text-primary" />
                 </div>
-                {p.contractValue > 0 && (
-                  <p className="text-sm font-medium mt-2 text-primary">{formatCurrency(p.contractValue)}</p>
-                )}
-                <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-                  {p.startDate && <span>Início: {formatDate(p.startDate)}</span>}
-                  {p.expectedEndDate && <span>Término: {formatDate(p.expectedEndDate)}</span>}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm truncate">{p.name}</h3>
+                  <p className="text-meta truncate">{p.client}</p>
+                  <div className="flex items-center gap-1 mt-1 text-meta">
+                    <MapPin className="w-3 h-3" />
+                    <span className="text-xs">{p.city}</span>
+                  </div>
+                  {p.contractValue > 0 && (
+                    <p className="text-sm font-medium mt-2 text-primary">{formatCurrency(p.contractValue)}</p>
+                  )}
+                  <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
+                    {p.startDate && <span>Início: {formatDate(p.startDate)}</span>}
+                    {p.expectedEndDate && <span>Término: {formatDate(p.expectedEndDate)}</span>}
+                  </div>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          </div>
         ))}
       </div>
       {filtered.length === 0 && <p className="text-meta text-center py-8">Nenhuma obra encontrada.</p>}
