@@ -431,10 +431,31 @@ function AllocationsTab({ projectId, allocations, employees, onAdd, onDelete }: 
 
 /* ── Materials Tab ── */
 function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurchases, onAdd, onUpdate, onDelete }: any) {
+  const { addSupplier, addMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const emptyForm = { date: '', supplierId: '', materialId: '', invoiceNumber: '', totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '' };
   const [form, setForm] = useState(emptyForm);
+
+  // Quick-add supplier
+  const [showQuickSupplier, setShowQuickSupplier] = useState(false);
+  const [quickSupplier, setQuickSupplier] = useState({ name: '', cnpj: '', phone: '', notes: '' });
+  const handleQuickSupplier = async () => {
+    if (!quickSupplier.name) return;
+    await addSupplier({ name: quickSupplier.name, cnpj: quickSupplier.cnpj, phone: quickSupplier.phone, email: '', address: '', notes: quickSupplier.notes });
+    setQuickSupplier({ name: '', cnpj: '', phone: '', notes: '' });
+    setShowQuickSupplier(false);
+  };
+
+  // Quick-add material
+  const [showQuickMaterial, setShowQuickMaterial] = useState(false);
+  const [quickMaterial, setQuickMaterial] = useState({ name: '', category: '', unit: '', notes: '' });
+  const handleQuickMaterial = async () => {
+    if (!quickMaterial.name) return;
+    await addMaterial({ name: quickMaterial.name, description: '', unit: quickMaterial.unit, category: quickMaterial.category, notes: quickMaterial.notes });
+    setQuickMaterial({ name: '', category: '', unit: '', notes: '' });
+    setShowQuickMaterial(false);
+  };
 
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
   const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0), 0);
@@ -475,20 +496,72 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
         <button onClick={() => { setEditId(null); setForm(emptyForm); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Nova Compra</button>
       </div>
 
+      {/* Quick-add supplier dialog */}
+      {showQuickSupplier && (
+        <div className="bg-accent/30 rounded-xl p-4 space-y-3 border border-border">
+          <h4 className="text-sm font-semibold">Cadastro Rápido de Fornecedor</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label className="label-caps block mb-1">Nome *</label><input value={quickSupplier.name} onChange={e => setQuickSupplier({ ...quickSupplier, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">CNPJ/CPF</label><input value={quickSupplier.cnpj} onChange={e => setQuickSupplier({ ...quickSupplier, cnpj: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Telefone</label><input value={quickSupplier.phone} onChange={e => setQuickSupplier({ ...quickSupplier, phone: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Observação</label><input value={quickSupplier.notes} onChange={e => setQuickSupplier({ ...quickSupplier, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleQuickSupplier} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar Fornecedor</button>
+            <button onClick={() => setShowQuickSupplier(false)} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick-add material dialog */}
+      {showQuickMaterial && (
+        <div className="bg-accent/30 rounded-xl p-4 space-y-3 border border-border">
+          <h4 className="text-sm font-semibold">Cadastro Rápido de Material</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label className="label-caps block mb-1">Nome *</label><input value={quickMaterial.name} onChange={e => setQuickMaterial({ ...quickMaterial, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Categoria</label>
+              <select value={quickMaterial.category} onChange={e => setQuickMaterial({ ...quickMaterial, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                <option value="">Selecione</option>
+                {MATERIAL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div><label className="label-caps block mb-1">Unidade</label>
+              <select value={quickMaterial.unit} onChange={e => setQuickMaterial({ ...quickMaterial, unit: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                <option value="">Selecione</option>
+                {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+              </select>
+            </div>
+            <div><label className="label-caps block mb-1">Observação</label><input value={quickMaterial.notes} onChange={e => setQuickMaterial({ ...quickMaterial, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleQuickMaterial} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar Material</button>
+            <button onClick={() => setShowQuickMaterial(false)} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>
+          </div>
+        </div>
+      )}
+
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
           <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Fornecedor (opcional)</label>
-            <select value={form.supplierId} onChange={e => setForm({ ...form, supplierId: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              <option value="">— Nenhum —</option>
-              {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+          <div>
+            <label className="label-caps block mb-1">Fornecedor (opcional)</label>
+            <div className="flex gap-1">
+              <select value={form.supplierId} onChange={e => setForm({ ...form, supplierId: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                <option value="">— Nenhum —</option>
+                {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <button type="button" onClick={() => setShowQuickSupplier(true)} className="px-2 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" title="Cadastro rápido"><Plus className="w-4 h-4" /></button>
+            </div>
           </div>
-          <div><label className="label-caps block mb-1">Material (opcional)</label>
-            <select value={form.materialId} onChange={e => setForm({ ...form, materialId: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              <option value="">— Nenhum —</option>
-              {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
+          <div>
+            <label className="label-caps block mb-1">Material (opcional)</label>
+            <div className="flex gap-1">
+              <select value={form.materialId} onChange={e => setForm({ ...form, materialId: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                <option value="">— Nenhum —</option>
+                {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}{m.category ? ` (${m.category})` : ''}</option>)}
+              </select>
+              <button type="button" onClick={() => setShowQuickMaterial(true)} className="px-2 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" title="Cadastro rápido"><Plus className="w-4 h-4" /></button>
+            </div>
           </div>
           <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={e => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Valor Total NF (R$) *</label><input type="number" required min="0" step="0.01" value={form.totalValue || ''} onChange={e => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
