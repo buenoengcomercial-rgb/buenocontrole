@@ -393,6 +393,21 @@ export default function WorkDaysPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {vacDays.map(date => (
+                      <tr key={`vac-${date}`} className="border-b border-border last:border-0 bg-primary/5">
+                        <td className="px-6 py-3 text-sm">{formatDate(date)}</td>
+                        <td className="px-6 py-3 text-sm"><span className="text-muted-foreground text-xs">—</span></td>
+                        <td className="px-6 py-3 text-sm text-center">
+                          <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                            <Umbrella className="w-3 h-3" />Em férias
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-sm text-center">—</td>
+                        <td className="px-6 py-3 text-sm text-muted-foreground">—</td>
+                        <td className="px-6 py-3 text-sm text-right font-medium">{formatCurrency(0)}</td>
+                        <td className="px-6 py-3 text-right">—</td>
+                      </tr>
+                    ))}
                     {days.map(w => {
                       const proj = w.projectId ? projects.find(p => p.id === w.projectId) : null;
                       const isAbsence = !!w.absenceType;

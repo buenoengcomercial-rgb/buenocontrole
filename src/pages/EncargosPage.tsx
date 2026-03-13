@@ -180,13 +180,16 @@ export default function EncargosPage() {
                 {c.paymentDate && <span className="text-sm text-muted-foreground">Pgto: {formatDate(c.paymentDate)}</span>}
               </div>
               <div className="flex gap-1">
+                <button onClick={() => setAttachOpenId(attachOpenId === c.id ? null : c.id)} className={`p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground ${attachOpenId === c.id ? 'bg-muted text-foreground' : ''}`} title="Anexar documento"><Paperclip className="w-4 h-4" /></button>
                 <button onClick={() => handleOpen(c)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { deleteCharge(c.id); toast.success('Encargo removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
-            <div className="px-6 py-3">
-              <AttachedDocuments entityType="encargo" entityId={c.id} />
-            </div>
+            {attachOpenId === c.id && (
+              <div className="px-6 py-3 border-t border-border">
+                <AttachedDocuments entityType="encargo" entityId={c.id} />
+              </div>
+            )}
           </div>
         ))}
         {filtered.length === 0 && (
