@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Pencil, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Trash2, Pencil, CheckCircle2, Clock, Paperclip } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import type { CompanyCharge, ChargeType } from '@/types/safety';
@@ -17,6 +17,7 @@ export default function EncargosPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [filterType, setFilterType] = useState<'all' | ChargeType>('all');
+  const [attachOpenId, setAttachOpenId] = useState<string | null>(null);
   const [form, setForm] = useState({
     chargeType: 'INSS' as ChargeType,
     month: new Date().toISOString().slice(0, 7),
@@ -179,13 +180,16 @@ export default function EncargosPage() {
                 {c.paymentDate && <span className="text-sm text-muted-foreground">Pgto: {formatDate(c.paymentDate)}</span>}
               </div>
               <div className="flex gap-1">
+                <button onClick={() => setAttachOpenId(attachOpenId === c.id ? null : c.id)} className={`p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground ${attachOpenId === c.id ? 'bg-muted text-foreground' : ''}`} title="Anexar documento"><Paperclip className="w-4 h-4" /></button>
                 <button onClick={() => handleOpen(c)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { deleteCharge(c.id); toast.success('Encargo removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
-            <div className="px-6 py-3">
-              <AttachedDocuments entityType="encargo" entityId={c.id} />
-            </div>
+            {attachOpenId === c.id && (
+              <div className="px-6 py-3 border-t border-border">
+                <AttachedDocuments entityType="encargo" entityId={c.id} />
+              </div>
+            )}
           </div>
         ))}
         {filtered.length === 0 && (

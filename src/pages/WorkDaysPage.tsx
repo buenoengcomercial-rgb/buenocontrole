@@ -120,22 +120,53 @@ export default function WorkDaysPage() {
     setBatchOpen(false);
   };
 
+  // Build vacation entries for the filtered month
+  const vacationEntries = useMemo(() => {
+    const entries: { employeeId: string; date: string; vacationId: string }[] = [];
+    const [y, m] = filterMonth.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    activeEmployees.forEach(emp => {
+      if (filterEmployee !== 'all' && emp.id !== filterEmployee) return;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${filterMonth}-${String(d).padStart(2, '0')}`;
+        const vac = isOnVacation(emp.id, dateStr);
+        if (vac) {
+          // Don't add if there's already a work_day record for this date
+          const existing = workDays.find(w => w.employeeId === emp.id && w.date === dateStr);
+          if (!existing) {
+            entries.push({ employeeId: emp.id, date: dateStr, vacationId: vac.id });
+          }
+        }
+      }
+    });
+    return entries;
+  }, [filterMonth, activeEmployees, filterEmployee, vacations, workDays]);
+
   // Group by employee for card layout
   const groupedByEmployee = useMemo(() => {
-    const map = new Map<string, typeof filtered>();
+    const map = new Map<string, { days: typeof filtered; vacDays: string[] }>();
+    
     filtered.forEach(w => {
-      const arr = map.get(w.employeeId) || [];
-      arr.push(w);
-      map.set(w.employeeId, arr);
+      const entry = map.get(w.employeeId) || { days: [], vacDays: [] };
+      entry.days.push(w);
+      map.set(w.employeeId, entry);
     });
-    return Array.from(map.entries()).map(([empId, days]) => ({
+    
+    vacationEntries.forEach(v => {
+      const entry = map.get(v.employeeId) || { days: [], vacDays: [] };
+      entry.vacDays.push(v.date);
+      map.set(v.employeeId, entry);
+    });
+
+    return Array.from(map.entries()).map(([empId, { days, vacDays }]) => ({
       employee: employees.find(e => e.id === empId),
       days,
+      vacDays: vacDays.sort(),
       totalVoucher: days.reduce((s, d) => s + d.mealVoucherValue, 0),
       workedCount: days.filter(d => d.worked).length,
       absenceCount: days.filter(d => !!d.absenceType).length,
     })).sort((a, b) => (a.employee?.name || '').localeCompare(b.employee?.name || ''));
-  }, [filtered, employees]);
+  }, [filtered, employees, vacationEntries]);
 
   return (
     <div className="space-y-6">
@@ -316,7 +347,7 @@ export default function WorkDaysPage() {
 
       {/* Employee cards */}
       <div className="space-y-4">
-        {groupedByEmployee.map(({ employee, days, totalVoucher: empVoucher, workedCount, absenceCount: empAbsences }) => {
+        {groupedByEmployee.map(({ employee, days, vacDays, totalVoucher: empVoucher, workedCount, absenceCount: empAbsences }) => {
           if (!employee) return null;
           return (
             <div key={employee.id} className="bg-card rounded-xl shadow-card overflow-hidden">
@@ -362,6 +393,21 @@ export default function WorkDaysPage() {
                     </tr>
                   </thead>
                   <tbody>
+                    {vacDays.map(date => (
+                      <tr key={`vac-${date}`} className="border-b border-border last:border-0 bg-primary/5">
+                        <td className="px-6 py-3 text-sm">{formatDate(date)}</td>
+                        <td className="px-6 py-3 text-sm"><span className="text-muted-foreground text-xs">—</span></td>
+                        <td className="px-6 py-3 text-sm text-center">
+                          <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                            <Umbrella className="w-3 h-3" />Em férias
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-sm text-center">—</td>
+                        <td className="px-6 py-3 text-sm text-muted-foreground">—</td>
+                        <td className="px-6 py-3 text-sm text-right font-medium">{formatCurrency(0)}</td>
+                        <td className="px-6 py-3 text-right">—</td>
+                      </tr>
+                    ))}
                     {days.map(w => {
                       const proj = w.projectId ? projects.find(p => p.id === w.projectId) : null;
                       const isAbsence = !!w.absenceType;
