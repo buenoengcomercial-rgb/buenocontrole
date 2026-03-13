@@ -582,7 +582,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
       <div className="bg-card rounded-xl shadow-card overflow-hidden">
           <h3 className="text-sm font-semibold px-4 pt-4 pb-2">Compras e Despesas da Obra</h3>
           <table className="w-full text-sm">
-            <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th><th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th><th className="label-caps text-right px-4 py-3">Valor NF</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th><th className="label-caps text-right px-4 py-3">Total</th><th className="label-caps text-right px-4 py-3">Ações</th></tr></thead>
+            <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Material</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Categoria</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th><th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th><th className="label-caps text-right px-4 py-3">Valor NF</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th><th className="label-caps text-right px-4 py-3">Total</th><th className="label-caps text-right px-4 py-3">Ações</th></tr></thead>
             <tbody>
               {sorted.map((p: any) => {
               const itemTotal = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
@@ -591,6 +591,8 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                   <tr className="border-b border-border hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">{formatDate(p.date)}</td>
                     <td className="px-4 py-3">{p.description || '—'}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{p.materialId ? materials.find((m: any) => m.id === p.materialId)?.name || '—' : '—'}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{(() => { const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null; return mat?.category ? <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-xs font-medium">{mat.category}</span> : '—'; })()}</td>
                     <td className="px-4 py-3 hidden md:table-cell">{p.supplierId ? suppliers.find((s: any) => s.id === p.supplierId)?.name || '—' : '—'}</td>
                     <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{p.invoiceNumber || '—'}</td>
                     <td className="px-4 py-3 text-right">{formatCurrency(p.totalValue)}</td>
@@ -602,7 +604,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                       <button onClick={() => onDelete(p.id)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-4 h-4 text-destructive" /></button>
                     </td>
                   </tr>
-                  <tr><td colSpan={9} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>
+                  <tr><td colSpan={11} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>
                 </React.Fragment>);
 
             })}
@@ -621,7 +623,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               {purchases.map((p: any) =>
             <tr key={p.id} className="border-b border-border">
                   <td className="px-4 py-3">{formatDate(p.date)}</td>
-                  <td className="px-4 py-3">{materials.find((m: any) => m.id === p.materialId)?.name || '—'}</td>
+                  <td className="px-4 py-3">{materials.find((m: any) => m.id === p.materialId)?.name || '—'} {(() => { const mat = materials.find((m: any) => m.id === p.materialId); return mat?.category ? <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-xs font-medium ml-1">{mat.category}</span> : null; })()}</td>
                   <td className="px-4 py-3">{suppliers.find((s: any) => s.id === p.supplierId)?.name || '—'}</td>
                   <td className="px-4 py-3 text-right font-medium">{formatCurrency(p.finalPrice)}</td>
                 </tr>

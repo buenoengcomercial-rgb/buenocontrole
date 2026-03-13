@@ -46,15 +46,11 @@ export const MATERIAL_CATEGORIES = [
   'Sinalização',
   'Luminária de emergência',
   'Civil',
-  'Bomba',
-  'Comando',
+  'Bomba - Comando',
   'Elétrica',
   'Hidráulica',
   'Ferramentas',
-  'Fixação',
-  'Tubulação',
-  'Conexões',
-  'Equipamentos',
+  'Serralheria',
   'Outros',
 ] as const;
 
