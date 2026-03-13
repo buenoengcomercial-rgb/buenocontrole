@@ -591,6 +591,8 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                   <tr className="border-b border-border hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">{formatDate(p.date)}</td>
                     <td className="px-4 py-3">{p.description || '—'}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{p.materialId ? materials.find((m: any) => m.id === p.materialId)?.name || '—' : '—'}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{(() => { const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null; return mat?.category ? <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-xs font-medium">{mat.category}</span> : '—'; })()}</td>
                     <td className="px-4 py-3 hidden md:table-cell">{p.supplierId ? suppliers.find((s: any) => s.id === p.supplierId)?.name || '—' : '—'}</td>
                     <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{p.invoiceNumber || '—'}</td>
                     <td className="px-4 py-3 text-right">{formatCurrency(p.totalValue)}</td>
