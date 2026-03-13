@@ -15,6 +15,7 @@ export interface Employee {
 export interface WorkDay {
   id: string;
   employeeId: string;
+  projectId: string | null;
   date: string;
   worked: boolean;
   interior: boolean;
