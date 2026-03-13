@@ -18,8 +18,8 @@ type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' 
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{id: string;}>();
-  const { projects, updateProject, allocations, addAllocation, deleteAllocation, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, updateProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase, equipmentRentals, addEquipmentRental, updateEquipmentRental, deleteEquipmentRental } = useProjectData();
-  const { employees } = useEmployeeData();
+  const { projects, updateProject, outsourcedServices, addOutsourcedService, deleteOutsourcedService, projectDocuments, addProjectDocument, updateProjectDocument, deleteProjectDocument, measurements, addMeasurement, updateMeasurement, deleteMeasurement, dasExpenses, projectPurchases, addProjectPurchase, updateProjectPurchase, deleteProjectPurchase, equipmentRentals, addEquipmentRental, updateEquipmentRental, deleteEquipmentRental } = useProjectData();
+  const { employees, workDays, addWorkDay, deleteWorkDay } = useEmployeeData();
   const { purchases, suppliers, materials } = useAppData();
   const { charges } = useSafetyData();
   const [tab, setTab] = useState<Tab>('dashboard');
