@@ -120,22 +120,53 @@ export default function WorkDaysPage() {
     setBatchOpen(false);
   };
 
+  // Build vacation entries for the filtered month
+  const vacationEntries = useMemo(() => {
+    const entries: { employeeId: string; date: string; vacationId: string }[] = [];
+    const [y, m] = filterMonth.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    activeEmployees.forEach(emp => {
+      if (filterEmployee !== 'all' && emp.id !== filterEmployee) return;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${filterMonth}-${String(d).padStart(2, '0')}`;
+        const vac = isOnVacation(emp.id, dateStr);
+        if (vac) {
+          // Don't add if there's already a work_day record for this date
+          const existing = workDays.find(w => w.employeeId === emp.id && w.date === dateStr);
+          if (!existing) {
+            entries.push({ employeeId: emp.id, date: dateStr, vacationId: vac.id });
+          }
+        }
+      }
+    });
+    return entries;
+  }, [filterMonth, activeEmployees, filterEmployee, vacations, workDays]);
+
   // Group by employee for card layout
   const groupedByEmployee = useMemo(() => {
-    const map = new Map<string, typeof filtered>();
+    const map = new Map<string, { days: typeof filtered; vacDays: string[] }>();
+    
     filtered.forEach(w => {
-      const arr = map.get(w.employeeId) || [];
-      arr.push(w);
-      map.set(w.employeeId, arr);
+      const entry = map.get(w.employeeId) || { days: [], vacDays: [] };
+      entry.days.push(w);
+      map.set(w.employeeId, entry);
     });
-    return Array.from(map.entries()).map(([empId, days]) => ({
+    
+    vacationEntries.forEach(v => {
+      const entry = map.get(v.employeeId) || { days: [], vacDays: [] };
+      entry.vacDays.push(v.date);
+      map.set(v.employeeId, entry);
+    });
+
+    return Array.from(map.entries()).map(([empId, { days, vacDays }]) => ({
       employee: employees.find(e => e.id === empId),
       days,
+      vacDays: vacDays.sort(),
       totalVoucher: days.reduce((s, d) => s + d.mealVoucherValue, 0),
       workedCount: days.filter(d => d.worked).length,
       absenceCount: days.filter(d => !!d.absenceType).length,
     })).sort((a, b) => (a.employee?.name || '').localeCompare(b.employee?.name || ''));
-  }, [filtered, employees]);
+  }, [filtered, employees, vacationEntries]);
 
   return (
     <div className="space-y-6">
