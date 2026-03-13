@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, AlertCircle, Building2, Umbrella, UserX, Calendar } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Building2, Umbrella, UserX, Calendar, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+import type { WorkDay } from '@/types/employee';
 
 const ABSENCE_TYPES = [
   { value: 'falta', label: 'Falta' },
@@ -22,7 +23,7 @@ const ABSENCE_TYPES = [
 ];
 
 export default function WorkDaysPage() {
-  const { employees, workDays, addWorkDay, deleteWorkDay } = useEmployeeData();
+  const { employees, workDays, addWorkDay, updateWorkDay, deleteWorkDay } = useEmployeeData();
   const { projects } = useProjectData();
   const { vacations } = useSafetyData();
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
@@ -35,6 +36,37 @@ export default function WorkDaysPage() {
     employeeId: '', date: '', worked: true, interior: false, projectId: '',
     absenceType: '', absenceReason: '', absenceNotes: '',
   });
+
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    id: string; employeeId: string; date: string; worked: boolean; interior: boolean;
+    projectId: string; absenceType: string; absenceReason: string; absenceNotes: string; mealVoucherValue: number;
+  } | null>(null);
+
+  const openEdit = (w: WorkDay) => {
+    setEditForm({
+      id: w.id, employeeId: w.employeeId, date: w.date, worked: w.worked, interior: w.interior,
+      projectId: w.projectId || '', absenceType: w.absenceType, absenceReason: w.absenceReason,
+      absenceNotes: w.absenceNotes, mealVoucherValue: w.mealVoucherValue,
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = () => {
+    if (!editForm) return;
+    updateWorkDay({
+      id: editForm.id, employeeId: editForm.employeeId, date: editForm.date,
+      worked: !editForm.absenceType, interior: editForm.interior,
+      projectId: editForm.projectId || null,
+      absenceType: editForm.absenceType, absenceReason: editForm.absenceReason,
+      absenceNotes: editForm.absenceNotes,
+      mealVoucherValue: editForm.absenceType ? 0 : calculateMealVoucher(!editForm.absenceType ? true : false, editForm.interior),
+    });
+    toast.success('Registro atualizado.');
+    setEditOpen(false);
+    setEditForm(null);
+  };
 
   // Check if an employee is on vacation on a given date
   const isOnVacation = (employeeId: string, date: string) => {
@@ -345,6 +377,67 @@ export default function WorkDaysPage() {
         </div>
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={v => { setEditOpen(v); if (!v) setEditForm(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Editar Registro</DialogTitle></DialogHeader>
+          {editForm && (
+            <div className="grid gap-4 py-4">
+              <div className="bg-muted rounded-lg p-3 text-sm">
+                <strong>{employees.find(e => e.id === editForm.employeeId)?.name}</strong> — {formatDate(editForm.date)}
+              </div>
+              <div>
+                <label className="label-caps mb-1 block">Obra</label>
+                <Select value={editForm.projectId || 'none'} onValueChange={v => setEditForm(f => f ? { ...f, projectId: v === 'none' ? '' : v } : f)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a obra..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem obra vinculada</SelectItem>
+                    {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="label-caps mb-1 block">Tipo de Registro</label>
+                <Select value={editForm.absenceType || 'presenca'} onValueChange={v => setEditForm(f => f ? ({
+                  ...f,
+                  absenceType: v === 'presenca' ? '' : v,
+                  worked: v === 'presenca',
+                }) : f)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="presenca">Presença Normal</SelectItem>
+                    {ABSENCE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              {editForm.absenceType ? (
+                <>
+                  <div>
+                    <label className="label-caps mb-1 block">Motivo</label>
+                    <Input value={editForm.absenceReason} onChange={e => setEditForm(f => f ? { ...f, absenceReason: e.target.value } : f)} placeholder="Ex: consulta médica..." />
+                  </div>
+                  <div>
+                    <label className="label-caps mb-1 block">Observações</label>
+                    <Textarea value={editForm.absenceNotes} onChange={e => setEditForm(f => f ? { ...f, absenceNotes: e.target.value } : f)} rows={2} />
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={editForm.interior} onCheckedChange={c => setEditForm(f => f ? { ...f, interior: !!c } : f)} />
+                    Interior (sem VA)
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleEditSubmit}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Employee cards */}
       <div className="space-y-4">
         {groupedByEmployee.map(({ employee, days, vacDays, totalVoucher: empVoucher, workedCount, absenceCount: empAbsences }) => {
@@ -437,9 +530,14 @@ export default function WorkDaysPage() {
                           </td>
                           <td className="px-6 py-3 text-sm text-right font-medium">{formatCurrency(w.mealVoucherValue)}</td>
                           <td className="px-6 py-3 text-right">
-                            <button onClick={() => { deleteWorkDay(w.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => openEdit(w)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground">
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => { deleteWorkDay(w.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
