@@ -23,7 +23,7 @@ const ABSENCE_TYPES = [
 ];
 
 export default function WorkDaysPage() {
-  const { employees, workDays, addWorkDay, deleteWorkDay } = useEmployeeData();
+  const { employees, workDays, addWorkDay, updateWorkDay, deleteWorkDay } = useEmployeeData();
   const { projects } = useProjectData();
   const { vacations } = useSafetyData();
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
