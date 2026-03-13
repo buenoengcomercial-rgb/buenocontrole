@@ -377,6 +377,67 @@ export default function WorkDaysPage() {
         </div>
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={v => { setEditOpen(v); if (!v) setEditForm(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Editar Registro</DialogTitle></DialogHeader>
+          {editForm && (
+            <div className="grid gap-4 py-4">
+              <div className="bg-muted rounded-lg p-3 text-sm">
+                <strong>{employees.find(e => e.id === editForm.employeeId)?.name}</strong> — {formatDate(editForm.date)}
+              </div>
+              <div>
+                <label className="label-caps mb-1 block">Obra</label>
+                <Select value={editForm.projectId || 'none'} onValueChange={v => setEditForm(f => f ? { ...f, projectId: v === 'none' ? '' : v } : f)}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a obra..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem obra vinculada</SelectItem>
+                    {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="label-caps mb-1 block">Tipo de Registro</label>
+                <Select value={editForm.absenceType || 'presenca'} onValueChange={v => setEditForm(f => f ? ({
+                  ...f,
+                  absenceType: v === 'presenca' ? '' : v,
+                  worked: v === 'presenca',
+                }) : f)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="presenca">Presença Normal</SelectItem>
+                    {ABSENCE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              {editForm.absenceType ? (
+                <>
+                  <div>
+                    <label className="label-caps mb-1 block">Motivo</label>
+                    <Input value={editForm.absenceReason} onChange={e => setEditForm(f => f ? { ...f, absenceReason: e.target.value } : f)} placeholder="Ex: consulta médica..." />
+                  </div>
+                  <div>
+                    <label className="label-caps mb-1 block">Observações</label>
+                    <Textarea value={editForm.absenceNotes} onChange={e => setEditForm(f => f ? { ...f, absenceNotes: e.target.value } : f)} rows={2} />
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={editForm.interior} onCheckedChange={c => setEditForm(f => f ? { ...f, interior: !!c } : f)} />
+                    Interior (sem VA)
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleEditSubmit}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Employee cards */}
       <div className="space-y-4">
         {groupedByEmployee.map(({ employee, days, vacDays, totalVoucher: empVoucher, workedCount, absenceCount: empAbsences }) => {
