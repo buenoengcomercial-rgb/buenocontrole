@@ -37,6 +37,37 @@ export default function WorkDaysPage() {
     absenceType: '', absenceReason: '', absenceNotes: '',
   });
 
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    id: string; employeeId: string; date: string; worked: boolean; interior: boolean;
+    projectId: string; absenceType: string; absenceReason: string; absenceNotes: string; mealVoucherValue: number;
+  } | null>(null);
+
+  const openEdit = (w: WorkDay) => {
+    setEditForm({
+      id: w.id, employeeId: w.employeeId, date: w.date, worked: w.worked, interior: w.interior,
+      projectId: w.projectId || '', absenceType: w.absenceType, absenceReason: w.absenceReason,
+      absenceNotes: w.absenceNotes, mealVoucherValue: w.mealVoucherValue,
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = () => {
+    if (!editForm) return;
+    updateWorkDay({
+      id: editForm.id, employeeId: editForm.employeeId, date: editForm.date,
+      worked: !editForm.absenceType, interior: editForm.interior,
+      projectId: editForm.projectId || null,
+      absenceType: editForm.absenceType, absenceReason: editForm.absenceReason,
+      absenceNotes: editForm.absenceNotes,
+      mealVoucherValue: editForm.absenceType ? 0 : calculateMealVoucher(!editForm.absenceType ? true : false, editForm.interior),
+    });
+    toast.success('Registro atualizado.');
+    setEditOpen(false);
+    setEditForm(null);
+  };
+
   // Check if an employee is on vacation on a given date
   const isOnVacation = (employeeId: string, date: string) => {
     return vacations.find(v =>
