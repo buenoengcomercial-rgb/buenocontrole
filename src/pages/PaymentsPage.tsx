@@ -372,7 +372,7 @@ export default function PaymentsPage() {
                             <div className="flex items-center gap-4">
                               <span className="text-sm">{formatCurrency(a.value)}</span>
                               <span className="text-xs text-muted-foreground">{formatDate(a.paymentDate)}</span>
-                              {a.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" title={a.notes} />}
+                              {a.notes && <span title={a.notes}><MessageSquare className="w-3.5 h-3.5 text-muted-foreground" /></span>}
                             </div>
                             <div className="flex items-center gap-2">
                               <button onClick={(e) => { e.stopPropagation(); setEditAdvance({ ...a }); setEditAdvOpen(true); }} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
