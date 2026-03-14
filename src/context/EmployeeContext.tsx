@@ -94,8 +94,6 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const generateAdvance = useCallback(async (employeeId: string, month: string) => {
-    const exists = advances.find(a => a.employeeId === employeeId && a.month === month);
-    if (exists) return;
     const emp = employees.find(e => e.id === employeeId);
     if (!emp) return;
     const [y, m] = month.split('-').map(Number);
@@ -104,7 +102,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
       employee_id: employeeId, month, value: calculateAdvance(emp.grossSalary), payment_date: payDate.toISOString().slice(0, 10),
     }).select().single();
     if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
-  }, [employees, advances]);
+  }, [employees]);
 
   const addAdvanceManual = useCallback(async (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => {
     const [y, m] = month.split('-').map(Number);
