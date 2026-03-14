@@ -16,7 +16,7 @@ import AttachedDocuments from '@/components/AttachedDocuments';
 const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'] as const;
 
 export default function PaymentsPage() {
-  const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
+  const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, updateAdvance, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
 
   // Advance generation
