@@ -17,6 +17,7 @@ interface EmployeeState {
   deleteWorkDay: (id: string) => void;
   generateAdvance: (employeeId: string, month: string) => void;
   addAdvanceManual: (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => void;
+  updateAdvance: (a: SalaryAdvance) => void;
   addPayment: (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => void;
   updatePayment: (p: SalaryPayment) => void;
   deletePayment: (id: string) => void;
