@@ -291,7 +291,7 @@ export default function PaymentsPage() {
         <TabsContent value="advances" className="space-y-4">
           <div className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row gap-3 items-end">
-              <div><label className="label-caps mb-1 block">Mês</label><Input type="month" value={advMonth} onChange={e => setAdvMonth(e.target.value)} className="w-[180px]" /></div>
+              <div><label className="label-caps mb-1 block">Mês</label><Input type="month" value={advMonth} onChange={e => setAdvMonth(e.target.value)} className="w-[200px]" /></div>
               <div className="flex-1 min-w-[200px]">
                 <label className="label-caps mb-1 block">Colaborador</label>
                 <Select value={advEmployee} onValueChange={setAdvEmployee}>
@@ -320,41 +320,61 @@ export default function PaymentsPage() {
 
           <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
 
+          {/* Grouped by employee */}
           <div className="space-y-3">
-            {filteredAdvances.map(a => {
-              const emp = employees.find(e => e.id === a.employeeId);
-              const isExpanded = expandedAdvance === a.id;
-              return (
-                <div key={a.id} className="bg-card rounded-xl shadow-card overflow-hidden">
-                  <div className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-row-hover transition-colors" onClick={() => setExpandedAdvance(isExpanded ? null : a.id)}>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium">{emp?.name || '—'}</span>
-                      <span className="text-xs text-muted-foreground">{a.month}</span>
+            {(() => {
+              const grouped = filteredAdvances.reduce<Record<string, typeof filteredAdvances>>((acc, a) => {
+                if (!acc[a.employeeId]) acc[a.employeeId] = [];
+                acc[a.employeeId].push(a);
+                return acc;
+              }, {});
+
+              const entries = Object.entries(grouped).map(([empId, advs]) => {
+                const emp = employees.find(e => e.id === empId);
+                const total = advs.reduce((s, a) => s + a.value, 0);
+                return { empId, emp, advs, total };
+              }).sort((a, b) => (a.emp?.name || '').localeCompare(b.emp?.name || ''));
+
+              if (entries.length === 0) {
+                return <div className="bg-card rounded-xl shadow-card px-6 py-12 text-center text-meta">Nenhum adiantamento encontrado.</div>;
+              }
+
+              return entries.map(({ empId, emp, advs, total }) => {
+                const isExpanded = expandedAdvance === empId;
+                return (
+                  <div key={empId} className="bg-card rounded-xl shadow-card overflow-hidden">
+                    <div
+                      className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-row-hover transition-colors"
+                      onClick={() => setExpandedAdvance(isExpanded ? null : empId)}
+                    >
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                        <span className="text-sm font-medium">{emp?.name || '—'}</span>
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{advs.length} registro{advs.length > 1 ? 's' : ''}</span>
+                      </div>
+                      <span className="text-sm font-semibold">{formatCurrency(total)}</span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-semibold">{formatCurrency(a.value)}</span>
-                      <span className="text-xs text-muted-foreground">{formatDate(a.paymentDate)}</span>
-                      {a.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />}
-                      <button onClick={(e) => { e.stopPropagation(); deleteAdvance(a.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                    </div>
+                    {isExpanded && (
+                      <div className="border-t border-border">
+                        {advs.sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)).map(a => (
+                          <div key={a.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors border-b border-border last:border-b-0">
+                            <div className="flex items-center gap-4">
+                              <span className="text-sm">{formatCurrency(a.value)}</span>
+                              <span className="text-xs text-muted-foreground">{formatDate(a.paymentDate)}</span>
+                              {a.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" title={a.notes} />}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button onClick={(e) => { e.stopPropagation(); setEditAdvance({ ...a }); setEditAdvOpen(true); }} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
+                              <button onClick={(e) => { e.stopPropagation(); deleteAdvance(a.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {isExpanded && (
-                    <div className="px-6 pb-4 space-y-3 border-t border-border pt-3">
-                      {a.notes && (
-                        <div>
-                          <span className="label-caps text-xs">Observações</span>
-                          <p className="text-sm text-muted-foreground mt-1">{a.notes}</p>
-                        </div>
-                      )}
-                      <AttachedDocuments entityType="advance" entityId={a.id} />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {filteredAdvances.length === 0 && (
-              <div className="bg-card rounded-xl shadow-card px-6 py-12 text-center text-meta">Nenhum adiantamento encontrado.</div>
-            )}
+                );
+              });
+            })()}
           </div>
         </TabsContent>
       </Tabs>
