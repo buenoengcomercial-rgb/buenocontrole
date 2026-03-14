@@ -17,6 +17,7 @@ interface EmployeeState {
   deleteWorkDay: (id: string) => void;
   generateAdvance: (employeeId: string, month: string) => void;
   addAdvanceManual: (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => void;
+  updateAdvance: (a: SalaryAdvance) => void;
   addPayment: (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => void;
   updatePayment: (p: SalaryPayment) => void;
   deletePayment: (id: string) => void;
@@ -93,8 +94,6 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const generateAdvance = useCallback(async (employeeId: string, month: string) => {
-    const exists = advances.find(a => a.employeeId === employeeId && a.month === month);
-    if (exists) return;
     const emp = employees.find(e => e.id === employeeId);
     if (!emp) return;
     const [y, m] = month.split('-').map(Number);
@@ -103,18 +102,23 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
       employee_id: employeeId, month, value: calculateAdvance(emp.grossSalary), payment_date: payDate.toISOString().slice(0, 10),
     }).select().single();
     if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
-  }, [employees, advances]);
+  }, [employees]);
 
   const addAdvanceManual = useCallback(async (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => {
-    const exists = advances.find(a => a.employeeId === employeeId && a.month === month);
-    if (exists) return;
     const [y, m] = month.split('-').map(Number);
     const payDate = paymentDate || getAdvancePaymentDate(y, m).toISOString().slice(0, 10);
     const { data } = await supabase.from('salary_advances').insert({
       employee_id: employeeId, month, value, payment_date: payDate, notes: notes || '',
     }).select().single();
     if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
-  }, [advances]);
+  }, []);
+
+  const updateAdvance = useCallback(async (a: SalaryAdvance) => {
+    await supabase.from('salary_advances').update({
+      value: a.value, payment_date: a.paymentDate, notes: a.notes || '',
+    }).eq('id', a.id);
+    setAdvances(prev => prev.map(x => x.id === a.id ? a : x));
+  }, []);
 
   const addPayment = useCallback(async (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('salary_payments').insert({
@@ -146,7 +150,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
       employees, workDays, advances, payments, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addWorkDay, updateWorkDay, deleteWorkDay,
-      generateAdvance, addAdvanceManual, addPayment, updatePayment, deletePayment, deleteAdvance,
+      generateAdvance, addAdvanceManual, updateAdvance, addPayment, updatePayment, deletePayment, deleteAdvance,
     }}>
       {children}
     </EmployeeContext.Provider>
