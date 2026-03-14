@@ -28,8 +28,6 @@ export default function PaymentsPage() {
 
   const handleGenerateAdvance = () => {
     if (!advEmployee) { toast.error('Selecione um colaborador.'); return; }
-    const exists = advances.find(a => a.employeeId === advEmployee && a.month === advMonth);
-    if (exists) { toast.error('Adiantamento já gerado para este mês.'); return; }
     if (advCustomValue && advCustomValue > 0) {
       addAdvanceManual(advEmployee, advMonth, advCustomValue, advNotes, advPayDate || undefined);
     } else {
