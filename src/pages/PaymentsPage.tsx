@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { calculateAdvance, getSalaryPaymentDate } from '@/types/employee';
-import type { SalaryPayment } from '@/types/employee';
+import type { SalaryPayment, SalaryAdvance } from '@/types/employee';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCard, KeyRound } from 'lucide-react';
+import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCard, KeyRound, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 
