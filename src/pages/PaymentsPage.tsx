@@ -121,9 +121,20 @@ export default function PaymentsPage() {
   const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredPayments = useMemo(() => payments.filter(p => p.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, filterMonth]);
 
-  // Expand advance details
+  // Expand advance details (now grouped by employee)
   const [expandedAdvance, setExpandedAdvance] = useState<string | null>(null);
   const [expandedPayment, setExpandedPayment] = useState<string | null>(null);
+
+  // Edit advance
+  const [editAdvOpen, setEditAdvOpen] = useState(false);
+  const [editAdvance, setEditAdvance] = useState<SalaryAdvance | null>(null);
+
+  const handleSaveAdvanceEdit = () => {
+    if (!editAdvance) return;
+    updateAdvance(editAdvance);
+    toast.success('Adiantamento atualizado.');
+    setEditAdvOpen(false);
+  };
 
   return (
     <div className="space-y-6">
