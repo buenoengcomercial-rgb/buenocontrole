@@ -93,14 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logAction = useCallback(async (action: string, entityType: string, entityId?: string, details?: Record<string, unknown>) => {
     if (!user) return;
-    await supabase.from('audit_log').insert({
+    await supabase.from('audit_log').insert([{
       user_id: user.id,
       username: profile?.username || user.email || '',
       action,
       entity_type: entityType,
       entity_id: entityId || '',
-      details: details || {},
-    });
+      details: (details || {}) as any,
+    }]);
   }, [user, profile]);
 
   const isAdmin = role === 'admin';
