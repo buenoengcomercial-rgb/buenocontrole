@@ -436,6 +436,39 @@ export default function PaymentsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Advance Dialog */}
+      <Dialog open={editAdvOpen} onOpenChange={setEditAdvOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Editar Adiantamento</DialogTitle></DialogHeader>
+          {editAdvance && (() => {
+            const emp = employees.find(e => e.id === editAdvance.employeeId);
+            return (
+              <div className="grid gap-4 py-4">
+                <div className="text-sm font-medium">{emp?.name} — {editAdvance.month}</div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label-caps mb-1 block">Valor</label>
+                    <Input type="number" min={0} step={0.01} value={editAdvance.value} onChange={e => setEditAdvance(a => a ? { ...a, value: Number(e.target.value) || 0 } : a)} />
+                  </div>
+                  <div>
+                    <label className="label-caps mb-1 block">Data do Pagamento</label>
+                    <Input type="date" value={editAdvance.paymentDate} onChange={e => setEditAdvance(a => a ? { ...a, paymentDate: e.target.value } : a)} />
+                  </div>
+                </div>
+                <div>
+                  <label className="label-caps mb-1 block">Observações</label>
+                  <Textarea value={editAdvance.notes} onChange={e => setEditAdvance(a => a ? { ...a, notes: e.target.value } : a)} className="min-h-[60px]" />
+                </div>
+              </div>
+            );
+          })()}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditAdvOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveAdvanceEdit}>Salvar Alterações</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
