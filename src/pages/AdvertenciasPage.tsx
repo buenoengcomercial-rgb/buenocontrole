@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
+import AttachedDocuments from '@/components/AttachedDocuments';
 
 interface Warning {
   id: string;
@@ -228,46 +229,51 @@ export default function AdvertenciasPage() {
                 </div>
               </button>
               {isExpanded && (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="text-xs text-muted-foreground">
-                        <th className="text-left px-6 py-2 font-medium">Data</th>
-                        <th className="text-left px-6 py-2 font-medium">Tipo</th>
-                        <th className="text-left px-6 py-2 font-medium">Motivo</th>
-                        <th className="text-left px-6 py-2 font-medium">Descrição</th>
-                        <th className="text-right px-6 py-2 font-medium">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map(w => {
-                        const typeLabel = WARNING_TYPES.find(t => t.value === w.type)?.label || w.type;
-                        return (
-                          <tr key={w.id} className="border-b border-border last:border-0 hover:bg-row-hover transition-colors duration-150">
-                            <td className="px-6 py-3 text-sm">{formatDate(w.date)}</td>
-                            <td className="px-6 py-3 text-sm">
-                              <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium">
-                                <AlertTriangle className="w-3 h-3" />{typeLabel}
-                              </span>
-                            </td>
-                            <td className="px-6 py-3 text-sm max-w-[200px] truncate">{w.reason}</td>
-                            <td className="px-6 py-3 text-sm text-muted-foreground max-w-[250px] truncate">{w.description || '—'}</td>
-                            <td className="px-6 py-3 text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <button onClick={() => handleOpen(w)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground">
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => handleDelete(w.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-xs text-muted-foreground">
+                          <th className="text-left px-6 py-2 font-medium">Data</th>
+                          <th className="text-left px-6 py-2 font-medium">Tipo</th>
+                          <th className="text-left px-6 py-2 font-medium">Motivo</th>
+                          <th className="text-left px-6 py-2 font-medium">Descrição</th>
+                          <th className="text-right px-6 py-2 font-medium">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map(w => {
+                          const typeLabel = WARNING_TYPES.find(t => t.value === w.type)?.label || w.type;
+                          return (
+                            <tr key={w.id} className="border-b border-border last:border-0 hover:bg-row-hover transition-colors duration-150">
+                              <td className="px-6 py-3 text-sm">{formatDate(w.date)}</td>
+                              <td className="px-6 py-3 text-sm">
+                                <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium">
+                                  <AlertTriangle className="w-3 h-3" />{typeLabel}
+                                </span>
+                              </td>
+                              <td className="px-6 py-3 text-sm max-w-[200px] truncate">{w.reason}</td>
+                              <td className="px-6 py-3 text-sm text-muted-foreground max-w-[250px] truncate">{w.description || '—'}</td>
+                              <td className="px-6 py-3 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <button onClick={() => handleOpen(w)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground">
+                                    <Pencil className="w-4 h-4" />
+                                  </button>
+                                  <button onClick={() => handleDelete(w.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="px-6 pb-4">
+                    <AttachedDocuments entityType="employee_warning" entityId={employee.id} />
+                  </div>
+                </>
               )}
             </div>
           );

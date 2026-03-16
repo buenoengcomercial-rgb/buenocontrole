@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Attachment {
   id: string;
@@ -20,14 +21,44 @@ interface AttachmentState {
 
 const AttachmentContext = createContext<AttachmentState | null>(null);
 
+function mapRow(r: any): Attachment {
+  return {
+    id: r.id,
+    entityType: r.entity_type,
+    entityId: r.entity_id,
+    fileName: r.file_name,
+    fileSize: r.file_size,
+    fileType: r.file_type,
+    dataUrl: r.file_data,
+    createdAt: r.created_at,
+  };
+}
+
 export function AttachmentProvider({ children }: { children: React.ReactNode }) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-  const addAttachment = useCallback((a: Omit<Attachment, 'id' | 'createdAt'>) => {
-    setAttachments(prev => [...prev, { ...a, id: crypto.randomUUID(), createdAt: new Date().toISOString() }]);
+  useEffect(() => {
+    supabase.from('attachments').select('*').then(({ data }) => {
+      if (data) setAttachments(data.map(mapRow));
+    });
   }, []);
 
-  const deleteAttachment = useCallback((id: string) => {
+  const addAttachment = useCallback(async (a: Omit<Attachment, 'id' | 'createdAt'>) => {
+    const { data, error } = await supabase.from('attachments').insert({
+      entity_type: a.entityType,
+      entity_id: a.entityId,
+      file_name: a.fileName,
+      file_size: a.fileSize,
+      file_type: a.fileType,
+      file_data: a.dataUrl,
+    }).select().single();
+    if (data && !error) {
+      setAttachments(prev => [...prev, mapRow(data)]);
+    }
+  }, []);
+
+  const deleteAttachment = useCallback(async (id: string) => {
+    await supabase.from('attachments').delete().eq('id', id);
     setAttachments(prev => prev.filter(a => a.id !== id));
   }, []);
 
