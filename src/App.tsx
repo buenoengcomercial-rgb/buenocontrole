@@ -22,6 +22,7 @@ import PaymentsPage from "@/pages/PaymentsPage";
 import EmployeeDashboardPage from "@/pages/EmployeeDashboardPage";
 import EmployeeReportsPage from "@/pages/EmployeeReportsPage";
 import EncargosPage from "@/pages/EncargosPage";
+import AdvertenciasPage from "@/pages/AdvertenciasPage";
 import FeriasPage from "@/pages/FeriasPage";
 import DocumentacaoPage from "@/pages/DocumentacaoPage";
 import EPIPage from "@/pages/EPIPage";
