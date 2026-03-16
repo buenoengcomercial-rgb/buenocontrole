@@ -27,7 +27,15 @@ export default function WorkDaysPage() {
   const { projects } = useProjectData();
   const { vacations } = useSafetyData();
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
+  const [expandedEmployees, setExpandedEmployees] = useState<Set<string>>(new Set());
 
+  const toggleEmployee = (id: string) => {
+    setExpandedEmployees(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [filterEmployee, setFilterEmployee] = useState('all');
   const [filterProject, setFilterProject] = useState('all');
