@@ -105,6 +105,7 @@ function AppRoutes() {
         <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
         <Route path="/colaboradores/encargos" element={<EncargosPage />} />
         <Route path="/colaboradores/ferias" element={<FeriasPage />} />
+        <Route path="/colaboradores/advertencias" element={<AdvertenciasPage />} />
         <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
         <Route path="/seguranca/documentacao" element={<DocumentacaoPage />} />
         <Route path="/seguranca/epi" element={<EPIPage />} />
