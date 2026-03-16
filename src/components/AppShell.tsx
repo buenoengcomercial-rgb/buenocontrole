@@ -44,6 +44,7 @@ const allSections = [
       { to: '/colaboradores/pagamentos', label: 'Pagamentos', icon: DollarSign },
       { to: '/colaboradores/encargos', label: 'Encargos', icon: Shield },
       { to: '/colaboradores/ferias', label: 'Férias', icon: Palmtree },
+      { to: '/colaboradores/advertencias', label: 'Advertências', icon: ClipboardList },
       { to: '/colaboradores/relatorios', label: 'Relatórios', icon: FileText },
     ],
   },

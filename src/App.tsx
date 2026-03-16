@@ -22,6 +22,7 @@ import PaymentsPage from "@/pages/PaymentsPage";
 import EmployeeDashboardPage from "@/pages/EmployeeDashboardPage";
 import EmployeeReportsPage from "@/pages/EmployeeReportsPage";
 import EncargosPage from "@/pages/EncargosPage";
+import AdvertenciasPage from "@/pages/AdvertenciasPage";
 import FeriasPage from "@/pages/FeriasPage";
 import DocumentacaoPage from "@/pages/DocumentacaoPage";
 import EPIPage from "@/pages/EPIPage";
@@ -104,6 +105,7 @@ function AppRoutes() {
         <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
         <Route path="/colaboradores/encargos" element={<EncargosPage />} />
         <Route path="/colaboradores/ferias" element={<FeriasPage />} />
+        <Route path="/colaboradores/advertencias" element={<AdvertenciasPage />} />
         <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
         <Route path="/seguranca/documentacao" element={<DocumentacaoPage />} />
         <Route path="/seguranca/epi" element={<EPIPage />} />

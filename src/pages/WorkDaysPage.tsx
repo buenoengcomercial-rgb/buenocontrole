@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, AlertCircle, Building2, Umbrella, UserX, Calendar, Pencil } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Building2, Umbrella, UserX, Calendar, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import type { WorkDay } from '@/types/employee';
 
@@ -27,7 +27,15 @@ export default function WorkDaysPage() {
   const { projects } = useProjectData();
   const { vacations } = useSafetyData();
   const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
+  const [expandedEmployees, setExpandedEmployees] = useState<Set<string>>(new Set());
 
+  const toggleEmployee = (id: string) => {
+    setExpandedEmployees(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [filterEmployee, setFilterEmployee] = useState('all');
   const [filterProject, setFilterProject] = useState('all');
@@ -442,15 +450,20 @@ export default function WorkDaysPage() {
       <div className="space-y-4">
         {groupedByEmployee.map(({ employee, days, vacDays, totalVoucher: empVoucher, workedCount, absenceCount: empAbsences }) => {
           if (!employee) return null;
+          const isExpanded = expandedEmployees.has(employee.id);
           return (
             <div key={employee.id} className="bg-card rounded-xl shadow-card overflow-hidden">
-              {/* Employee header */}
-              <div className="flex items-center justify-between px-6 py-4 bg-muted/50 border-b border-border">
+              {/* Employee header - clickable */}
+              <button
+                type="button"
+                onClick={() => toggleEmployee(employee.id)}
+                className="w-full flex items-center justify-between px-6 py-4 bg-muted/50 border-b border-border hover:bg-muted/70 transition-colors cursor-pointer"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
                     {employee.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
                   </div>
-                  <div>
+                  <div className="text-left">
                     <h3 className="font-semibold text-sm">{employee.name}</h3>
                     <p className="text-xs text-muted-foreground">{employee.role}</p>
                   </div>
@@ -469,9 +482,11 @@ export default function WorkDaysPage() {
                   <div className="flex items-center gap-1.5 bg-background rounded-lg px-3 py-1.5 font-medium">
                     VA: {formatCurrency(empVoucher)}
                   </div>
+                  {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 </div>
-              </div>
-              {/* Days table */}
+              </button>
+              {/* Days table - collapsible */}
+              {isExpanded && (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -531,10 +546,10 @@ export default function WorkDaysPage() {
                           <td className="px-6 py-3 text-sm text-right font-medium">{formatCurrency(w.mealVoucherValue)}</td>
                           <td className="px-6 py-3 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <button onClick={() => openEdit(w)} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground">
+                              <button onClick={(e) => { e.stopPropagation(); openEdit(w); }} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground">
                                 <Pencil className="w-4 h-4" />
                               </button>
-                              <button onClick={() => { deleteWorkDay(w.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                              <button onClick={(e) => { e.stopPropagation(); deleteWorkDay(w.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
@@ -545,6 +560,7 @@ export default function WorkDaysPage() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           );
         })}
