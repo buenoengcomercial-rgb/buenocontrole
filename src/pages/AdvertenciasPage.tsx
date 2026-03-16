@@ -269,6 +269,9 @@ export default function AdvertenciasPage() {
                     </tbody>
                   </table>
                 </div>
+                <div className="px-6 pb-4">
+                  <AttachedDocuments entityType="employee_warning" entityId={employee.id} />
+                </div>
               )}
             </div>
           );
