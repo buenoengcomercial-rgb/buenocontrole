@@ -318,6 +318,50 @@ export type Database = {
           },
         ]
       }
+      employee_warnings: {
+        Row: {
+          created_at: string
+          date: string
+          description: string
+          employee_id: string
+          id: string
+          notes: string
+          reason: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description?: string
+          employee_id: string
+          id?: string
+          notes?: string
+          reason?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string
+          employee_id?: string
+          id?: string
+          notes?: string
+          reason?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_warnings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           admission_date: string
