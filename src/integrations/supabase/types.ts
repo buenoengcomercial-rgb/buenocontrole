@@ -781,9 +781,11 @@ export type Database = {
           freight_value: number
           icms_value: number
           id: string
+          installments: number
           invoice_number: string
           material_id: string | null
           notes: string
+          payment_method: string
           project_id: string
           supplier_id: string | null
           total_value: number
@@ -796,9 +798,11 @@ export type Database = {
           freight_value?: number
           icms_value?: number
           id?: string
+          installments?: number
           invoice_number?: string
           material_id?: string | null
           notes?: string
+          payment_method?: string
           project_id: string
           supplier_id?: string | null
           total_value?: number
@@ -811,9 +815,11 @@ export type Database = {
           freight_value?: number
           icms_value?: number
           id?: string
+          installments?: number
           invoice_number?: string
           material_id?: string | null
           notes?: string
+          payment_method?: string
           project_id?: string
           supplier_id?: string | null
           total_value?: number
