@@ -7,7 +7,7 @@ import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { daysUntilExpiry } from '@/types/safety';
 import { calculate13thDailyCost } from '@/types/employee';
-import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES, EQUIPMENT_TYPES, BILLING_TYPES } from '@/types/project';
+import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES, EQUIPMENT_TYPES, BILLING_TYPES, PAYMENT_METHODS } from '@/types/project';
 import { MATERIAL_CATEGORIES, UNITS } from '@/types';
 import type { ProjectDocType, MeasurementStatus, Measurement, EquipmentRental, EquipmentType, BillingType } from '@/types/project';
 import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck, Paperclip } from 'lucide-react';
