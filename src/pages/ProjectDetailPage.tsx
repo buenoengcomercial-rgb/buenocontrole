@@ -713,6 +713,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
             })}
             </tbody>
           </table>
+          </div>
         </div>
       }
 
