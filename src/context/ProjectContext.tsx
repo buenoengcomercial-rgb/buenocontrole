@@ -57,7 +57,7 @@ function mapDAS(r: any): DASExpense {
   return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, createdAt: r.created_at };
 }
 function mapProjectPurchase(r: any): ProjectPurchase {
-  return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), freightValue: Number(r.freight_value || 0), icmsValue: Number(r.icms_value || 0), description: r.description, notes: r.notes, createdAt: r.created_at };
+  return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), freightValue: Number(r.freight_value || 0), icmsValue: Number(r.icms_value || 0), description: r.description, notes: r.notes, paymentMethod: r.payment_method || '', installments: r.installments || 1, createdAt: r.created_at };
 }
 function mapEquipmentRental(r: any): EquipmentRental {
   return { id: r.id, projectId: r.project_id, equipmentName: r.equipment_name, equipmentType: r.equipment_type, supplier: r.supplier, billingType: r.billing_type, unitValue: Number(r.unit_value), quantity: Number(r.quantity), totalValue: Number(r.total_value), startDate: r.start_date, endDate: r.end_date || '', invoiceNumber: r.invoice_number, notes: r.notes, createdAt: r.created_at };
@@ -192,6 +192,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
       freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
       description: p.description, notes: p.notes,
+      payment_method: p.paymentMethod || '', installments: p.installments || 1,
     }).select().single();
     if (data) setProjectPurchases(prev => [...prev, mapProjectPurchase(data)]);
   }, []);
@@ -201,6 +202,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
       freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
       description: p.description, notes: p.notes,
+      payment_method: p.paymentMethod || '', installments: p.installments || 1,
     }).eq('id', p.id);
     setProjectPurchases(prev => prev.map(x => x.id === p.id ? p : x));
   }, []);

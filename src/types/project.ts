@@ -105,6 +105,15 @@ export interface DASExpense {
   createdAt: string;
 }
 
+export type PaymentMethod = 'pix' | 'debito' | 'credito' | 'boleto' | '';
+
+export const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'pix', label: 'Pix' },
+  { value: 'debito', label: 'Débito' },
+  { value: 'credito', label: 'Crédito' },
+  { value: 'boleto', label: 'Boleto' },
+];
+
 export interface ProjectPurchase {
   id: string;
   projectId: string;
@@ -117,6 +126,8 @@ export interface ProjectPurchase {
   icmsValue: number;
   description: string;
   notes: string;
+  paymentMethod: PaymentMethod;
+  installments: number;
   createdAt: string;
 }
 

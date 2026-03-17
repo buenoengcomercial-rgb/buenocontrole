@@ -7,7 +7,7 @@ import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { daysUntilExpiry } from '@/types/safety';
 import { calculate13thDailyCost } from '@/types/employee';
-import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES, EQUIPMENT_TYPES, BILLING_TYPES } from '@/types/project';
+import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES, EQUIPMENT_TYPES, BILLING_TYPES, PAYMENT_METHODS } from '@/types/project';
 import { MATERIAL_CATEGORIES, UNITS } from '@/types';
 import type { ProjectDocType, MeasurementStatus, Measurement, EquipmentRental, EquipmentType, BillingType } from '@/types/project';
 import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck, Paperclip } from 'lucide-react';
@@ -498,7 +498,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '' };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1 };
   const [form, setForm] = useState(emptyForm);
 
   // Quick-add supplier
@@ -542,7 +542,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const handleEdit = (p: any) => {
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
-    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes });
+    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1 });
     setShowForm(true);
   };
 
@@ -641,6 +641,15 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
           </div>
           <div><label className="label-caps block mb-1">Descrição *</label><input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Forma de Pagamento</label>
+            <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value, installments: (e.target.value === 'credito' || e.target.value === 'boleto') ? form.installments : 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <option value="">Selecione</option>
+              {PAYMENT_METHODS.map((pm) => <option key={pm.value} value={pm.value}>{pm.label}</option>)}
+            </select>
+          </div>
+          {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
+            <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          )}
           <div className="flex items-end gap-2">
             <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Atualizar' : 'Salvar'}</button>
             {editId && <button type="button" onClick={() => {setEditId(null);setForm(emptyForm);setShowForm(false);}} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
@@ -653,7 +662,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
       <div className="bg-card rounded-xl shadow-card overflow-hidden">
           <h3 className="text-sm font-semibold px-4 pt-4 pb-2">Compras e Despesas da Obra</h3>
           <table className="w-full text-sm">
-            <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Material</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Categoria</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th><th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th><th className="label-caps text-right px-4 py-3">Valor NF</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th><th className="label-caps text-right px-4 py-3">Total</th><th className="label-caps text-right px-4 py-3">Ações</th></tr></thead>
+            <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Material</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Categoria</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th><th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th><th className="label-caps text-right px-4 py-3">Valor NF</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th><th className="label-caps text-right px-4 py-3">Total</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Pagamento</th><th className="label-caps text-right px-4 py-3">Ações</th></tr></thead>
             <tbody>
               {sorted.map((p: any) => {
               const itemTotal = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
@@ -670,13 +679,14 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.freightValue ? formatCurrency(p.freightValue) : '—'}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.icmsValue ? formatCurrency(p.icmsValue) : '—'}</td>
                     <td className="px-4 py-3 text-right font-medium">{formatCurrency(itemTotal)}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{(() => { const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod); const label = pm?.label || '—'; return (p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1 ? `${label} ${p.installments}x` : label; })()}</td>
                     <td className="px-4 py-3 text-right flex justify-end gap-1">
                       <button onClick={() => setExpandedPurchaseId(expandedPurchaseId === p.id ? null : p.id)} className="p-1 rounded hover:bg-accent" title="Anexar documentos"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
                       <button onClick={() => handleEdit(p)} className="p-1 rounded hover:bg-primary/10"><Pencil className="w-4 h-4 text-primary" /></button>
                       <button onClick={() => onDelete(p.id)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-4 h-4 text-destructive" /></button>
                     </td>
                   </tr>
-                  {expandedPurchaseId === p.id && <tr><td colSpan={11} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
+                  {expandedPurchaseId === p.id && <tr><td colSpan={12} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
                 </React.Fragment>);
 
             })}
