@@ -192,6 +192,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
       freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
       description: p.description, notes: p.notes,
+      payment_method: p.paymentMethod || '', installments: p.installments || 1,
     }).select().single();
     if (data) setProjectPurchases(prev => [...prev, mapProjectPurchase(data)]);
   }, []);
