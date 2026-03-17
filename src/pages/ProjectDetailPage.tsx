@@ -607,50 +607,56 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
       }
 
       {showForm &&
-      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div>
-            <label className="label-caps block mb-1">Fornecedor (opcional)</label>
-            <div className="flex gap-1">
-              <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })} className="flex-1 py-2 rounded-lg border border-input bg-background text-sm px-0 mx-0">
-                <option value="">— Nenhum —</option>
-                {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div>
+              <label className="label-caps block mb-1">Fornecedor (opcional)</label>
+              <div className="flex gap-1">
+                <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                  <option value="">— Nenhum —</option>
+                  {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <button type="button" onClick={() => setShowQuickSupplier(true)} className="px-2 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" title="Cadastro rápido"><Plus className="w-4 h-4" /></button>
+              </div>
+            </div>
+            <div>
+              <label className="label-caps block mb-1">Material (opcional)</label>
+              <div className="flex gap-1">
+                <select value={form.materialId} onChange={(e) => setForm({ ...form, materialId: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                  <option value="">— Nenhum —</option>
+                  {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}{m.category ? ` (${m.category})` : ''}</option>)}
+                </select>
+                <button type="button" onClick={() => setShowQuickMaterial(true)} className="px-2 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" title="Cadastro rápido"><Plus className="w-4 h-4" /></button>
+              </div>
+            </div>
+            <div><label className="label-caps block mb-1">Categoria</label>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                <option value="">Selecione</option>
+                {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <button type="button" onClick={() => setShowQuickSupplier(true)} className="px-2 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" title="Cadastro rápido"><Plus className="w-4 h-4" /></button>
             </div>
           </div>
-          <div>
-            <label className="label-caps block mb-1">Material (opcional)</label>
-            <div className="flex gap-1">
-              <select value={form.materialId} onChange={(e) => setForm({ ...form, materialId: e.target.value })} className="flex-1 py-2 rounded-lg border-input bg-background text-sm mx-[27px] px-px border-8">
-                <option value="">— Nenhum —</option>
-                {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}{m.category ? ` (${m.category})` : ''}</option>)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div><label className="label-caps block mb-1">Descrição *</label><input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Valor Total NF (R$) *</label><input type="number" required min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Valor Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Forma de Pagamento</label>
+              <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value, installments: (e.target.value === 'credito' || e.target.value === 'boleto') ? form.installments : 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                <option value="">Selecione</option>
+                {PAYMENT_METHODS.map((pm) => <option key={pm.value} value={pm.value}>{pm.label}</option>)}
               </select>
-              <button type="button" onClick={() => setShowQuickMaterial(true)} className="bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors px-[12px] py-[13px] my-[3px]" title="Cadastro rápido"><Plus className="w-4 h-4" /></button>
             </div>
+            {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
+              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            )}
+            <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           </div>
-          <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor Total NF (R$) *</label><input type="number" required min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Categoria</label>
-            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              <option value="">Selecione</option>
-              {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div><label className="label-caps block mb-1">Descrição *</label><input required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Forma de Pagamento</label>
-            <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value, installments: (e.target.value === 'credito' || e.target.value === 'boleto') ? form.installments : 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              <option value="">Selecione</option>
-              {PAYMENT_METHODS.map((pm) => <option key={pm.value} value={pm.value}>{pm.label}</option>)}
-            </select>
-          </div>
-          {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-            <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          )}
-          <div className="flex items-end gap-2">
+          <div className="flex items-center gap-2 pt-1">
             <button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">{editId ? 'Atualizar' : 'Salvar'}</button>
             {editId && <button type="button" onClick={() => {setEditId(null);setForm(emptyForm);setShowForm(false);}} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>}
           </div>
