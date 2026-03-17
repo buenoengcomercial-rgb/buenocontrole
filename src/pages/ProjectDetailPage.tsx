@@ -667,32 +667,47 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
       {sorted.length > 0 &&
       <div className="bg-card rounded-xl shadow-card overflow-hidden">
           <h3 className="text-sm font-semibold px-4 pt-4 pb-2">Compras e Despesas da Obra</h3>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Material</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Categoria</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th><th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th><th className="label-caps text-right px-4 py-3">Valor NF</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th><th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th><th className="label-caps text-right px-4 py-3">Total</th><th className="label-caps text-left px-4 py-3 hidden md:table-cell">Pagamento</th><th className="label-caps text-right px-4 py-3">Ações</th></tr></thead>
+            <thead><tr className="bg-muted">
+              <th className="label-caps text-left px-4 py-3">Data</th>
+              <th className="label-caps text-left px-4 py-3">Material</th>
+              <th className="label-caps text-left px-4 py-3 hidden md:table-cell">Categoria</th>
+              <th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th>
+              <th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th>
+              <th className="label-caps text-right px-4 py-3">Valor NF</th>
+              <th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th>
+              <th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th>
+              <th className="label-caps text-right px-4 py-3">Total</th>
+              <th className="label-caps text-left px-4 py-3 hidden md:table-cell">Pagamento</th>
+              <th className="label-caps text-center px-4 py-3 whitespace-nowrap">Ações</th>
+            </tr></thead>
             <tbody>
               {sorted.map((p: any) => {
               const itemTotal = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
+              const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
               return (
                 <React.Fragment key={p.id}>
                   <tr className="border-b border-border hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3">{formatDate(p.date)}</td>
-                    <td className="px-4 py-3">{p.description || '—'}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">{p.materialId ? materials.find((m: any) => m.id === p.materialId)?.name || '—' : '—'}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">{(() => { const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null; return mat?.category ? <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-xs font-medium">{mat.category}</span> : '—'; })()}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{formatDate(p.date)}</td>
+                    <td className="px-4 py-3">{mat?.name || p.description || '—'}</td>
+                    <td className="px-4 py-3 hidden md:table-cell">{mat?.category ? <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-xs font-medium">{mat.category}</span> : '—'}</td>
                     <td className="px-4 py-3 hidden md:table-cell">{p.supplierId ? suppliers.find((s: any) => s.id === p.supplierId)?.name || '—' : '—'}</td>
                     <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{p.invoiceNumber || '—'}</td>
-                    <td className="px-4 py-3 text-right">{formatCurrency(p.totalValue)}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">{formatCurrency(p.totalValue)}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.freightValue ? formatCurrency(p.freightValue) : '—'}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.icmsValue ? formatCurrency(p.icmsValue) : '—'}</td>
-                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(itemTotal)}</td>
-                    <td className="px-4 py-3 hidden md:table-cell">{(() => { const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod); const label = pm?.label || '—'; return (p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1 ? `${label} ${p.installments}x` : label; })()}</td>
-                    <td className="px-4 py-3 text-right flex justify-end gap-1">
-                      <button onClick={() => setExpandedPurchaseId(expandedPurchaseId === p.id ? null : p.id)} className="p-1 rounded hover:bg-accent" title="Anexar documentos"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
-                      <button onClick={() => handleEdit(p)} className="p-1 rounded hover:bg-primary/10"><Pencil className="w-4 h-4 text-primary" /></button>
-                      <button onClick={() => onDelete(p.id)} className="p-1 rounded hover:bg-destructive/10"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                    <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{formatCurrency(itemTotal)}</td>
+                    <td className="px-4 py-3 hidden md:table-cell whitespace-nowrap">{(() => { const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod); const label = pm?.label || '—'; return (p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1 ? `${label} ${p.installments}x` : label; })()}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => setExpandedPurchaseId(expandedPurchaseId === p.id ? null : p.id)} className="p-1.5 rounded hover:bg-accent" title="Anexar documentos"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
+                        <button onClick={() => handleEdit(p)} className="p-1.5 rounded hover:bg-primary/10" title="Editar"><Pencil className="w-4 h-4 text-primary" /></button>
+                        <button onClick={() => onDelete(p.id)} className="p-1.5 rounded hover:bg-destructive/10" title="Excluir"><Trash2 className="w-4 h-4 text-destructive" /></button>
+                      </div>
                     </td>
                   </tr>
-                  {expandedPurchaseId === p.id && <tr><td colSpan={12} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
+                  {expandedPurchaseId === p.id && <tr><td colSpan={11} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
                 </React.Fragment>);
 
             })}
