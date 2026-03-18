@@ -306,23 +306,12 @@ export default function LaudosPage() {
                     <TableCell className="font-medium max-w-[200px]">
                       <div className="truncate" title={l.cliente}>{l.cliente}</div>
                     </TableCell>
-                    <TableCell className="max-w-[180px]">
-                      <div className="truncate text-sm" title={l.responsavel}>
-                        {l.responsavel && (
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 shrink-0 text-muted-foreground" />
-                            <span className="truncate">{l.responsavel}</span>
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
                     <TableCell className="text-sm">{l.municipio}</TableCell>
                     <TableCell className="text-sm max-w-[200px]">
                       <div className="truncate" title={l.endereco}>{l.endereco || '—'}</div>
                     </TableCell>
                     <TableCell className="text-xs font-mono">{l.cnpj}</TableCell>
                     <TableCell className="text-sm">{l.utilizacao}</TableCell>
-                    <TableCell className="text-sm">{l.setor_atendimento}</TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {l.data_vencimento ? formatDate(l.data_vencimento) : '—'}
                     </TableCell>
