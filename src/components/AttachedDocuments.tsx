@@ -54,11 +54,18 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
     if (inputRef.current) inputRef.current.value = '';
   };
 
-  const handleDownload = (att: { dataUrl: string; fileName: string }) => {
+  const handleDownload = async (att: { id: string; fileName: string }) => {
+    toast.info('Baixando arquivo...');
+    const dataUrl = await downloadAttachment(att.id);
+    if (!dataUrl) {
+      toast.error('Erro ao baixar arquivo.');
+      return;
+    }
     const a = document.createElement('a');
-    a.href = att.dataUrl;
+    a.href = dataUrl;
     a.download = att.fileName;
     a.click();
+    toast.dismiss();
   };
 
   return (
