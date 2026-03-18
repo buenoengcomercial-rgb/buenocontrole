@@ -8,15 +8,15 @@ export interface Attachment {
   fileName: string;
   fileSize: number;
   fileType: string;
-  dataUrl: string;
   createdAt: string;
 }
 
 interface AttachmentState {
   attachments: Attachment[];
-  addAttachment: (a: Omit<Attachment, 'id' | 'createdAt'>) => void;
+  addAttachment: (a: Omit<Attachment, 'id' | 'createdAt'> & { dataUrl: string }) => void;
   deleteAttachment: (id: string) => void;
   getAttachments: (entityType: string, entityId: string) => Attachment[];
+  downloadAttachment: (id: string) => Promise<string | null>;
 }
 
 const AttachmentContext = createContext<AttachmentState | null>(null);
@@ -29,7 +29,6 @@ function mapRow(r: any): Attachment {
     fileName: r.file_name,
     fileSize: r.file_size,
     fileType: r.file_type,
-    dataUrl: r.file_data,
     createdAt: r.created_at,
   };
 }
@@ -38,12 +37,13 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
   useEffect(() => {
-    supabase.from('attachments').select('*').then(({ data }) => {
+    // Load only metadata, NOT file_data (which can be 100MB+)
+    supabase.from('attachments').select('id, entity_type, entity_id, file_name, file_size, file_type, created_at').then(({ data }) => {
       if (data) setAttachments(data.map(mapRow));
     });
   }, []);
 
-  const addAttachment = useCallback(async (a: Omit<Attachment, 'id' | 'createdAt'>) => {
+  const addAttachment = useCallback(async (a: Omit<Attachment, 'id' | 'createdAt'> & { dataUrl: string }) => {
     const { data, error } = await supabase.from('attachments').insert({
       entity_type: a.entityType,
       entity_id: a.entityId,
@@ -51,7 +51,7 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
       file_size: a.fileSize,
       file_type: a.fileType,
       file_data: a.dataUrl,
-    }).select().single();
+    }).select('id, entity_type, entity_id, file_name, file_size, file_type, created_at').single();
     if (data && !error) {
       setAttachments(prev => [...prev, mapRow(data)]);
     }
@@ -66,8 +66,18 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
     return attachments.filter(a => a.entityType === entityType && a.entityId === entityId);
   }, [attachments]);
 
+  const downloadAttachment = useCallback(async (id: string): Promise<string | null> => {
+    const { data, error } = await supabase
+      .from('attachments')
+      .select('file_data')
+      .eq('id', id)
+      .single();
+    if (error || !data) return null;
+    return (data as any).file_data;
+  }, []);
+
   return (
-    <AttachmentContext.Provider value={{ attachments, addAttachment, deleteAttachment, getAttachments }}>
+    <AttachmentContext.Provider value={{ attachments, addAttachment, deleteAttachment, getAttachments, downloadAttachment }}>
       {children}
     </AttachmentContext.Provider>
   );
