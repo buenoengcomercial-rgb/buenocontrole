@@ -34,6 +34,7 @@ import ProjectReportsPage from "@/pages/ProjectReportsPage";
 import DASPage from "@/pages/DASPage";
 import UsersPage from "@/pages/UsersPage";
 import AuditLogPage from "@/pages/AuditLogPage";
+import LaudosPage from "@/pages/LaudosPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
