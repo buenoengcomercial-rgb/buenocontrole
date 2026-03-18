@@ -136,33 +136,47 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
   filter((d) => d.value > 0);
   const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(25, 95%, 53%)', 'hsl(340, 70%, 50%)', 'hsl(280, 60%, 50%)'];
 
-  // Cost evolution by month
+  // Cost evolution by month (all categories)
   const costEvolution = useMemo(() => {
-    const months: Record<string, {materiais: number;maoDeObra: number;terceirizados: number;}> = {};
-    purchases.forEach((p: any) => {
-      const m = p.date.slice(0, 7);
-      if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
-      months[m].materiais += p.finalPrice;
-    });
+    const emptyMonth = () => ({ materiais: 0, maoDeObra: 0, terceirizados: 0, alugueis: 0, documentacao: 0, das: 0 });
+    const months: Record<string, ReturnType<typeof emptyMonth>> = {};
+    const ensure = (m: string) => { if (!months[m]) months[m] = emptyMonth(); };
+
+    // Old purchases (by city)
+    purchases.forEach((p: any) => { const m = p.date.slice(0, 7); ensure(m); months[m].materiais += p.finalPrice; });
+    // Project purchases
+    (projectPurchases || []).forEach((p: any) => { const m = p.date.slice(0, 7); ensure(m); months[m].materiais += p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0); });
+    // Labor
     allocations.forEach((a: any) => {
       if (!a.worked) return;
       const emp = employees.find((e: any) => e.id === a.employeeId);
       if (!emp) return;
-      const m = a.date.slice(0, 7);
-      if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
+      const m = a.date.slice(0, 7); ensure(m);
       months[m].maoDeObra += emp.grossSalary / 22 + calculate13thDailyCost(emp.grossSalary);
     });
-    outsourced.forEach((s: any) => {
-      const m = s.date.slice(0, 7);
-      if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
-      months[m].terceirizados += s.value;
-    });
+    // Outsourced
+    outsourced.forEach((s: any) => { const m = s.date.slice(0, 7); ensure(m); months[m].terceirizados += s.value; });
+    // Rentals
+    (rentals || []).forEach((r: any) => { const m = r.startDate.slice(0, 7); ensure(m); months[m].alugueis += r.totalValue; });
+    // Documentation
+    (projectDocs || []).forEach((d: any) => { if (d.value > 0) { const m = d.documentDate.slice(0, 7); ensure(m); months[m].documentacao += d.value; } });
+    // DAS proportional
+    const pCount = allProjects.length || 1;
+    dasExpenses.forEach((d: any) => { ensure(d.month); months[d.month].das += d.value / pCount; });
+
     return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, data]) => ({
+      monthKey: month,
       month: new Date(month + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
       ...data,
-      total: data.materiais + data.maoDeObra + data.terceirizados
+      total: data.materiais + data.maoDeObra + data.terceirizados + data.alugueis + data.documentacao + data.das
     }));
-  }, [purchases, allocations, outsourced, employees, charges]);
+  }, [purchases, projectPurchases, allocations, outsourced, employees, rentals, projectDocs, dasExpenses, allProjects]);
+
+  // Accumulated cost evolution
+  const costAccumulated = useMemo(() => {
+    let acc = 0;
+    return costEvolution.map(d => { acc += d.total; return { ...d, acumulado: acc }; });
+  }, [costEvolution]);
 
   return (
     <div className="space-y-6">
@@ -209,7 +223,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
             <h3 className="text-sm font-semibold mb-4">Evolução de Custos</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={costEvolution}>
+                <LineChart data={costAccumulated}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
                   <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
@@ -218,6 +232,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
                   <Line type="monotone" dataKey="materiais" name="Materiais" stroke="hsl(221, 83%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="maoDeObra" name="Mão de Obra" stroke="hsl(142, 76%, 36%)" strokeWidth={2} dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="terceirizados" name="Terceirizados" stroke="hsl(38, 92%, 50%)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="alugueis" name="Aluguéis" stroke="hsl(25, 95%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="total" name="Total" stroke="hsl(0, 0%, 30%)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -225,6 +240,77 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
           </div>
         }
       </div>
+
+      {/* Monthly cost bar chart */}
+      {costEvolution.length > 0 &&
+      <div className="bg-card rounded-xl p-6 shadow-card">
+        <h3 className="text-sm font-semibold mb-4">Gastos Mensais por Categoria</h3>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={costEvolution}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
+              <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Legend />
+              <Bar dataKey="materiais" name="Materiais" fill="hsl(221, 83%, 53%)" stackId="a" radius={[0,0,0,0]} />
+              <Bar dataKey="maoDeObra" name="Mão de Obra" fill="hsl(142, 76%, 36%)" stackId="a" />
+              <Bar dataKey="terceirizados" name="Terceirizados" fill="hsl(38, 92%, 50%)" stackId="a" />
+              <Bar dataKey="alugueis" name="Aluguéis" fill="hsl(25, 95%, 53%)" stackId="a" />
+              <Bar dataKey="documentacao" name="Documentação" fill="hsl(340, 70%, 50%)" stackId="a" />
+              <Bar dataKey="das" name="DAS" fill="hsl(280, 60%, 50%)" stackId="a" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      }
+
+      {/* Monthly breakdown table */}
+      {costEvolution.length > 0 &&
+      <div className="bg-card rounded-xl shadow-card overflow-hidden">
+        <h3 className="text-sm font-semibold p-6 pb-3">Detalhamento Mensal</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="label-caps text-left px-4 py-3">Mês</th>
+                <th className="label-caps text-right px-4 py-3">Materiais</th>
+                <th className="label-caps text-right px-4 py-3">Mão de Obra</th>
+                <th className="label-caps text-right px-4 py-3">Terceiriz.</th>
+                <th className="label-caps text-right px-4 py-3">Aluguéis</th>
+                <th className="label-caps text-right px-4 py-3">Docs</th>
+                <th className="label-caps text-right px-4 py-3">DAS</th>
+                <th className="label-caps text-right px-4 py-3 font-bold">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {costEvolution.map((d) => (
+                <tr key={d.monthKey} className="border-b border-border hover:bg-row-hover transition-colors">
+                  <td className="px-4 py-3 font-medium">{d.month}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.materiais)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.maoDeObra)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.terceirizados)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.alugueis)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.documentacao)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.das)}</td>
+                  <td className="px-4 py-3 text-right font-bold">{formatCurrency(d.total)}</td>
+                </tr>
+              ))}
+              <tr className="bg-muted font-bold">
+                <td className="px-4 py-3">Total Geral</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.materiais, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.maoDeObra, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.terceirizados, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.alugueis, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.documentacao, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.das, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.total, 0))}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      }
 
       {/* Recent measurements */}
       <div className="bg-card rounded-xl p-6 shadow-card">
