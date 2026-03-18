@@ -206,11 +206,14 @@ export default function LaudosPage() {
     fetchLaudos();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Excluir este laudo?')) return;
-    const { error } = await supabase.from('laudos').delete().eq('id', id);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  async function confirmDelete() {
+    if (!deleteId) return;
+    const { error } = await supabase.from('laudos').delete().eq('id', deleteId);
     if (error) { toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' }); return; }
     toast({ title: 'Laudo excluído' });
+    setDeleteId(null);
     fetchLaudos();
   }
 
