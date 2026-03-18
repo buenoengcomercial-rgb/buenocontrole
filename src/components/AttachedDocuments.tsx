@@ -26,7 +26,7 @@ interface Props {
 }
 
 export default function AttachedDocuments({ entityType, entityId }: Props) {
-  const { addAttachment, deleteAttachment, getAttachments } = useAttachments();
+  const { addAttachment, deleteAttachment, getAttachments, downloadAttachment } = useAttachments();
   const inputRef = useRef<HTMLInputElement>(null);
   const files = getAttachments(entityType, entityId);
 
