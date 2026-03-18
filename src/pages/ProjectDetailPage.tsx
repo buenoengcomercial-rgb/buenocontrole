@@ -136,33 +136,47 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
   filter((d) => d.value > 0);
   const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(25, 95%, 53%)', 'hsl(340, 70%, 50%)', 'hsl(280, 60%, 50%)'];
 
-  // Cost evolution by month
+  // Cost evolution by month (all categories)
   const costEvolution = useMemo(() => {
-    const months: Record<string, {materiais: number;maoDeObra: number;terceirizados: number;}> = {};
-    purchases.forEach((p: any) => {
-      const m = p.date.slice(0, 7);
-      if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
-      months[m].materiais += p.finalPrice;
-    });
+    const emptyMonth = () => ({ materiais: 0, maoDeObra: 0, terceirizados: 0, alugueis: 0, documentacao: 0, das: 0 });
+    const months: Record<string, ReturnType<typeof emptyMonth>> = {};
+    const ensure = (m: string) => { if (!months[m]) months[m] = emptyMonth(); };
+
+    // Old purchases (by city)
+    purchases.forEach((p: any) => { const m = p.date.slice(0, 7); ensure(m); months[m].materiais += p.finalPrice; });
+    // Project purchases
+    (projectPurchases || []).forEach((p: any) => { const m = p.date.slice(0, 7); ensure(m); months[m].materiais += p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0); });
+    // Labor
     allocations.forEach((a: any) => {
       if (!a.worked) return;
       const emp = employees.find((e: any) => e.id === a.employeeId);
       if (!emp) return;
-      const m = a.date.slice(0, 7);
-      if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
+      const m = a.date.slice(0, 7); ensure(m);
       months[m].maoDeObra += emp.grossSalary / 22 + calculate13thDailyCost(emp.grossSalary);
     });
-    outsourced.forEach((s: any) => {
-      const m = s.date.slice(0, 7);
-      if (!months[m]) months[m] = { materiais: 0, maoDeObra: 0, terceirizados: 0 };
-      months[m].terceirizados += s.value;
-    });
+    // Outsourced
+    outsourced.forEach((s: any) => { const m = s.date.slice(0, 7); ensure(m); months[m].terceirizados += s.value; });
+    // Rentals
+    (rentals || []).forEach((r: any) => { const m = r.startDate.slice(0, 7); ensure(m); months[m].alugueis += r.totalValue; });
+    // Documentation
+    (projectDocs || []).forEach((d: any) => { if (d.value > 0) { const m = d.documentDate.slice(0, 7); ensure(m); months[m].documentacao += d.value; } });
+    // DAS proportional
+    const pCount = allProjects.length || 1;
+    dasExpenses.forEach((d: any) => { ensure(d.month); months[d.month].das += d.value / pCount; });
+
     return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, data]) => ({
+      monthKey: month,
       month: new Date(month + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
       ...data,
-      total: data.materiais + data.maoDeObra + data.terceirizados
+      total: data.materiais + data.maoDeObra + data.terceirizados + data.alugueis + data.documentacao + data.das
     }));
-  }, [purchases, allocations, outsourced, employees, charges]);
+  }, [purchases, projectPurchases, allocations, outsourced, employees, rentals, projectDocs, dasExpenses, allProjects]);
+
+  // Accumulated cost evolution
+  const costAccumulated = useMemo(() => {
+    let acc = 0;
+    return costEvolution.map(d => { acc += d.total; return { ...d, acumulado: acc }; });
+  }, [costEvolution]);
 
   return (
     <div className="space-y-6">
