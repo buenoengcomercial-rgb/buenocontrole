@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 
@@ -18,6 +19,7 @@ export default function EPIPage() {
   const [open, setOpen] = useState(false);
   const [filterEmployee, setFilterEmployee] = useState('all');
   const [form, setForm] = useState({ employeeId: '', epiType: '', unit: '', deliveryDate: '', quantity: 1, notes: '', fileName: '' });
+  const [expandedEmployees, setExpandedEmployees] = useState<Record<string, boolean>>({});
 
   const empName = (id: string) => employees.find(e => e.id === id)?.name ?? '—';
   const activeEmployees = employees.filter(e => e.status === 'ativo');
@@ -26,6 +28,26 @@ export default function EPIPage() {
     filterEmployee === 'all' ? epiDeliveries : epiDeliveries.filter(e => e.employeeId === filterEmployee),
     [epiDeliveries, filterEmployee]
   );
+
+  const grouped = useMemo(() => {
+    const map: Record<string, typeof filtered> = {};
+    filtered.forEach(d => {
+      if (!map[d.employeeId]) map[d.employeeId] = [];
+      map[d.employeeId].push(d);
+    });
+    return Object.entries(map).sort((a, b) => empName(a[0]).localeCompare(empName(b[0])));
+  }, [filtered, employees]);
+
+  const toggleEmployee = (empId: string) => {
+    setExpandedEmployees(prev => ({ ...prev, [empId]: !prev[empId] }));
+  };
+
+  const toggleAll = () => {
+    const allExpanded = grouped.every(([id]) => expandedEmployees[id]);
+    const next: Record<string, boolean> = {};
+    grouped.forEach(([id]) => { next[id] = !allExpanded; });
+    setExpandedEmployees(next);
+  };
 
   const handleSubmit = () => {
     if (!form.employeeId || !form.epiType || !form.deliveryDate) { toast.error('Preencha os campos obrigatórios.'); return; }
@@ -98,52 +120,79 @@ export default function EPIPage() {
         </Dialog>
       </div>
 
-      <div>
-        <label className="label-caps mb-1 block">Filtrar por Colaborador</label>
-        <Select value={filterEmployee} onValueChange={setFilterEmployee}>
-          <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      <div className="flex items-center gap-4">
+        <div className="flex-1">
+          <label className="label-caps mb-1 block">Filtrar por Colaborador</label>
+          <Select value={filterEmployee} onValueChange={setFilterEmployee}>
+            <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        {grouped.length > 0 && (
+          <Button variant="outline" size="sm" onClick={toggleAll} className="mt-5">
+            {grouped.every(([id]) => expandedEmployees[id]) ? 'Minimizar Todos' : 'Expandir Todos'}
+          </Button>
+        )}
       </div>
 
-      <div className="bg-card rounded-xl shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted">
-                <th className="label-caps text-left px-6 py-3">Colaborador</th>
-                <th className="label-caps text-left px-6 py-3">Tipo de EPI</th>
-                <th className="label-caps text-left px-6 py-3">Data</th>
-                <th className="label-caps text-left px-6 py-3">Unidade</th>
-                <th className="label-caps text-center px-6 py-3">Qtd</th>
-                <th className="label-caps text-left px-6 py-3">Observações</th>
-                <th className="label-caps text-right px-6 py-3">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(e => (
-                <React.Fragment key={e.id}>
-                <tr className="border-b border-border hover:bg-row-hover transition-colors duration-150">
-                  <td className="px-6 py-4 text-sm font-medium">{empName(e.employeeId)}</td>
-                  <td className="px-6 py-4 text-sm">{e.epiType}</td>
-                  <td className="px-6 py-4 text-sm">{formatDate(e.deliveryDate)}</td>
-                  <td className="px-6 py-4 text-sm">{e.unit || '—'}</td>
-                  <td className="px-6 py-4 text-sm text-center">{e.quantity}</td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">{e.notes || '—'}</td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => { deleteEPIDelivery(e.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
-                  </td>
-                </tr>
-                <tr><td colSpan={7} className="px-6 py-2 bg-muted/30"><AttachedDocuments entityType="epi" entityId={e.id} /></td></tr>
-                </React.Fragment>
-              ))}
-              {filtered.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhuma entrega registrada.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+      <div className="space-y-3">
+        {grouped.map(([empId, items]) => {
+          const isOpen = !!expandedEmployees[empId];
+          return (
+            <Collapsible key={empId} open={isOpen} onOpenChange={() => toggleEmployee(empId)}>
+              <div className="bg-card rounded-xl shadow-card overflow-hidden">
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between px-6 py-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      {isOpen ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
+                      <span className="font-semibold text-foreground">{empName(empId)}</span>
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{items.length} entrega(s)</span>
+                    </div>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="overflow-x-auto border-t border-border">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="label-caps text-left px-6 py-3">Tipo de EPI</th>
+                          <th className="label-caps text-left px-6 py-3">Data</th>
+                          <th className="label-caps text-left px-6 py-3">Unidade</th>
+                          <th className="label-caps text-center px-6 py-3">Qtd</th>
+                          <th className="label-caps text-left px-6 py-3">Observações</th>
+                          <th className="label-caps text-right px-6 py-3">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map(e => (
+                          <React.Fragment key={e.id}>
+                            <tr className="border-b border-border hover:bg-row-hover transition-colors duration-150">
+                              <td className="px-6 py-4 text-sm">{e.epiType}</td>
+                              <td className="px-6 py-4 text-sm">{formatDate(e.deliveryDate)}</td>
+                              <td className="px-6 py-4 text-sm">{e.unit || '—'}</td>
+                              <td className="px-6 py-4 text-sm text-center">{e.quantity}</td>
+                              <td className="px-6 py-4 text-sm text-muted-foreground">{e.notes || '—'}</td>
+                              <td className="px-6 py-4 text-right">
+                                <button onClick={() => { deleteEPIDelivery(e.id); toast.success('Registro removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
+                              </td>
+                            </tr>
+                            <tr><td colSpan={6} className="px-6 py-2 bg-muted/30"><AttachedDocuments entityType="epi" entityId={e.id} /></td></tr>
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          );
+        })}
+        {grouped.length === 0 && (
+          <div className="bg-card rounded-xl shadow-card p-12 text-center text-meta">Nenhuma entrega registrada.</div>
+        )}
       </div>
     </div>
   );
