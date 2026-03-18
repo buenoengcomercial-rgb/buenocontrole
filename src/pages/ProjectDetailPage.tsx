@@ -613,7 +613,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
             <div>
               <label className="label-caps block mb-1">Fornecedor (opcional)</label>
               <div className="flex gap-1">
-                <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })} className="flex-1 px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })} className="flex-1 min-w-0 max-w-[220px] px-3 py-2 rounded-lg border border-input bg-background text-sm truncate">
                   <option value="">— Nenhum —</option>
                   {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
