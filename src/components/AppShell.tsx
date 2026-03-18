@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X, Users, CalendarDays, DollarSign, FileText, PieChart, Shield, HardHat, Palmtree, BookOpen, GraduationCap, Stethoscope, Building2, Wrench, Receipt, UserCog, ClipboardList, LogOut } from 'lucide-react';
+import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X, Users, CalendarDays, DollarSign, FileText, PieChart, Shield, HardHat, Palmtree, BookOpen, GraduationCap, Stethoscope, Building2, Wrench, Receipt, UserCog, ClipboardList, LogOut, FileCheck } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -18,6 +18,11 @@ const allSections = [
       { to: '/obras', label: 'Obras e Projetos', icon: Building2 },
       { to: '/obras/relatorios', label: 'Relatórios de Obras', icon: BarChart3 },
     ],
+  },
+  {
+    title: 'Laudos & AVCIPs',
+    adminOnly: true,
+    links: [{ to: '/laudos', label: 'Gerenciar Laudos', icon: FileCheck }],
   },
   {
     title: 'Financeiro',

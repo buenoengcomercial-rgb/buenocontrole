@@ -513,6 +513,72 @@ export type Database = {
           },
         ]
       }
+      laudos: {
+        Row: {
+          area: string
+          cliente: string
+          cnpj: string
+          created_at: string
+          data_vencimento: string | null
+          distrito: string
+          email: string
+          endereco: string
+          id: string
+          municipio: string
+          numero_projetos: string
+          observacoes: string
+          responsavel: string
+          sat: string
+          setor_atendimento: string
+          status_bueno: string
+          status_cbm: string
+          updated_at: string
+          utilizacao: string
+        }
+        Insert: {
+          area?: string
+          cliente: string
+          cnpj?: string
+          created_at?: string
+          data_vencimento?: string | null
+          distrito?: string
+          email?: string
+          endereco?: string
+          id?: string
+          municipio?: string
+          numero_projetos?: string
+          observacoes?: string
+          responsavel?: string
+          sat?: string
+          setor_atendimento?: string
+          status_bueno?: string
+          status_cbm?: string
+          updated_at?: string
+          utilizacao?: string
+        }
+        Update: {
+          area?: string
+          cliente?: string
+          cnpj?: string
+          created_at?: string
+          data_vencimento?: string | null
+          distrito?: string
+          email?: string
+          endereco?: string
+          id?: string
+          municipio?: string
+          numero_projetos?: string
+          observacoes?: string
+          responsavel?: string
+          sat?: string
+          setor_atendimento?: string
+          status_bueno?: string
+          status_cbm?: string
+          updated_at?: string
+          utilizacao?: string
+        }
+        Relationships: []
+      }
       materials: {
         Row: {
           category: string

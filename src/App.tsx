@@ -34,6 +34,7 @@ import ProjectReportsPage from "@/pages/ProjectReportsPage";
 import DASPage from "@/pages/DASPage";
 import UsersPage from "@/pages/UsersPage";
 import AuditLogPage from "@/pages/AuditLogPage";
+import LaudosPage from "@/pages/LaudosPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -94,6 +95,7 @@ function AppRoutes() {
         <Route path="/obras" element={<ProjectsPage />} />
         <Route path="/obras/:id" element={<ProjectDetailPage />} />
         <Route path="/obras/relatorios" element={<ProjectReportsPage />} />
+        <Route path="/laudos" element={<LaudosPage />} />
         <Route path="/financeiro/das" element={<DASPage />} />
         <Route path="/fornecedores" element={<SuppliersPage />} />
         <Route path="/materiais" element={<MaterialsPage />} />
