@@ -20,6 +20,11 @@ const allSections = [
     ],
   },
   {
+    title: 'Laudos & AVCIPs',
+    adminOnly: true,
+    links: [{ to: '/laudos', label: 'Gerenciar Laudos', icon: FileCheck }],
+  },
+  {
     title: 'Financeiro',
     adminOnly: true,
     links: [{ to: '/financeiro/das', label: 'DAS — Simples Nacional', icon: Receipt }],
