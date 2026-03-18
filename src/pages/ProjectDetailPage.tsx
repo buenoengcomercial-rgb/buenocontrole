@@ -223,7 +223,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
             <h3 className="text-sm font-semibold mb-4">Evolução de Custos</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={costEvolution}>
+                <LineChart data={costAccumulated}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
                   <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
@@ -232,6 +232,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
                   <Line type="monotone" dataKey="materiais" name="Materiais" stroke="hsl(221, 83%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="maoDeObra" name="Mão de Obra" stroke="hsl(142, 76%, 36%)" strokeWidth={2} dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="terceirizados" name="Terceirizados" stroke="hsl(38, 92%, 50%)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="alugueis" name="Aluguéis" stroke="hsl(25, 95%, 53%)" strokeWidth={2} dot={{ r: 3 }} />
                   <Line type="monotone" dataKey="total" name="Total" stroke="hsl(0, 0%, 30%)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -239,6 +240,77 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
           </div>
         }
       </div>
+
+      {/* Monthly cost bar chart */}
+      {costEvolution.length > 0 &&
+      <div className="bg-card rounded-xl p-6 shadow-card">
+        <h3 className="text-sm font-semibold mb-4">Gastos Mensais por Categoria</h3>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={costEvolution}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
+              <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Legend />
+              <Bar dataKey="materiais" name="Materiais" fill="hsl(221, 83%, 53%)" stackId="a" radius={[0,0,0,0]} />
+              <Bar dataKey="maoDeObra" name="Mão de Obra" fill="hsl(142, 76%, 36%)" stackId="a" />
+              <Bar dataKey="terceirizados" name="Terceirizados" fill="hsl(38, 92%, 50%)" stackId="a" />
+              <Bar dataKey="alugueis" name="Aluguéis" fill="hsl(25, 95%, 53%)" stackId="a" />
+              <Bar dataKey="documentacao" name="Documentação" fill="hsl(340, 70%, 50%)" stackId="a" />
+              <Bar dataKey="das" name="DAS" fill="hsl(280, 60%, 50%)" stackId="a" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      }
+
+      {/* Monthly breakdown table */}
+      {costEvolution.length > 0 &&
+      <div className="bg-card rounded-xl shadow-card overflow-hidden">
+        <h3 className="text-sm font-semibold p-6 pb-3">Detalhamento Mensal</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="label-caps text-left px-4 py-3">Mês</th>
+                <th className="label-caps text-right px-4 py-3">Materiais</th>
+                <th className="label-caps text-right px-4 py-3">Mão de Obra</th>
+                <th className="label-caps text-right px-4 py-3">Terceiriz.</th>
+                <th className="label-caps text-right px-4 py-3">Aluguéis</th>
+                <th className="label-caps text-right px-4 py-3">Docs</th>
+                <th className="label-caps text-right px-4 py-3">DAS</th>
+                <th className="label-caps text-right px-4 py-3 font-bold">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {costEvolution.map((d) => (
+                <tr key={d.monthKey} className="border-b border-border hover:bg-row-hover transition-colors">
+                  <td className="px-4 py-3 font-medium">{d.month}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.materiais)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.maoDeObra)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.terceirizados)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.alugueis)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.documentacao)}</td>
+                  <td className="px-4 py-3 text-right">{formatCurrency(d.das)}</td>
+                  <td className="px-4 py-3 text-right font-bold">{formatCurrency(d.total)}</td>
+                </tr>
+              ))}
+              <tr className="bg-muted font-bold">
+                <td className="px-4 py-3">Total Geral</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.materiais, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.maoDeObra, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.terceirizados, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.alugueis, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.documentacao, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.das, 0))}</td>
+                <td className="px-4 py-3 text-right">{formatCurrency(costEvolution.reduce((s, d) => s + d.total, 0))}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      }
 
       {/* Recent measurements */}
       <div className="bg-card rounded-xl p-6 shadow-card">
