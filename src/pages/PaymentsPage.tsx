@@ -319,6 +319,16 @@ export default function PaymentsPage() {
                 <Input type="date" value={advPayDate} onChange={e => setAdvPayDate(e.target.value)} className="w-[180px]" />
               </div>
             </div>
+            {(() => {
+              const selEmp = activeEmployees.find(e => e.id === advEmployee);
+              if (!selEmp || !selEmp.pixKey) return null;
+              return (
+                <div className="bg-accent/30 rounded-lg p-3 flex items-center gap-3">
+                  <KeyRound className="w-4 h-4 text-primary" />
+                  <span className="text-sm">PIX ({selEmp.pixKeyType}): <span className="font-mono font-medium text-foreground">{selEmp.pixKey}</span></span>
+                </div>
+              );
+            })()}
             <div>
               <label className="label-caps mb-1 block">Observações</label>
               <Textarea value={advNotes} onChange={e => setAdvNotes(e.target.value)} placeholder="Motivo, referência do pagamento, ajustes..." className="min-h-[60px]" />
