@@ -289,12 +289,10 @@ export default function LaudosPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('cliente')}>Cliente <SortIcon field="cliente" /></TableHead>
-                <TableHead>Responsável</TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('municipio')}>Município <SortIcon field="municipio" /></TableHead>
                 <TableHead>Endereço</TableHead>
                 <TableHead>CNPJ</TableHead>
                 <TableHead>Utilização</TableHead>
-                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('setor_atendimento')}>Setor <SortIcon field="setor_atendimento" /></TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('data_vencimento')}>Vencimento <SortIcon field="data_vencimento" /></TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[80px]">Ações</TableHead>
