@@ -319,6 +319,9 @@ export default function LaudosPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{l.municipio}</TableCell>
+                    <TableCell className="text-sm max-w-[200px]">
+                      <div className="truncate" title={l.endereco}>{l.endereco || '—'}</div>
+                    </TableCell>
                     <TableCell className="text-xs font-mono">{l.cnpj}</TableCell>
                     <TableCell className="text-sm">{l.utilizacao}</TableCell>
                     <TableCell className="text-sm">{l.setor_atendimento}</TableCell>
