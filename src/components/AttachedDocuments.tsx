@@ -12,6 +12,15 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 function FileIcon({ type }: { type: string }) {
   if (type.includes('pdf')) return <FileText className="w-4 h-4 text-destructive" />;
   if (type.includes('sheet') || type.includes('excel') || type.includes('.xls')) return <FileSpreadsheet className="w-4 h-4 text-success" />;
@@ -30,27 +39,33 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const files = getAttachments(entityType, entityId);
 
-  const handleFiles = (fileList: FileList | null) => {
+  const handleFiles = async (fileList: FileList | null) => {
     if (!fileList) return;
-    Array.from(fileList).forEach(file => {
+
+    for (const file of Array.from(fileList)) {
       if (file.size > MAX_SIZE) {
         toast.error(`${file.name} excede 10MB.`);
-        return;
+        continue;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        addAttachment({
+
+      try {
+        const dataUrl = await readAsDataUrl(file);
+        const saved = await addAttachment({
           entityType,
           entityId,
           fileName: file.name,
           fileSize: file.size,
           fileType: file.type || file.name.split('.').pop() || '',
-          dataUrl: reader.result as string,
+          dataUrl,
         });
-        toast.success(`${file.name} anexado.`);
-      };
-      reader.readAsDataURL(file);
-    });
+
+        if (saved) toast.success(`${file.name} anexado.`);
+        else toast.error(`Falha ao anexar ${file.name}.`);
+      } catch {
+        toast.error(`Falha ao ler ${file.name}.`);
+      }
+    }
+
     if (inputRef.current) inputRef.current.value = '';
   };
 
@@ -68,6 +83,12 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
     toast.dismiss();
   };
 
+  const handleDelete = async (id: string) => {
+    const removed = await deleteAttachment(id);
+    if (removed) toast.success('Arquivo removido.');
+    else toast.error('Erro ao remover arquivo.');
+  };
+
   return (
     <div className="bg-card rounded-xl p-4 shadow-card space-y-3">
       <div className="flex items-center justify-between">
@@ -82,7 +103,7 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
         >
           + Anexar
         </button>
-        <input ref={inputRef} type="file" multiple accept={ACCEPTED} className="hidden" onChange={e => handleFiles(e.target.files)} />
+        <input ref={inputRef} type="file" multiple accept={ACCEPTED} className="hidden" onChange={e => { void handleFiles(e.target.files); }} />
       </div>
 
       {files.length === 0 && (
@@ -99,7 +120,7 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
               <button onClick={() => handleDownload(f)} className="p-1 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity" title="Baixar">
                 <Download className="w-3.5 h-3.5" />
               </button>
-              <button onClick={() => { deleteAttachment(f.id); toast.success('Arquivo removido.'); }} className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" title="Excluir">
+              <button onClick={() => { void handleDelete(f.id); }} className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" title="Excluir">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
