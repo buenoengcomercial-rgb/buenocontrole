@@ -45,7 +45,6 @@ const currentMonth = () => {
 export default function MedicoesEnergisaPage() {
   const [contractItems, setContractItems] = useState<ContractItem[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
-  const [laudos, setLaudos] = useState<Laudo[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth());
