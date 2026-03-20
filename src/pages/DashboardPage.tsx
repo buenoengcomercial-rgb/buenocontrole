@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 
 export default function DashboardPage() {
   const { purchases } = useAppData();
-  const { employees, workDays, payments, advances } = useEmployeeData();
+  const { employees, workDays, payments, advances, terminations } = useEmployeeData();
   const { charges, vacations, asos, trainings } = useSafetyData();
   const { projects, allocations, outsourcedServices, projectDocuments, dasExpenses } = useProjectData();
 
