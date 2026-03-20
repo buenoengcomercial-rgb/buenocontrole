@@ -33,6 +33,7 @@ import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import ProjectReportsPage from "@/pages/ProjectReportsPage";
 import DASPage from "@/pages/DASPage";
 import UsersPage from "@/pages/UsersPage";
+import RescisaoPage from "@/pages/RescisaoPage";
 import AuditLogPage from "@/pages/AuditLogPage";
 import LaudosPage from "@/pages/LaudosPage";
 import NotFound from "./pages/NotFound.tsx";
