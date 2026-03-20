@@ -36,6 +36,7 @@ import UsersPage from "@/pages/UsersPage";
 import RescisaoPage from "@/pages/RescisaoPage";
 import AuditLogPage from "@/pages/AuditLogPage";
 import LaudosPage from "@/pages/LaudosPage";
+import MedicoesEnergisaPage from "@/pages/MedicoesEnergisaPage";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -97,6 +98,7 @@ function AppRoutes() {
         <Route path="/obras/:id" element={<ProjectDetailPage />} />
         <Route path="/obras/relatorios" element={<ProjectReportsPage />} />
         <Route path="/laudos" element={<LaudosPage />} />
+        <Route path="/medicoes-energisa" element={<MedicoesEnergisaPage />} />
         <Route path="/financeiro/das" element={<DASPage />} />
         <Route path="/fornecedores" element={<SuppliersPage />} />
         <Route path="/materiais" element={<MaterialsPage />} />
