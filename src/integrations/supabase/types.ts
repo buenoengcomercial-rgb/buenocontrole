@@ -407,6 +407,96 @@ export type Database = {
         }
         Relationships: []
       }
+      energisa_contract_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          item_code: string
+          labor_unit_value: number
+          material_unit_value: number
+          quantity: number
+          total_value: number
+          unit: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description: string
+          id?: string
+          item_code: string
+          labor_unit_value?: number
+          material_unit_value?: number
+          quantity?: number
+          total_value?: number
+          unit?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          item_code?: string
+          labor_unit_value?: number
+          material_unit_value?: number
+          quantity?: number
+          total_value?: number
+          unit?: string
+        }
+        Relationships: []
+      }
+      energisa_service_records: {
+        Row: {
+          contract_item_id: string
+          created_at: string
+          date: string
+          id: string
+          laudo_id: string
+          month: string
+          notes: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          contract_item_id: string
+          created_at?: string
+          date: string
+          id?: string
+          laudo_id: string
+          month: string
+          notes?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          contract_item_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          laudo_id?: string
+          month?: string
+          notes?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energisa_service_records_contract_item_id_fkey"
+            columns: ["contract_item_id"]
+            isOneToOne: false
+            referencedRelation: "energisa_contract_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "energisa_service_records_laudo_id_fkey"
+            columns: ["laudo_id"]
+            isOneToOne: false
+            referencedRelation: "laudos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epi_deliveries: {
         Row: {
           created_at: string
