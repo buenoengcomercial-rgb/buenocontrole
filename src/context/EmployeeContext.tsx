@@ -49,7 +49,7 @@ function mapAdvance(r: any): SalaryAdvance {
 function mapTermination(r: any): Termination {
   return { id: r.id, employeeId: r.employee_id, terminationDate: r.termination_date, paymentDate: r.payment_date, value: Number(r.value), notes: r.notes || '', createdAt: r.created_at };
 }
-
+function mapPayment(r: any): SalaryPayment {
   return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, paymentMethod: r.payment_method || '', notes: r.notes || '', createdAt: r.created_at };
 }
 
