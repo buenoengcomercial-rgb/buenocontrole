@@ -210,7 +210,7 @@ export default function MedicoesEnergisaPage() {
   };
 
   const resetForm = () => {
-    setFormLaudoId('');
+    setFormUnitName('');
     setFormItemId('');
     setFormQuantity('');
     setFormDate(new Date().toISOString().slice(0, 10));
