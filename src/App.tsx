@@ -33,6 +33,7 @@ import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import ProjectReportsPage from "@/pages/ProjectReportsPage";
 import DASPage from "@/pages/DASPage";
 import UsersPage from "@/pages/UsersPage";
+import RescisaoPage from "@/pages/RescisaoPage";
 import AuditLogPage from "@/pages/AuditLogPage";
 import LaudosPage from "@/pages/LaudosPage";
 import NotFound from "./pages/NotFound.tsx";
@@ -109,6 +110,7 @@ function AppRoutes() {
         <Route path="/colaboradores/ferias" element={<FeriasPage />} />
         <Route path="/colaboradores/advertencias" element={<AdvertenciasPage />} />
         <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
+        <Route path="/colaboradores/rescisao" element={<RescisaoPage />} />
         <Route path="/seguranca/documentacao" element={<DocumentacaoPage />} />
         <Route path="/seguranca/epi" element={<EPIPage />} />
         <Route path="/seguranca/aso" element={<ASOPage />} />

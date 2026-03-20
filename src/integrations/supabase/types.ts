@@ -1177,6 +1177,47 @@ export type Database = {
         }
         Relationships: []
       }
+      terminations: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string
+          payment_date: string | null
+          termination_date: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string
+          payment_date?: string | null
+          termination_date: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string
+          payment_date?: string | null
+          termination_date?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terminations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trainings: {
         Row: {
           created_at: string
