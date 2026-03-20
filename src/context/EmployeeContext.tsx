@@ -58,6 +58,8 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   const [workDays, setWorkDays] = useState<WorkDay[]>([]);
   const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
+  const [terminations, setTerminations] = useState<Termination[]>([]);
+  const [loading, setLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
