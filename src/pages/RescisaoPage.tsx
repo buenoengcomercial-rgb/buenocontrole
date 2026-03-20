@@ -27,7 +27,7 @@ interface Termination {
 }
 
 export default function RescisaoPage() {
-  const { employees } = useEmployeeData();
+  const { employees, updateEmployee } = useEmployeeData();
   const [terminations, setTerminations] = useState<Termination[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
