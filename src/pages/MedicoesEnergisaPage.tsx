@@ -55,7 +55,7 @@ export default function MedicoesEnergisaPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Form state
-  const [formLaudoId, setFormLaudoId] = useState('');
+  const [formUnitName, setFormUnitName] = useState('');
   const [formItemId, setFormItemId] = useState('');
   const [formQuantity, setFormQuantity] = useState('');
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
