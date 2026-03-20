@@ -86,7 +86,7 @@ export default function DashboardPage() {
   }, [projects, allocations, purchases, outsourcedServices, employees, charges, dasExpenses]);
 
   const kpis = [
-    { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Adiant: ${formatCurrency(totalAdvancesPaid)}` },
+    { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Adiant: ${formatCurrency(totalAdvancesPaid)}${totalTerminations > 0 ? ` | Resc: ${formatCurrency(totalTerminations)}` : ''}` },
     { label: 'Encargos (INSS+FGTS)', value: formatCurrency(totalCharges), icon: Shield },
     { label: 'Vale Alimentação', value: formatCurrency(totalMealVoucher), icon: HardHat },
     { label: 'DAS do Mês', value: formatCurrency(totalDASMonth), icon: Receipt },
