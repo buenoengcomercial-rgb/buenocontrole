@@ -68,6 +68,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
       supabase.from('work_days').select('*').then(({ data }) => setWorkDays((data || []).map(mapWorkDay))),
       supabase.from('salary_advances').select('*').then(({ data }) => setAdvances((data || []).map(mapAdvance))),
       supabase.from('salary_payments').select('*').then(({ data }) => setPayments((data || []).map(mapPayment))),
+      supabase.from('terminations').select('*').then(({ data }) => setTerminations((data || []).map(mapTermination))),
     ]).finally(() => setLoading(false));
   }, []);
 
