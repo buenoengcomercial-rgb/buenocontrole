@@ -110,6 +110,7 @@ function AppRoutes() {
         <Route path="/colaboradores/ferias" element={<FeriasPage />} />
         <Route path="/colaboradores/advertencias" element={<AdvertenciasPage />} />
         <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />
+        <Route path="/colaboradores/rescisao" element={<RescisaoPage />} />
         <Route path="/seguranca/documentacao" element={<DocumentacaoPage />} />
         <Route path="/seguranca/epi" element={<EPIPage />} />
         <Route path="/seguranca/aso" element={<ASOPage />} />
