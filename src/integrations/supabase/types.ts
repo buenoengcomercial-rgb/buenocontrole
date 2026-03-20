@@ -452,10 +452,11 @@ export type Database = {
           created_at: string
           date: string
           id: string
-          laudo_id: string
+          laudo_id: string | null
           month: string
           notes: string
           quantity: number
+          unit_name: string
           updated_at: string
         }
         Insert: {
@@ -463,10 +464,11 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
-          laudo_id: string
+          laudo_id?: string | null
           month: string
           notes?: string
           quantity?: number
+          unit_name?: string
           updated_at?: string
         }
         Update: {
@@ -474,10 +476,11 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
-          laudo_id?: string
+          laudo_id?: string | null
           month?: string
           notes?: string
           quantity?: number
+          unit_name?: string
           updated_at?: string
         }
         Relationships: [
@@ -486,13 +489,6 @@ export type Database = {
             columns: ["contract_item_id"]
             isOneToOne: false
             referencedRelation: "energisa_contract_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "energisa_service_records_laudo_id_fkey"
-            columns: ["laudo_id"]
-            isOneToOne: false
-            referencedRelation: "laudos"
             referencedColumns: ["id"]
           },
         ]
