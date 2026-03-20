@@ -67,19 +67,15 @@ export default function MedicoesEnergisaPage() {
     Promise.all([
       supabase.from('energisa_contract_items').select('*').order('item_code'),
       supabase.from('energisa_service_records').select('*'),
-      supabase.from('laudos').select('id, cliente, endereco, municipio'),
-    ]).then(([items, records, laudosRes]) => {
+    ]).then(([items, records]) => {
       setContractItems((items.data || []).map((r: any) => ({
         id: r.id, item_code: r.item_code, category: r.category, description: r.description,
         quantity: Number(r.quantity), unit: r.unit, material_unit_value: Number(r.material_unit_value),
         labor_unit_value: Number(r.labor_unit_value), total_value: Number(r.total_value),
       })));
       setServiceRecords((records.data || []).map((r: any) => ({
-        id: r.id, contract_item_id: r.contract_item_id, laudo_id: r.laudo_id,
+        id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
         quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, created_at: r.created_at,
-      })));
-      setLaudos((laudosRes.data || []).map((r: any) => ({
-        id: r.id, cliente: r.cliente, endereco: r.endereco, municipio: r.municipio,
       })));
       setLoading(false);
     });
