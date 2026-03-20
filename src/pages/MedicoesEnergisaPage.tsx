@@ -29,19 +29,12 @@ interface ContractItem {
 interface ServiceRecord {
   id: string;
   contract_item_id: string;
-  laudo_id: string;
+  unit_name: string;
   quantity: number;
   date: string;
   month: string;
   notes: string;
   created_at: string;
-}
-
-interface Laudo {
-  id: string;
-  cliente: string;
-  endereco: string;
-  municipio: string;
 }
 
 const currentMonth = () => {
@@ -52,7 +45,6 @@ const currentMonth = () => {
 export default function MedicoesEnergisaPage() {
   const [contractItems, setContractItems] = useState<ContractItem[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
-  const [laudos, setLaudos] = useState<Laudo[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth());
@@ -63,7 +55,7 @@ export default function MedicoesEnergisaPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Form state
-  const [formLaudoId, setFormLaudoId] = useState('');
+  const [formUnitName, setFormUnitName] = useState('');
   const [formItemId, setFormItemId] = useState('');
   const [formQuantity, setFormQuantity] = useState('');
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
@@ -75,19 +67,15 @@ export default function MedicoesEnergisaPage() {
     Promise.all([
       supabase.from('energisa_contract_items').select('*').order('item_code'),
       supabase.from('energisa_service_records').select('*'),
-      supabase.from('laudos').select('id, cliente, endereco, municipio'),
-    ]).then(([items, records, laudosRes]) => {
+    ]).then(([items, records]) => {
       setContractItems((items.data || []).map((r: any) => ({
         id: r.id, item_code: r.item_code, category: r.category, description: r.description,
         quantity: Number(r.quantity), unit: r.unit, material_unit_value: Number(r.material_unit_value),
         labor_unit_value: Number(r.labor_unit_value), total_value: Number(r.total_value),
       })));
       setServiceRecords((records.data || []).map((r: any) => ({
-        id: r.id, contract_item_id: r.contract_item_id, laudo_id: r.laudo_id,
+        id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
         quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, created_at: r.created_at,
-      })));
-      setLaudos((laudosRes.data || []).map((r: any) => ({
-        id: r.id, cliente: r.cliente, endereco: r.endereco, municipio: r.municipio,
       })));
       setLoading(false);
     });
@@ -113,16 +101,15 @@ export default function MedicoesEnergisaPage() {
 
   // Accumulated data grouped by item
   const accumulatedByItem = useMemo(() => {
-    const map = new Map<string, { totalQty: number; records: (ServiceRecord & { laudoName: string })[] }>();
+    const map = new Map<string, { totalQty: number; records: (ServiceRecord & { unitLabel: string })[] }>();
     for (const r of monthRecords) {
       const existing = map.get(r.contract_item_id) || { totalQty: 0, records: [] };
-      const laudo = laudos.find(l => l.id === r.laudo_id);
       existing.totalQty += r.quantity;
-      existing.records.push({ ...r, laudoName: laudo ? `${laudo.cliente} - ${laudo.endereco}` : '' });
+      existing.records.push({ ...r, unitLabel: r.unit_name });
       map.set(r.contract_item_id, existing);
     }
     return map;
-  }, [monthRecords, laudos]);
+  }, [monthRecords]);
 
   const totalMonthValue = useMemo(() => {
     let total = 0;
@@ -186,14 +173,14 @@ export default function MedicoesEnergisaPage() {
   }, [contractItems, formCategoryFilter, formItemSearch]);
 
   const handleSave = async () => {
-    if (!formLaudoId || !formItemId || !formQuantity || !formDate) {
+    if (!formUnitName.trim() || !formItemId || !formQuantity || !formDate) {
       toast({ title: 'Preencha todos os campos obrigatórios', variant: 'destructive' });
       return;
     }
     const month = formDate.slice(0, 7);
     const { data, error } = await supabase.from('energisa_service_records').insert({
       contract_item_id: formItemId,
-      laudo_id: formLaudoId,
+      unit_name: formUnitName.trim(),
       quantity: parseFloat(formQuantity),
       date: formDate,
       month,
@@ -205,7 +192,7 @@ export default function MedicoesEnergisaPage() {
     }
     if (data) {
       setServiceRecords(prev => [...prev, {
-        id: data.id, contract_item_id: data.contract_item_id, laudo_id: data.laudo_id,
+        id: data.id, contract_item_id: data.contract_item_id, unit_name: data.unit_name || '',
         quantity: Number(data.quantity), date: data.date, month: data.month, notes: data.notes, created_at: data.created_at,
       }]);
     }
@@ -223,7 +210,7 @@ export default function MedicoesEnergisaPage() {
   };
 
   const resetForm = () => {
-    setFormLaudoId('');
+    setFormUnitName('');
     setFormItemId('');
     setFormQuantity('');
     setFormDate(new Date().toISOString().slice(0, 10));
@@ -244,7 +231,7 @@ export default function MedicoesEnergisaPage() {
       const acc = accumulatedByItem.get(item.id);
       if (!acc) continue;
       const unitTotal = item.material_unit_value + item.labor_unit_value;
-      const unidades = acc.records.map(r => r.laudoName).join(' / ');
+      const unidades = acc.records.map(r => r.unitLabel).join(' / ');
       lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${acc.totalQty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${(acc.totalQty * unitTotal).toFixed(2)};${unidades}`);
     }
 
@@ -387,7 +374,7 @@ export default function MedicoesEnergisaPage() {
                         <TableCell className="text-xs">
                           {acc?.records.map((r, i) => (
                             <div key={r.id} className="flex items-center gap-1 py-0.5">
-                              <span className="truncate max-w-[140px]" title={r.laudoName}>{r.laudoName.split(' - ')[0]}</span>
+                              <span className="truncate max-w-[140px]" title={r.unitLabel}>{r.unitLabel}</span>
                               <span className="text-muted-foreground">({r.quantity})</span>
                               <button onClick={() => setDeleteId(r.id)} className="text-destructive hover:text-destructive/80 ml-1">
                                 <Trash2 className="h-3 w-3" />
@@ -418,18 +405,11 @@ export default function MedicoesEnergisaPage() {
           <div className="space-y-4">
             <div>
               <Label>Unidade Energisa *</Label>
-              <Select value={formLaudoId} onValueChange={setFormLaudoId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a unidade..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {laudos.map(l => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.cliente} — {l.endereco}, {l.municipio}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                placeholder="Digite o nome da unidade..."
+                value={formUnitName}
+                onChange={e => setFormUnitName(e.target.value)}
+              />
             </div>
 
             <div>
