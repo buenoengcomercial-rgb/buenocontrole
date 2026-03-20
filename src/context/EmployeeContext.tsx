@@ -1,13 +1,24 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'; // v2
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'; // v3
 import { supabase } from '@/integrations/supabase/client';
 import type { Employee, WorkDay, SalaryAdvance, SalaryPayment } from '@/types/employee';
 import { calculateAdvance, calculateMealVoucher, getAdvancePaymentDate } from '@/types/employee';
+
+export interface Termination {
+  id: string;
+  employeeId: string;
+  terminationDate: string;
+  paymentDate: string | null;
+  value: number;
+  notes: string;
+  createdAt: string;
+}
 
 interface EmployeeState {
   employees: Employee[];
   workDays: WorkDay[];
   advances: SalaryAdvance[];
   payments: SalaryPayment[];
+  terminations: Termination[];
   loading: boolean;
   addEmployee: (e: Omit<Employee, 'id' | 'createdAt'>) => void;
   updateEmployee: (e: Employee) => void;
@@ -35,6 +46,9 @@ function mapWorkDay(r: any): WorkDay {
 function mapAdvance(r: any): SalaryAdvance {
   return { id: r.id, employeeId: r.employee_id, month: r.month, value: Number(r.value), paymentDate: r.payment_date, notes: r.notes || '', createdAt: r.created_at };
 }
+function mapTermination(r: any): Termination {
+  return { id: r.id, employeeId: r.employee_id, terminationDate: r.termination_date, paymentDate: r.payment_date, value: Number(r.value), notes: r.notes || '', createdAt: r.created_at };
+}
 function mapPayment(r: any): SalaryPayment {
   return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, paymentMethod: r.payment_method || '', notes: r.notes || '', createdAt: r.created_at };
 }
@@ -44,6 +58,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   const [workDays, setWorkDays] = useState<WorkDay[]>([]);
   const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
+  const [terminations, setTerminations] = useState<Termination[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,6 +67,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
       supabase.from('work_days').select('*').then(({ data }) => setWorkDays((data || []).map(mapWorkDay))),
       supabase.from('salary_advances').select('*').then(({ data }) => setAdvances((data || []).map(mapAdvance))),
       supabase.from('salary_payments').select('*').then(({ data }) => setPayments((data || []).map(mapPayment))),
+      supabase.from('terminations').select('*').then(({ data }) => setTerminations((data || []).map(mapTermination))),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -147,7 +163,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <EmployeeContext.Provider value={{
-      employees, workDays, advances, payments, loading,
+      employees, workDays, advances, payments, terminations, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addWorkDay, updateWorkDay, deleteWorkDay,
       generateAdvance, addAdvanceManual, updateAdvance, addPayment, updatePayment, deletePayment, deleteAdvance,
