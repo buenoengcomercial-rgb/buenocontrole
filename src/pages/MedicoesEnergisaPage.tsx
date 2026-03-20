@@ -405,18 +405,11 @@ export default function MedicoesEnergisaPage() {
           <div className="space-y-4">
             <div>
               <Label>Unidade Energisa *</Label>
-              <Select value={formLaudoId} onValueChange={setFormLaudoId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a unidade..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {laudos.map(l => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.cliente} — {l.endereco}, {l.municipio}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                placeholder="Digite o nome da unidade..."
+                value={formUnitName}
+                onChange={e => setFormUnitName(e.target.value)}
+              />
             </div>
 
             <div>
