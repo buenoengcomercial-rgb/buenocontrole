@@ -22,7 +22,10 @@ const allSections = [
   {
     title: 'Laudos & AVCIPs',
     adminOnly: true,
-    links: [{ to: '/laudos', label: 'Gerenciar Laudos', icon: FileCheck }],
+    links: [
+      { to: '/laudos', label: 'Gerenciar Laudos', icon: FileCheck },
+      { to: '/medicoes-energisa', label: 'Medições Energisa', icon: FileSpreadsheet },
+    ],
   },
   {
     title: 'Financeiro',
