@@ -26,7 +26,8 @@ export default function DashboardPage() {
     return vacations.filter(v => v.paymentDate && v.paymentDate.startsWith(currentMonth)).reduce((s, v) => s + v.totalPaid, 0);
   }, [vacations, currentMonth]);
   const totalMealVoucher = useMemo(() => workDays.filter(w => w.date.startsWith(currentMonth)).reduce((s, w) => s + w.mealVoucherValue, 0), [workDays, currentMonth]);
-  const totalPayroll = useMemo(() => totalSalariesPaid + totalAdvancesPaid + totalVacationsPaid + totalMealVoucher, [totalSalariesPaid, totalAdvancesPaid, totalVacationsPaid, totalMealVoucher]);
+  const totalTerminations = useMemo(() => terminations.filter(t => t.paymentDate && t.paymentDate.startsWith(currentMonth)).reduce((s, t) => s + t.value, 0), [terminations, currentMonth]);
+  const totalPayroll = useMemo(() => totalSalariesPaid + totalAdvancesPaid + totalVacationsPaid + totalMealVoucher + totalTerminations, [totalSalariesPaid, totalAdvancesPaid, totalVacationsPaid, totalMealVoucher, totalTerminations]);
 
   const totalCharges = useMemo(() => charges.filter(c => c.month === currentMonth).reduce((s, c) => s + c.value, 0), [charges, currentMonth]);
   const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === currentMonth).reduce((s, d) => s + d.value, 0), [dasExpenses, currentMonth]);
