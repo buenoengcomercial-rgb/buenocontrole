@@ -97,6 +97,12 @@ export default function RescisaoPage() {
     } else {
       const { error } = await supabase.from('terminations').insert(payload);
       if (error) { toast({ title: 'Erro ao cadastrar', variant: 'destructive' }); return; }
+      // Atualizar status do colaborador para desligado automaticamente
+      const emp = employees.find(e => e.id === form.employee_id);
+      if (emp && emp.status !== 'desligado') {
+        await supabase.from('employees').update({ status: 'desligado' }).eq('id', form.employee_id);
+        updateEmployee({ ...emp, status: 'desligado' });
+      }
       toast({ title: 'Rescisão cadastrada' });
     }
     setDialogOpen(false);
