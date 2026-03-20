@@ -50,6 +50,7 @@ const allSections = [
       { to: '/colaboradores/encargos', label: 'Encargos', icon: Shield },
       { to: '/colaboradores/ferias', label: 'Férias', icon: Palmtree },
       { to: '/colaboradores/advertencias', label: 'Advertências', icon: ClipboardList },
+      { to: '/colaboradores/rescisao', label: 'Rescisão', icon: FileText },
       { to: '/colaboradores/relatorios', label: 'Relatórios', icon: FileText },
     ],
   },
