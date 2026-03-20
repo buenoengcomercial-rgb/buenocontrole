@@ -173,14 +173,14 @@ export default function MedicoesEnergisaPage() {
   }, [contractItems, formCategoryFilter, formItemSearch]);
 
   const handleSave = async () => {
-    if (!formLaudoId || !formItemId || !formQuantity || !formDate) {
+    if (!formUnitName.trim() || !formItemId || !formQuantity || !formDate) {
       toast({ title: 'Preencha todos os campos obrigatórios', variant: 'destructive' });
       return;
     }
     const month = formDate.slice(0, 7);
     const { data, error } = await supabase.from('energisa_service_records').insert({
       contract_item_id: formItemId,
-      laudo_id: formLaudoId,
+      unit_name: formUnitName.trim(),
       quantity: parseFloat(formQuantity),
       date: formDate,
       month,
@@ -192,7 +192,7 @@ export default function MedicoesEnergisaPage() {
     }
     if (data) {
       setServiceRecords(prev => [...prev, {
-        id: data.id, contract_item_id: data.contract_item_id, laudo_id: data.laudo_id,
+        id: data.id, contract_item_id: data.contract_item_id, unit_name: data.unit_name || '',
         quantity: Number(data.quantity), date: data.date, month: data.month, notes: data.notes, created_at: data.created_at,
       }]);
     }
