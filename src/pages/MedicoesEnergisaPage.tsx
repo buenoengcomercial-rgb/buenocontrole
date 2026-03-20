@@ -10,9 +10,9 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Trash2, Download, FileSpreadsheet, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency } from '@/lib/format';
 
 interface ContractItem {
   id: string;
@@ -37,6 +37,12 @@ interface ServiceRecord {
   created_at: string;
 }
 
+interface PendingItem {
+  contract_item_id: string;
+  quantity: string;
+  notes: string;
+}
+
 const currentMonth = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -56,12 +62,16 @@ export default function MedicoesEnergisaPage() {
 
   // Form state
   const [formUnitName, setFormUnitName] = useState('');
-  const [formItemId, setFormItemId] = useState('');
-  const [formQuantity, setFormQuantity] = useState('');
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
-  const [formNotes, setFormNotes] = useState('');
   const [formCategoryFilter, setFormCategoryFilter] = useState('all');
   const [formItemSearch, setFormItemSearch] = useState('');
+  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  // Quick-add state
+  const [quickItemId, setQuickItemId] = useState('');
+  const [quickQuantity, setQuickQuantity] = useState('');
+  const [quickNotes, setQuickNotes] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -99,7 +109,6 @@ export default function MedicoesEnergisaPage() {
     });
   };
 
-  // Accumulated data grouped by item
   const accumulatedByItem = useMemo(() => {
     const map = new Map<string, { totalQty: number; records: (ServiceRecord & { unitLabel: string })[] }>();
     for (const r of monthRecords) {
@@ -115,9 +124,7 @@ export default function MedicoesEnergisaPage() {
     let total = 0;
     for (const [itemId, data] of accumulatedByItem) {
       const item = contractItems.find(i => i.id === itemId);
-      if (item) {
-        total += data.totalQty * (item.material_unit_value + item.labor_unit_value);
-      }
+      if (item) total += data.totalQty * (item.material_unit_value + item.labor_unit_value);
     }
     return total;
   }, [accumulatedByItem, contractItems]);
@@ -172,31 +179,64 @@ export default function MedicoesEnergisaPage() {
     });
   }, [contractItems, formCategoryFilter, formItemSearch]);
 
-  const handleSave = async () => {
-    if (!formUnitName.trim() || !formItemId || !formQuantity || !formDate) {
-      toast({ title: 'Preencha todos os campos obrigatórios', variant: 'destructive' });
+  const addPendingItem = () => {
+    if (!quickItemId || !quickQuantity) {
+      toast({ title: 'Selecione um item e informe a quantidade', variant: 'destructive' });
       return;
     }
+    if (pendingItems.some(p => p.contract_item_id === quickItemId)) {
+      toast({ title: 'Este item já foi adicionado à lista', variant: 'destructive' });
+      return;
+    }
+    setPendingItems(prev => [...prev, { contract_item_id: quickItemId, quantity: quickQuantity, notes: quickNotes }]);
+    setQuickItemId('');
+    setQuickQuantity('');
+    setQuickNotes('');
+  };
+
+  const removePendingItem = (idx: number) => {
+    setPendingItems(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSave = async () => {
+    if (!formUnitName.trim()) {
+      toast({ title: 'Informe o nome da unidade', variant: 'destructive' });
+      return;
+    }
+    if (pendingItems.length === 0) {
+      toast({ title: 'Adicione pelo menos um item à lista', variant: 'destructive' });
+      return;
+    }
+    if (!formDate) {
+      toast({ title: 'Informe a data', variant: 'destructive' });
+      return;
+    }
+
+    setSaving(true);
     const month = formDate.slice(0, 7);
-    const { data, error } = await supabase.from('energisa_service_records').insert({
-      contract_item_id: formItemId,
+    const rows = pendingItems.map(p => ({
+      contract_item_id: p.contract_item_id,
       unit_name: formUnitName.trim(),
-      quantity: parseFloat(formQuantity),
+      quantity: parseFloat(p.quantity),
       date: formDate,
       month,
-      notes: formNotes,
-    }).select().single();
+      notes: p.notes,
+    }));
+
+    const { data, error } = await supabase.from('energisa_service_records').insert(rows).select();
+    setSaving(false);
+
     if (error) {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
       return;
     }
     if (data) {
-      setServiceRecords(prev => [...prev, {
-        id: data.id, contract_item_id: data.contract_item_id, unit_name: data.unit_name || '',
-        quantity: Number(data.quantity), date: data.date, month: data.month, notes: data.notes, created_at: data.created_at,
-      }]);
+      setServiceRecords(prev => [...prev, ...data.map((r: any) => ({
+        id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
+        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, created_at: r.created_at,
+      }))]);
     }
-    toast({ title: 'Serviço registrado com sucesso' });
+    toast({ title: `${pendingItems.length} serviço(s) registrado(s) com sucesso` });
     setShowAddDialog(false);
     resetForm();
   };
@@ -211,16 +251,16 @@ export default function MedicoesEnergisaPage() {
 
   const resetForm = () => {
     setFormUnitName('');
-    setFormItemId('');
-    setFormQuantity('');
     setFormDate(new Date().toISOString().slice(0, 10));
-    setFormNotes('');
     setFormCategoryFilter('all');
     setFormItemSearch('');
+    setPendingItems([]);
+    setQuickItemId('');
+    setQuickQuantity('');
+    setQuickNotes('');
   };
 
   const exportExcel = useCallback(async () => {
-    // Build CSV for export
     const lines: string[] = [];
     lines.push('MEDIÇÃO ACUMULADA - ENERGISA');
     lines.push(`Mês: ${selectedMonth}`);
@@ -251,6 +291,11 @@ export default function MedicoesEnergisaPage() {
     toast({ title: 'Relatório exportado com sucesso' });
   }, [contractItems, accumulatedByItem, selectedMonth, totalMonthValue, totalMaterialValue, totalLaborValue]);
 
+  const getItemLabel = (itemId: string) => {
+    const item = contractItems.find(i => i.id === itemId);
+    return item ? `${item.item_code} - ${item.description.slice(0, 50)}` : itemId;
+  };
+
   if (loading) return <div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">Carregando...</div>;
 
   return (
@@ -273,28 +318,16 @@ export default function MedicoesEnergisaPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total do Mês</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-foreground tabular-nums">{formatCurrency(totalMonthValue)}</p>
-          </CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total do Mês</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-foreground tabular-nums">{formatCurrency(totalMonthValue)}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Material</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-foreground tabular-nums">{formatCurrency(totalMaterialValue)}</p>
-          </CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Material</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-foreground tabular-nums">{formatCurrency(totalMaterialValue)}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Mão de Obra</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-foreground tabular-nums">{formatCurrency(totalLaborValue)}</p>
-          </CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Mão de Obra</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-foreground tabular-nums">{formatCurrency(totalLaborValue)}</p></CardContent>
         </Card>
       </div>
 
@@ -372,7 +405,7 @@ export default function MedicoesEnergisaPage() {
                           {executedQty > 0 ? formatCurrency(executedValue) : '-'}
                         </TableCell>
                         <TableCell className="text-xs">
-                          {acc?.records.map((r, i) => (
+                          {acc?.records.map((r) => (
                             <div key={r.id} className="flex items-center gap-1 py-0.5">
                               <span className="truncate max-w-[140px]" title={r.unitLabel}>{r.unitLabel}</span>
                               <span className="text-muted-foreground">({r.quantity})</span>
@@ -396,25 +429,32 @@ export default function MedicoesEnergisaPage() {
         <div className="text-center py-12 text-muted-foreground">Nenhum item encontrado</div>
       )}
 
-      {/* Add Service Dialog */}
+      {/* Add Service Dialog - Multi-item */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Registrar Serviço Executado</DialogTitle>
+            <DialogTitle>Registrar Serviços Executados</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Unidade Energisa *</Label>
-              <Input
-                placeholder="Digite o nome da unidade..."
-                value={formUnitName}
-                onChange={e => setFormUnitName(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2 sm:col-span-1">
+                <Label>Unidade Energisa *</Label>
+                <Input
+                  placeholder="Digite o nome da unidade..."
+                  value={formUnitName}
+                  onChange={e => setFormUnitName(e.target.value)}
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <Label>Data *</Label>
+                <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
+              </div>
             </div>
 
-            <div>
-              <Label>Item do Contrato *</Label>
-              <div className="flex gap-2 mb-2">
+            {/* Item selector */}
+            <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+              <p className="text-sm font-medium text-foreground">Adicionar item</p>
+              <div className="flex gap-2">
                 <Select value={formCategoryFilter} onValueChange={setFormCategoryFilter}>
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Categoria" />
@@ -426,50 +466,92 @@ export default function MedicoesEnergisaPage() {
                 </Select>
                 <Input placeholder="Buscar..." value={formItemSearch} onChange={e => setFormItemSearch(e.target.value)} className="flex-1" />
               </div>
-              <Select value={formItemId} onValueChange={setFormItemId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o item..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {formFilteredItems.map(i => (
-                    <SelectItem key={i.id} value={i.id}>
-                      <span className="font-mono mr-2">{i.item_code}</span> {i.description.slice(0, 60)}...
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {formItemId && (() => {
-                const item = contractItems.find(i => i.id === formItemId);
-                if (!item) return null;
-                const totalUsed = serviceRecords.filter(r => r.contract_item_id === formItemId).reduce((s, r) => s + r.quantity, 0);
-                return (
-                  <div className="mt-2 p-2 rounded bg-muted text-xs space-y-1">
-                    <p><strong>Contrato:</strong> {item.quantity} {item.unit} | <strong>Usado:</strong> {totalUsed} | <strong>Saldo:</strong> {item.quantity - totalUsed}</p>
-                    <p><strong>Material:</strong> {formatCurrency(item.material_unit_value)} | <strong>MO:</strong> {formatCurrency(item.labor_unit_value)}</p>
-                  </div>
-                );
-              })()}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Quantidade *</Label>
-                <Input type="number" min="0" step="0.01" value={formQuantity} onChange={e => setFormQuantity(e.target.value)} />
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Select value={quickItemId} onValueChange={setQuickItemId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o item..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {formFilteredItems.map(i => (
+                        <SelectItem key={i.id} value={i.id}>
+                          <span className="font-mono mr-2">{i.item_code}</span> {i.description.slice(0, 50)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-24">
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="Qtd"
+                    value={quickQuantity}
+                    onChange={e => setQuickQuantity(e.target.value)}
+                  />
+                </div>
+                <Button type="button" size="sm" onClick={addPendingItem} className="shrink-0">
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar
+                </Button>
               </div>
               <div>
-                <Label>Data *</Label>
-                <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
+                <Input placeholder="Observação do item (opcional)" value={quickNotes} onChange={e => setQuickNotes(e.target.value)} />
               </div>
             </div>
 
-            <div>
-              <Label>Observações</Label>
-              <Textarea value={formNotes} onChange={e => setFormNotes(e.target.value)} rows={2} />
-            </div>
+            {/* Pending items list */}
+            {pendingItems.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="px-3 py-2 bg-muted/50 flex justify-between items-center">
+                  <p className="text-sm font-medium text-foreground">Itens a registrar ({pendingItems.length})</p>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead className="w-20 text-right">Qtd</TableHead>
+                      <TableHead className="w-28 text-right">Valor</TableHead>
+                      <TableHead className="w-10"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingItems.map((p, idx) => {
+                      const item = contractItems.find(i => i.id === p.contract_item_id);
+                      const val = item ? parseFloat(p.quantity || '0') * (item.material_unit_value + item.labor_unit_value) : 0;
+                      return (
+                        <TableRow key={idx}>
+                          <TableCell className="text-xs">
+                            <span className="font-mono mr-1">{item?.item_code}</span>
+                            {item?.description.slice(0, 40)}
+                            {p.notes && <span className="block text-muted-foreground mt-0.5">{p.notes}</span>}
+                          </TableCell>
+                          <TableCell className="text-right text-xs tabular-nums">{p.quantity}</TableCell>
+                          <TableCell className="text-right text-xs tabular-nums">{formatCurrency(val)}</TableCell>
+                          <TableCell>
+                            <button onClick={() => removePendingItem(idx)} className="text-destructive hover:text-destructive/80">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                <div className="px-3 py-2 bg-muted/30 text-right text-sm font-semibold tabular-nums">
+                  Total: {formatCurrency(pendingItems.reduce((sum, p) => {
+                    const item = contractItems.find(i => i.id === p.contract_item_id);
+                    return sum + (item ? parseFloat(p.quantity || '0') * (item.material_unit_value + item.labor_unit_value) : 0);
+                  }, 0))}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>Salvar</Button>
+            <Button onClick={handleSave} disabled={saving || pendingItems.length === 0}>
+              {saving ? 'Salvando...' : `Salvar ${pendingItems.length} item(s)`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
