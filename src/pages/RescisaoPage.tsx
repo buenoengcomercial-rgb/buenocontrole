@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmployeeData } from '@/context/EmployeeContext';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +27,7 @@ interface Termination {
 }
 
 export default function RescisaoPage() {
-  const { employees } = useEmployeeData();
+  const { employees, updateEmployee } = useEmployeeData();
   const [terminations, setTerminations] = useState<Termination[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -96,6 +97,12 @@ export default function RescisaoPage() {
     } else {
       const { error } = await supabase.from('terminations').insert(payload);
       if (error) { toast({ title: 'Erro ao cadastrar', variant: 'destructive' }); return; }
+      // Atualizar status do colaborador para desligado automaticamente
+      const emp = employees.find(e => e.id === form.employee_id);
+      if (emp && emp.status !== 'desligado') {
+        await supabase.from('employees').update({ status: 'desligado' }).eq('id', form.employee_id);
+        updateEmployee({ ...emp, status: 'desligado' });
+      }
       toast({ title: 'Rescisão cadastrada' });
     }
     setDialogOpen(false);
