@@ -18,6 +18,7 @@ interface EmployeeState {
   workDays: WorkDay[];
   advances: SalaryAdvance[];
   payments: SalaryPayment[];
+  terminations: Termination[];
   loading: boolean;
   addEmployee: (e: Omit<Employee, 'id' | 'createdAt'>) => void;
   updateEmployee: (e: Employee) => void;
