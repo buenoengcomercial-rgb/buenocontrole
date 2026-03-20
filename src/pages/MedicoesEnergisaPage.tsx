@@ -466,20 +466,46 @@ export default function MedicoesEnergisaPage() {
                 </Select>
                 <Input placeholder="Buscar..." value={formItemSearch} onChange={e => setFormItemSearch(e.target.value)} className="flex-1" />
               </div>
+              {/* Item list for selection */}
+              <div className="max-h-48 overflow-y-auto border rounded-md bg-background">
+                {formFilteredItems.length === 0 && (
+                  <p className="text-xs text-muted-foreground p-3">Nenhum item encontrado</p>
+                )}
+                {formFilteredItems.map(i => {
+                  const isSelected = quickItemId === i.id;
+                  const alreadyAdded = pendingItems.some(p => p.contract_item_id === i.id);
+                  return (
+                    <button
+                      key={i.id}
+                      type="button"
+                      disabled={alreadyAdded}
+                      onClick={() => setQuickItemId(isSelected ? '' : i.id)}
+                      className={`w-full text-left px-3 py-2 border-b last:border-b-0 text-xs transition-colors ${
+                        alreadyAdded
+                          ? 'opacity-40 cursor-not-allowed bg-muted/30'
+                          : isSelected
+                            ? 'bg-primary/10 ring-1 ring-primary/30'
+                            : 'hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="font-mono font-semibold shrink-0 text-foreground">{i.item_code}</span>
+                        <span className="text-foreground leading-snug">{i.description}</span>
+                      </div>
+                      <div className="flex gap-3 mt-1 text-muted-foreground">
+                        <span>Un: {i.unit}</span>
+                        <span>Contrato: {i.quantity}</span>
+                        <span>Mat: {formatCurrency(i.material_unit_value)}</span>
+                        <span>MO: {formatCurrency(i.labor_unit_value)}</span>
+                      </div>
+                      {alreadyAdded && <span className="text-xs text-muted-foreground italic">Já adicionado</span>}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <Select value={quickItemId} onValueChange={setQuickItemId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o item..." />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-60">
-                      {formFilteredItems.map(i => (
-                        <SelectItem key={i.id} value={i.id}>
-                          <span className="font-mono mr-2">{i.item_code}</span> {i.description.slice(0, 50)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="flex-1 text-xs text-muted-foreground">
+                  {quickItemId ? `Selecionado: ${contractItems.find(i => i.id === quickItemId)?.item_code}` : 'Selecione um item acima'}
                 </div>
                 <div className="w-24">
                   <Input
