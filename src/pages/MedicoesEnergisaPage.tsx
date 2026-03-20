@@ -374,7 +374,7 @@ export default function MedicoesEnergisaPage() {
                         <TableCell className="text-xs">
                           {acc?.records.map((r, i) => (
                             <div key={r.id} className="flex items-center gap-1 py-0.5">
-                              <span className="truncate max-w-[140px]" title={r.laudoName}>{r.laudoName.split(' - ')[0]}</span>
+                              <span className="truncate max-w-[140px]" title={r.unitLabel}>{r.unitLabel}</span>
                               <span className="text-muted-foreground">({r.quantity})</span>
                               <button onClick={() => setDeleteId(r.id)} className="text-destructive hover:text-destructive/80 ml-1">
                                 <Trash2 className="h-3 w-3" />
