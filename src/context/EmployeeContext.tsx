@@ -1,7 +1,17 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'; // v2
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'; // v3
 import { supabase } from '@/integrations/supabase/client';
 import type { Employee, WorkDay, SalaryAdvance, SalaryPayment } from '@/types/employee';
 import { calculateAdvance, calculateMealVoucher, getAdvancePaymentDate } from '@/types/employee';
+
+export interface Termination {
+  id: string;
+  employeeId: string;
+  terminationDate: string;
+  paymentDate: string | null;
+  value: number;
+  notes: string;
+  createdAt: string;
+}
 
 interface EmployeeState {
   employees: Employee[];
