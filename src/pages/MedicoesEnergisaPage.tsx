@@ -231,7 +231,7 @@ export default function MedicoesEnergisaPage() {
       const acc = accumulatedByItem.get(item.id);
       if (!acc) continue;
       const unitTotal = item.material_unit_value + item.labor_unit_value;
-      const unidades = acc.records.map(r => r.laudoName).join(' / ');
+      const unidades = acc.records.map(r => r.unitLabel).join(' / ');
       lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${acc.totalQty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${(acc.totalQty * unitTotal).toFixed(2)};${unidades}`);
     }
 
