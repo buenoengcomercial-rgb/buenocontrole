@@ -164,7 +164,7 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <EmployeeContext.Provider value={{
-      employees, workDays, advances, payments, loading,
+      employees, workDays, advances, payments, terminations, loading,
       addEmployee, updateEmployee, deleteEmployee,
       addWorkDay, updateWorkDay, deleteWorkDay,
       generateAdvance, addAdvanceManual, updateAdvance, addPayment, updatePayment, deletePayment, deleteAdvance,
