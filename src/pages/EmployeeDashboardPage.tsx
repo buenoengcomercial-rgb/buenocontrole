@@ -43,6 +43,11 @@ export default function EmployeeDashboardPage() {
     [vacationsMonth]
   );
 
+  // Terminations in current month
+  const totalTerminationsMonth = useMemo(() =>
+    terminations.filter(t => t.paymentDate && t.paymentDate.startsWith(currentMonth)).reduce((s, t) => s + t.value, 0),
+    [terminations, currentMonth]
+  );
 
   const kpis = [
     { label: 'Salário Bruto (Pago)', value: formatCurrency(totalGrossMonth), icon: DollarSign, accent: true },
@@ -50,6 +55,7 @@ export default function EmployeeDashboardPage() {
     { label: 'Adiantamentos no Mês', value: formatCurrency(totalAdvancesMonth), icon: ArrowUpCircle },
     { label: 'Vale Alimentação no Mês', value: formatCurrency(totalMealVoucher), icon: UtensilsCrossed },
     { label: 'Férias no Mês', value: formatCurrency(totalVacationsMonth), icon: Palmtree },
+    { label: 'Rescisões no Mês', value: formatCurrency(totalTerminationsMonth), icon: DollarSign },
     { label: 'Colaboradores Ativos', value: activeEmployees.length.toString(), icon: Users },
   ];
 
