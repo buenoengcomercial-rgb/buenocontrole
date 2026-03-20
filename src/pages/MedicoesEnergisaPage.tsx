@@ -101,16 +101,15 @@ export default function MedicoesEnergisaPage() {
 
   // Accumulated data grouped by item
   const accumulatedByItem = useMemo(() => {
-    const map = new Map<string, { totalQty: number; records: (ServiceRecord & { laudoName: string })[] }>();
+    const map = new Map<string, { totalQty: number; records: (ServiceRecord & { unitLabel: string })[] }>();
     for (const r of monthRecords) {
       const existing = map.get(r.contract_item_id) || { totalQty: 0, records: [] };
-      const laudo = laudos.find(l => l.id === r.laudo_id);
       existing.totalQty += r.quantity;
-      existing.records.push({ ...r, laudoName: laudo ? `${laudo.cliente} - ${laudo.endereco}` : '' });
+      existing.records.push({ ...r, unitLabel: r.unit_name });
       map.set(r.contract_item_id, existing);
     }
     return map;
-  }, [monthRecords, laudos]);
+  }, [monthRecords]);
 
   const totalMonthValue = useMemo(() => {
     let total = 0;
