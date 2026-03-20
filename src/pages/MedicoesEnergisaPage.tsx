@@ -29,19 +29,12 @@ interface ContractItem {
 interface ServiceRecord {
   id: string;
   contract_item_id: string;
-  laudo_id: string;
+  unit_name: string;
   quantity: number;
   date: string;
   month: string;
   notes: string;
   created_at: string;
-}
-
-interface Laudo {
-  id: string;
-  cliente: string;
-  endereco: string;
-  municipio: string;
 }
 
 const currentMonth = () => {
