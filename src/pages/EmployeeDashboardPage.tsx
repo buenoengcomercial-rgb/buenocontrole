@@ -6,7 +6,7 @@ import { Users, DollarSign, ArrowUpCircle, UtensilsCrossed, Palmtree } from 'luc
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function EmployeeDashboardPage() {
-  const { employees, advances, payments, workDays } = useEmployeeData();
+  const { employees, advances, payments, workDays, terminations } = useEmployeeData();
   const { vacations } = useSafetyData();
   const currentMonth = new Date().toISOString().slice(0, 7);
   const currentYear = new Date().getFullYear();
