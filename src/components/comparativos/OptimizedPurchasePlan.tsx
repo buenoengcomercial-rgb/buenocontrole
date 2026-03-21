@@ -37,7 +37,8 @@ interface OptimizedItem {
   winnerSupplierId: string;
   winnerPrice: number;
   total: number;
-  maxPrice: number;
+  basePrice: number;
+  baseTotal: number;
   diffPercent: number;
   savings: number;
   isTie: boolean;
@@ -78,15 +79,15 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
       if (supplierPrices.length === 0) return null;
 
       const minPrice = Math.min(...supplierPrices.map((sp) => sp.price));
-      const maxPrice = Math.max(...supplierPrices.map((sp) => sp.price));
       const winners = supplierPrices.filter((sp) => sp.price === minPrice);
       const isTie = winners.length > 1;
       const winner = winners[0];
 
+      const basePrice = item.base_price || 0;
       const total = minPrice * item.quantity;
-      const maxTotal = maxPrice * item.quantity;
-      const savings = maxTotal - total;
-      const diffPercent = maxPrice > 0 && minPrice !== maxPrice ? ((maxPrice - minPrice) / maxPrice) * 100 : 0;
+      const baseTotal = basePrice * item.quantity;
+      const savings = basePrice > 0 ? baseTotal - total : 0;
+      const diffPercent = basePrice > 0 && minPrice !== basePrice ? ((basePrice - minPrice) / basePrice) * 100 : 0;
 
       return {
         code: item.code,
@@ -97,7 +98,8 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
         winnerSupplierId: winner.supplier.id,
         winnerPrice: minPrice,
         total,
-        maxPrice,
+        basePrice,
+        baseTotal,
         diffPercent,
         savings,
         isTie,
@@ -121,22 +123,10 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
   // Summary calculations
   const totalOptimized = optimizedItems.reduce((s, i) => s + i.total, 0);
 
-  // Traditional: best single supplier total
-  const traditionalTotals = suppliers.map((sup) => {
-    let total = 0;
-    let complete = true;
-    for (const item of items) {
-      const p = getPrice(item.id, sup.id);
-      if (p > 0) total += p * item.quantity;
-      else complete = false;
-    }
-    return { supplier: sup, total, complete };
-  }).filter((t) => t.complete).sort((a, b) => a.total - b.total);
-
-  const bestTraditional = traditionalTotals[0];
-  const totalTraditional = bestTraditional?.total ?? 0;
-  const totalSavings = totalTraditional > 0 ? totalTraditional - totalOptimized : 0;
-  const savingsPercent = totalTraditional > 0 ? (totalSavings / totalTraditional) * 100 : 0;
+  // Total original (base prices)
+  const totalBase = optimizedItems.reduce((s, i) => s + i.baseTotal, 0);
+  const totalSavings = totalBase > 0 ? totalBase - totalOptimized : 0;
+  const savingsPercent = totalBase > 0 ? (totalSavings / totalBase) * 100 : 0;
 
   // Chart data: per supplier in optimized model
   const supplierOptimizedTotals = useMemo(() => {
@@ -154,7 +144,7 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
   };
 
   const comparisonChartData = [
-    { name: bestTraditional ? `Melhor Fornecedor (${bestTraditional.supplier.name})` : "Fornecedor Único", value: totalTraditional },
+    { name: "Preço Original", value: totalBase },
     { name: "Compra Otimizada", value: totalOptimized },
   ];
 
@@ -180,8 +170,8 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
     let y = obraName ? 40 : 34;
     doc.setFontSize(10);
     doc.text(`Total Otimizado: ${fmtCurrency(totalOptimized)}`, 14, y);
-    if (totalTraditional > 0) {
-      doc.text(`Total Tradicional: ${fmtCurrency(totalTraditional)}  |  Economia: ${fmtCurrency(totalSavings)} (${savingsPercent.toFixed(1)}%)`, 14, y + 6);
+    if (totalBase > 0) {
+      doc.text(`Total Original: ${fmtCurrency(totalBase)}  |  Economia: ${fmtCurrency(totalSavings)} (${savingsPercent.toFixed(1)}%)`, 14, y + 6);
       y += 6;
     }
     y += 10;
@@ -213,7 +203,7 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
     const wsData = [
       ["PLANO DE COMPRAS OTIMIZADO"], [],
       ["Cotação", groupCode], ["Data", new Date().toLocaleDateString("pt-BR")], ["Obra", obraName || "—"], [],
-      ["Total Otimizado", totalOptimized], ["Total Tradicional", totalTraditional], ["Economia", totalSavings], [],
+      ["Total Otimizado", totalOptimized], ["Total Original", totalBase], ["Economia", totalSavings], [],
       ["Cód.", "Descrição", "Ud", "Qtd", "Fornecedor Vencedor", "Preço Unit.", "Total", "Diferença %", "Economia R$"],
       ...sortedItems.map((i) => [i.code, i.description, i.unit, i.quantity, i.winnerSupplier, i.winnerPrice, i.total, `${i.diffPercent.toFixed(1)}%`, i.savings]),
       [], ["", "", "", "", "", "TOTAL:", totalOptimized, "", totalSavings],
@@ -282,9 +272,9 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
         </Card>
         <Card className="border-border">
           <CardContent className="p-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Tradicional</p>
-            <p className="text-lg font-bold">{totalTraditional > 0 ? fmtCurrency(totalTraditional) : "—"}</p>
-            {bestTraditional && <p className="text-[10px] text-muted-foreground">{bestTraditional.supplier.name}</p>}
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Original</p>
+            <p className="text-lg font-bold">{totalBase > 0 ? fmtCurrency(totalBase) : "—"}</p>
+            <p className="text-[10px] text-muted-foreground">Preço base dos itens</p>
           </CardContent>
         </Card>
         <Card className="border-border">
