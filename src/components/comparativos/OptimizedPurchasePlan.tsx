@@ -123,22 +123,10 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
   // Summary calculations
   const totalOptimized = optimizedItems.reduce((s, i) => s + i.total, 0);
 
-  // Traditional: best single supplier total
-  const traditionalTotals = suppliers.map((sup) => {
-    let total = 0;
-    let complete = true;
-    for (const item of items) {
-      const p = getPrice(item.id, sup.id);
-      if (p > 0) total += p * item.quantity;
-      else complete = false;
-    }
-    return { supplier: sup, total, complete };
-  }).filter((t) => t.complete).sort((a, b) => a.total - b.total);
-
-  const bestTraditional = traditionalTotals[0];
-  const totalTraditional = bestTraditional?.total ?? 0;
-  const totalSavings = totalTraditional > 0 ? totalTraditional - totalOptimized : 0;
-  const savingsPercent = totalTraditional > 0 ? (totalSavings / totalTraditional) * 100 : 0;
+  // Total original (base prices)
+  const totalBase = optimizedItems.reduce((s, i) => s + i.baseTotal, 0);
+  const totalSavings = totalBase > 0 ? totalBase - totalOptimized : 0;
+  const savingsPercent = totalBase > 0 ? (totalSavings / totalBase) * 100 : 0;
 
   // Chart data: per supplier in optimized model
   const supplierOptimizedTotals = useMemo(() => {
