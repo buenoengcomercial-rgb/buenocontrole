@@ -159,6 +159,14 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
           <tbody>
             {items.map((item) => {
               const importance = item.base_price * item.quantity;
+              // Compare supplier prices against each other
+              const supplierPricesForItem = suppliers
+                .map((s) => getPrice(item.id, s.id))
+                .filter((p) => p > 0);
+              const minPrice = supplierPricesForItem.length > 0 ? Math.min(...supplierPricesForItem) : 0;
+              const maxPrice = supplierPricesForItem.length > 0 ? Math.max(...supplierPricesForItem) : 0;
+              const hasMultiple = supplierPricesForItem.length >= 2;
+
               return (
                 <tr key={item.id} className="border-b border-border hover:bg-muted/30">
                   <td className="px-2 py-1 font-medium">{item.code}</td>
@@ -173,8 +181,8 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
                     const unitPrice = getPrice(item.id, s.id);
                     const supImportance = unitPrice > 0 ? unitPrice * item.quantity : 0;
                     const cellKey = `${item.id}-${s.id}`;
-                    const isCheaper = unitPrice > 0 && unitPrice < item.base_price;
-                    const isExpensive = unitPrice > 0 && unitPrice > item.base_price;
+                    const isCheapest = hasMultiple && unitPrice > 0 && unitPrice === minPrice;
+                    const isMostExpensive = hasMultiple && unitPrice > 0 && unitPrice === maxPrice && minPrice !== maxPrice;
 
                     return (
                       <td key={s.id} colSpan={2} className="border-l border-border px-1 py-1">
@@ -191,7 +199,7 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
                             ) : (
                               <button
                                 className={`w-full rounded px-1 py-0.5 text-right text-xs hover:bg-muted ${
-                                  isCheaper ? "text-savings font-semibold" : isExpensive ? "text-destructive font-semibold" : ""
+                                  isCheapest ? "text-savings font-semibold" : isMostExpensive ? "text-destructive font-semibold" : ""
                                 }`}
                                 onClick={() => startEdit(cellKey, unitPrice)}
                               >
@@ -200,7 +208,7 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
                             )}
                           </div>
                           <div className={`flex-1 text-right text-xs ${
-                            isCheaper ? "text-savings font-semibold" : isExpensive ? "text-destructive font-semibold" : "text-muted-foreground"
+                            isCheapest ? "text-savings font-semibold" : isMostExpensive ? "text-destructive font-semibold" : "text-muted-foreground"
                           }`}>
                             {supImportance > 0 ? fmt(supImportance) : ""}
                           </div>
