@@ -57,6 +57,13 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
+  const PURCHASE_GROUPS = useMemo(() => {
+    const extraGroups = groups
+      .map((g) => g.description.toUpperCase())
+      .filter((d) => d && !BASE_PURCHASE_GROUPS.includes(d));
+    return [...BASE_PURCHASE_GROUPS, ...extraGroups];
+  }, [groups]);
+
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
