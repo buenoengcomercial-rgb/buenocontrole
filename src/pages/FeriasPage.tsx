@@ -27,7 +27,7 @@ const defaultForm = {
 };
 
 export default function FeriasPage() {
-  const { employees } = useEmployeeData();
+  const { employees, updateEmployee } = useEmployeeData();
   const { vacations, addVacation, updateVacation, deleteVacation } = useSafetyData();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
