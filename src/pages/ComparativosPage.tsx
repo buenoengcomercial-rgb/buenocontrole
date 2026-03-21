@@ -6,10 +6,11 @@ import { ItemsTable, type ItemData, type ItemPrice } from "@/components/comparat
 import { CotacaoAnalysis } from "@/components/comparativos/CotacaoAnalysis";
 import { PriceHistoryPanel } from "@/components/comparativos/PriceHistoryPanel";
 import { PurchaseOrderDialog } from "@/components/comparativos/PurchaseOrderDialog";
+import { OptimizedPurchasePlan } from "@/components/comparativos/OptimizedPurchasePlan";
 import { ObraMaterialsTab, type ObraMaterial } from "@/components/comparativos/ObraMaterialsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Table, History, FileText, LayoutDashboard, Package } from "lucide-react";
+import { BarChart3, Table, History, FileText, LayoutDashboard, Package, Zap } from "lucide-react";
 import { toast } from "sonner";
 import type { ImportRow } from "@/components/comparativos/ImportItemsDialog";
 
