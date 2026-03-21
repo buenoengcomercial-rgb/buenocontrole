@@ -39,6 +39,7 @@ const allSections = [
       { to: '/fornecedores', label: 'Fornecedores', icon: Truck },
       { to: '/materiais', label: 'Materiais', icon: Package },
       { to: '/compras', label: 'Compras', icon: ShoppingCart },
+      { to: '/comparativos', label: 'Comparativos', icon: Scale },
       { to: '/relatorios', label: 'Relatórios', icon: BarChart3 },
     ],
   },
