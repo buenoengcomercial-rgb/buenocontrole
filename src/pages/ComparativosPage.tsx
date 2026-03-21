@@ -264,7 +264,7 @@ export default function ComparativosPage() {
         )}
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex h-[280px] flex-shrink-0 overflow-hidden">
         <div className="w-[520px] flex-shrink-0 overflow-hidden">
           <ComparisonGroupList
             groups={groups}
@@ -287,7 +287,7 @@ export default function ComparativosPage() {
         </div>
       </div>
 
-      <div className="h-[45%] flex-shrink-0 overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="obraMaterials" className="flex h-full flex-col">
           <div className="flex items-center border-t border-border bg-card px-3">
             <TabsList className="h-8 bg-transparent p-0">
