@@ -6,10 +6,11 @@ import { ItemsTable, type ItemData, type ItemPrice } from "@/components/comparat
 import { CotacaoAnalysis } from "@/components/comparativos/CotacaoAnalysis";
 import { PriceHistoryPanel } from "@/components/comparativos/PriceHistoryPanel";
 import { PurchaseOrderDialog } from "@/components/comparativos/PurchaseOrderDialog";
+import { OptimizedPurchasePlan } from "@/components/comparativos/OptimizedPurchasePlan";
 import { ObraMaterialsTab, type ObraMaterial } from "@/components/comparativos/ObraMaterialsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Table, History, FileText, LayoutDashboard, Package } from "lucide-react";
+import { BarChart3, Table, History, FileText, LayoutDashboard, Package, Zap } from "lucide-react";
 import { toast } from "sonner";
 import type { ImportRow } from "@/components/comparativos/ImportItemsDialog";
 
@@ -393,6 +394,9 @@ export default function ComparativosPage() {
                   <TabsTrigger value="historico" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                     <History className="h-3 w-3" /> Histórico de Preços
                   </TabsTrigger>
+                  <TabsTrigger value="otimizado" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                    <Zap className="h-3 w-3" /> Plano de Compras Otimizado
+                  </TabsTrigger>
                 </>
               )}
             </TabsList>
@@ -417,6 +421,9 @@ export default function ComparativosPage() {
               </TabsContent>
               <TabsContent value="historico" className="mt-0 flex-1 overflow-hidden">
                 <PriceHistoryPanel history={history} />
+              </TabsContent>
+              <TabsContent value="otimizado" className="mt-0 flex-1 overflow-hidden">
+                <OptimizedPurchasePlan items={items} suppliers={suppliers} prices={prices} groupCode={selected.code} obraName={obraName} />
               </TabsContent>
             </>
           ) : null}
