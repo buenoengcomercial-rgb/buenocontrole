@@ -101,14 +101,23 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
   }, [attachments]);
 
   const downloadAttachment = useCallback(async (id: string): Promise<string | null> => {
-    const { data, error } = await supabase
-      .from('attachments')
-      .select('file_data')
-      .eq('id', id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('attachments')
+        .select('file_data')
+        .eq('id', id)
+        .single();
 
-    if (error || !data) return null;
-    return (data as any).file_data;
+      if (error) {
+        console.error('Erro ao baixar anexo:', error.message, error.code);
+        return null;
+      }
+      if (!data) return null;
+      return (data as any).file_data;
+    } catch (err) {
+      console.error('Erro inesperado ao baixar anexo:', err);
+      return null;
+    }
   }, []);
 
   return (
