@@ -272,9 +272,9 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
         </Card>
         <Card className="border-border">
           <CardContent className="p-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Tradicional</p>
-            <p className="text-lg font-bold">{totalTraditional > 0 ? fmtCurrency(totalTraditional) : "—"}</p>
-            {bestTraditional && <p className="text-[10px] text-muted-foreground">{bestTraditional.supplier.name}</p>}
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Original</p>
+            <p className="text-lg font-bold">{totalBase > 0 ? fmtCurrency(totalBase) : "—"}</p>
+            <p className="text-[10px] text-muted-foreground">Preço base dos itens</p>
           </CardContent>
         </Card>
         <Card className="border-border">
