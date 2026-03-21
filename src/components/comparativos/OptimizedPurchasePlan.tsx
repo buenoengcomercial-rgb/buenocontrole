@@ -203,7 +203,7 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
     const wsData = [
       ["PLANO DE COMPRAS OTIMIZADO"], [],
       ["Cotação", groupCode], ["Data", new Date().toLocaleDateString("pt-BR")], ["Obra", obraName || "—"], [],
-      ["Total Otimizado", totalOptimized], ["Total Tradicional", totalTraditional], ["Economia", totalSavings], [],
+      ["Total Otimizado", totalOptimized], ["Total Original", totalBase], ["Economia", totalSavings], [],
       ["Cód.", "Descrição", "Ud", "Qtd", "Fornecedor Vencedor", "Preço Unit.", "Total", "Diferença %", "Economia R$"],
       ...sortedItems.map((i) => [i.code, i.description, i.unit, i.quantity, i.winnerSupplier, i.winnerPrice, i.total, `${i.diffPercent.toFixed(1)}%`, i.savings]),
       [], ["", "", "", "", "", "TOTAL:", totalOptimized, "", totalSavings],
