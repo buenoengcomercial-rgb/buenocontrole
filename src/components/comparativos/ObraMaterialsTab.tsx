@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Upload, Search } from "lucide-react";
+import { Trash2, Upload, Search, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import * as XLSX from "xlsx";
 
 export interface ObraMaterial {
@@ -41,9 +41,30 @@ function fmt(v: number) {
   return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+type SortKey = "code" | "description" | "unit" | "quantity" | "price" | "purchase_group";
+type SortDir = "asc" | "desc";
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  if (!active) return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
+  return dir === "asc"
+    ? <ArrowUp className="ml-1 inline h-3 w-3 text-primary" />
+    : <ArrowDown className="ml-1 inline h-3 w-3 text-primary" />;
+}
+
 export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, onToggleLink, onRemove }: Props) {
   const [filter, setFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,12 +106,30 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
     e.target.value = "";
   };
 
-  const filtered = materials.filter((m) => {
-    const text = filter.toLowerCase();
-    const matchText = !text || m.code.toLowerCase().includes(text) || m.description.toLowerCase().includes(text);
-    const matchGroup = groupFilter === "all" || m.purchase_group === groupFilter;
-    return matchText && matchGroup;
-  });
+  const filtered = useMemo(() => {
+    let result = materials.filter((m) => {
+      const text = filter.toLowerCase();
+      const matchText = !text || m.code.toLowerCase().includes(text) || m.description.toLowerCase().includes(text);
+      const matchGroup = groupFilter === "all" || m.purchase_group === groupFilter;
+      return matchText && matchGroup;
+    });
+
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        const valA = a[sortKey];
+        const valB = b[sortKey];
+        let cmp = 0;
+        if (typeof valA === "number" && typeof valB === "number") {
+          cmp = valA - valB;
+        } else {
+          cmp = String(valA).localeCompare(String(valB), "pt-BR", { sensitivity: "base" });
+        }
+        return sortDir === "asc" ? cmp : -cmp;
+      });
+    }
+
+    return result;
+  }, [materials, filter, groupFilter, sortKey, sortDir]);
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -130,12 +169,24 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border bg-muted/50 text-left">
-              <th className="w-16 px-2 py-1.5 font-semibold text-muted-foreground">Código</th>
-              <th className="w-12 px-2 py-1.5 text-center font-semibold text-muted-foreground">Ud</th>
-              <th className="min-w-[200px] px-2 py-1.5 font-semibold text-muted-foreground">Resumo</th>
-              <th className="w-16 px-2 py-1.5 text-right font-semibold text-muted-foreground">Qtd</th>
-              <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground">Preço</th>
-              <th className="w-40 px-2 py-1.5 font-semibold text-muted-foreground">Grupo de Compras</th>
+              <th className="w-16 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("code")}>
+                Código <SortIcon active={sortKey === "code"} dir={sortDir} />
+              </th>
+              <th className="w-12 px-2 py-1.5 text-center font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("unit")}>
+                Ud <SortIcon active={sortKey === "unit"} dir={sortDir} />
+              </th>
+              <th className="min-w-[200px] px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("description")}>
+                Resumo <SortIcon active={sortKey === "description"} dir={sortDir} />
+              </th>
+              <th className="w-16 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("quantity")}>
+                Qtd <SortIcon active={sortKey === "quantity"} dir={sortDir} />
+              </th>
+              <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("price")}>
+                Preço <SortIcon active={sortKey === "price"} dir={sortDir} />
+              </th>
+              <th className="w-40 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("purchase_group")}>
+                Grupo de Compras <SortIcon active={sortKey === "purchase_group"} dir={sortDir} />
+              </th>
               <th className="w-16 px-2 py-1.5 text-center font-semibold text-muted-foreground">Vinculado</th>
               <th className="w-8"></th>
             </tr>
