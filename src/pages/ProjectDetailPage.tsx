@@ -15,7 +15,7 @@ import PriceComparisonTab from '@/components/PriceComparisonTab';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
-type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs' | 'quotes';
+type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{id: string;}>();
