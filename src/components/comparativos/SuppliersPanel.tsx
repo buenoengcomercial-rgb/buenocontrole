@@ -46,20 +46,21 @@ export function SuppliersPanel({ suppliers, onAdd, onRemove }: Props) {
   useEffect(() => {
     if (!registeredOpen) return;
     supabase
-      .from("comparison_suppliers")
+      .from("registered_suppliers" as any)
       .select("name")
+      .order("name")
       .then(({ data }) => {
         if (data) {
-          const unique = [...new Set(data.map((d) => d.name).filter(Boolean))].sort((a, b) =>
-            a.localeCompare(b, "pt-BR")
-          );
-          setAllSupplierNames(unique);
+          const names = (data as any[]).map((d) => d.name).filter(Boolean);
+          setAllSupplierNames(names);
         }
       });
   }, [registeredOpen]);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!name.trim()) return;
+    // Auto-register supplier name globally
+    await supabase.from("registered_suppliers" as any).upsert({ name: name.trim() } as any, { onConflict: "name" } as any);
     onAdd(name.trim(), days ? Number(days) : 0, rating || 0);
     setName("");
     setDays("");

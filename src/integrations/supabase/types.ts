@@ -1451,6 +1451,24 @@ export type Database = {
           },
         ]
       }
+      registered_suppliers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       salary_advances: {
         Row: {
           created_at: string
