@@ -302,36 +302,6 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-2 gap-3 p-3 border-b border-border">
-        <div className="rounded-lg border border-border p-3">
-          <h4 className="text-xs font-bold mb-2">Comparação: Tradicional vs Otimizado</h4>
-          <ChartContainer config={chartConfig} className="h-[140px] w-full">
-            <BarChart data={comparisonChartData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 10 }} />
-              <ChartTooltip content={<ChartTooltipContent formatter={(value) => fmtCurrency(Number(value))} />} />
-              <Bar dataKey="value" radius={4}>
-                <Cell fill="hsl(var(--muted-foreground))" />
-                <Cell fill="hsl(var(--primary))" />
-              </Bar>
-            </BarChart>
-          </ChartContainer>
-        </div>
-        <div className="rounded-lg border border-border p-3">
-          <h4 className="text-xs font-bold mb-2">Distribuição por Fornecedor (Otimizado)</h4>
-          <ChartContainer config={chartConfig} className="h-[140px] w-full">
-            <BarChart data={supplierOptimizedTotals}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-              <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <ChartTooltip content={<ChartTooltipContent formatter={(value) => fmtCurrency(Number(value))} />} />
-              <Bar dataKey="total" fill="hsl(var(--primary))" radius={4} />
-            </BarChart>
-          </ChartContainer>
-        </div>
-      </div>
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
