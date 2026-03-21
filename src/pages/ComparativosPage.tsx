@@ -221,6 +221,7 @@ export default function ComparativosPage() {
       const descCol = find(['descrição', 'descricao', 'resumo', 'desc']);
       const unitCol = find(['unidade', 'und', 'ud', 'un']);
       const qtyCol = find(['quantidade', 'qtd', 'quant']);
+      const priceCol = find(['preço', 'preco', 'price', 'valor unit', 'p.unit', 'unitário', 'unitario']);
       if (descCol === -1) { toast.error('Coluna descrição não encontrada'); return; }
 
       const newItems: any[] = [];
@@ -235,6 +236,7 @@ export default function ComparativosPage() {
           description: desc,
           unit: unitCol >= 0 ? String(r[unitCol] || '').trim() : 'UN',
           quantity: qtyCol >= 0 ? Number(r[qtyCol]) || 0 : 0,
+          base_price: priceCol >= 0 ? Number(r[priceCol]) || 0 : 0,
         });
       }
 
