@@ -170,8 +170,8 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
     let y = obraName ? 40 : 34;
     doc.setFontSize(10);
     doc.text(`Total Otimizado: ${fmtCurrency(totalOptimized)}`, 14, y);
-    if (totalTraditional > 0) {
-      doc.text(`Total Tradicional: ${fmtCurrency(totalTraditional)}  |  Economia: ${fmtCurrency(totalSavings)} (${savingsPercent.toFixed(1)}%)`, 14, y + 6);
+    if (totalBase > 0) {
+      doc.text(`Total Original: ${fmtCurrency(totalBase)}  |  Economia: ${fmtCurrency(totalSavings)} (${savingsPercent.toFixed(1)}%)`, 14, y + 6);
       y += 6;
     }
     y += 10;
