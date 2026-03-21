@@ -172,7 +172,7 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
 
       <ImportItemsDialog open={importOpen} onOpenChange={setImportOpen} onImport={onImportItems} />
 
-      <div className="flex-1 overflow-auto max-h-[calc(100vh-320px)]">
+      <div className="flex-1 overflow-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border bg-muted/50 text-left">
