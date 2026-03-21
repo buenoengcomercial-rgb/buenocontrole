@@ -27,7 +27,7 @@ const defaultForm = {
 };
 
 export default function FeriasPage() {
-  const { employees } = useEmployeeData();
+  const { employees, updateEmployee } = useEmployeeData();
   const { vacations, addVacation, updateVacation, deleteVacation } = useSafetyData();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -63,6 +63,13 @@ export default function FeriasPage() {
     if (editId) {
       const existing = vacations.find(v => v.id === editId)!;
       updateVacation({ ...existing, ...form });
+      // When vacation is concluded, set employee back to active
+      if (form.status === 'concluidas') {
+        const emp = employees.find(e => e.id === form.employeeId);
+        if (emp && emp.status !== 'ativo') {
+          updateEmployee({ ...emp, status: 'ativo' });
+        }
+      }
       toast.success('Férias atualizadas.');
     } else {
       addVacation(form);
