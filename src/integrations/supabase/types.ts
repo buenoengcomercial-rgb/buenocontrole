@@ -907,6 +907,50 @@ export type Database = {
           },
         ]
       }
+      obra_materials: {
+        Row: {
+          code: string
+          created_at: string
+          description: string
+          id: string
+          linked_group_id: string | null
+          price: number
+          purchase_group: string
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          linked_group_id?: string | null
+          price?: number
+          purchase_group?: string
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          linked_group_id?: string | null
+          price?: number
+          purchase_group?: string
+          quantity?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_materials_linked_group_id_fkey"
+            columns: ["linked_group_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_comparisons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outsourced_services: {
         Row: {
           cnpj: string
@@ -1304,7 +1348,9 @@ export type Database = {
           date: string
           description: string
           id: string
+          observations: string
           project_id: string | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -1313,7 +1359,9 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          observations?: string
           project_id?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -1322,7 +1370,9 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          observations?: string
           project_id?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
