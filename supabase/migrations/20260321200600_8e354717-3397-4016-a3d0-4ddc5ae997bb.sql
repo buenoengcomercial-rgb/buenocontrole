@@ -1,0 +1,1 @@
+ALTER TABLE public.comparison_items ADD COLUMN base_price numeric NOT NULL DEFAULT 0;

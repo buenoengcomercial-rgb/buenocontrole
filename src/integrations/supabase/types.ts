@@ -248,6 +248,7 @@ export type Database = {
       }
       comparison_items: {
         Row: {
+          base_price: number
           code: string
           comparison_id: string
           created_at: string
@@ -257,6 +258,7 @@ export type Database = {
           unit: string
         }
         Insert: {
+          base_price?: number
           code?: string
           comparison_id: string
           created_at?: string
@@ -266,6 +268,7 @@ export type Database = {
           unit?: string
         }
         Update: {
+          base_price?: number
           code?: string
           comparison_id?: string
           created_at?: string

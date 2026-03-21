@@ -30,6 +30,7 @@ interface CompItem {
   description: string;
   unit: string;
   quantity: number;
+  base_price: number;
 }
 
 interface ItemPrice {
@@ -220,6 +221,7 @@ export default function ComparativosPage() {
       const descCol = find(['descrição', 'descricao', 'resumo', 'desc']);
       const unitCol = find(['unidade', 'und', 'ud', 'un']);
       const qtyCol = find(['quantidade', 'qtd', 'quant']);
+      const priceCol = find(['preço', 'preco', 'price', 'valor unit', 'p.unit', 'unitário', 'unitario']);
       if (descCol === -1) { toast.error('Coluna descrição não encontrada'); return; }
 
       const newItems: any[] = [];
@@ -234,6 +236,7 @@ export default function ComparativosPage() {
           description: desc,
           unit: unitCol >= 0 ? String(r[unitCol] || '').trim() : 'UN',
           quantity: qtyCol >= 0 ? Number(r[qtyCol]) || 0 : 0,
+          base_price: priceCol >= 0 ? Number(r[priceCol]) || 0 : 0,
         });
       }
 
@@ -463,17 +466,15 @@ function FornecimentoTab({ items, suppliers, prices, editingPrice, editPriceVal,
               <th className="px-3 py-2 text-left font-medium text-muted-foreground min-w-[300px]">Resumo</th>
               <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[90px]">Quantidade</th>
               <th className="px-3 py-2 text-center font-medium text-muted-foreground w-[50px]">Ud</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[100px]">Preço</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[110px]">Importância</th>
               {suppliers.map((s: Supplier, idx: number) => (
                 <React.Fragment key={s.id}>
                   <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[100px]">
-                    <div className="text-right">
-                      <span className="text-[10px] text-muted-foreground/60">{idx + 1} Preço</span>
-                    </div>
+                    <span className="text-[10px] text-muted-foreground/60">{idx + 1}</span> Preço {idx + 1}
                   </th>
                   <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[110px]">
-                    <div className="text-right">
-                      <span className="text-[10px] text-muted-foreground/60">Importância {idx + 1}</span>
-                    </div>
+                    Importância {idx + 1}
                   </th>
                 </React.Fragment>
               ))}
@@ -482,62 +483,96 @@ function FornecimentoTab({ items, suppliers, prices, editingPrice, editPriceVal,
           </thead>
           <tbody>
             {items.length === 0 && (
-              <tr><td colSpan={4 + suppliers.length * 2 + 1} className="text-center text-muted-foreground py-8 text-sm">
+              <tr><td colSpan={6 + suppliers.length * 2 + 1} className="text-center text-muted-foreground py-8 text-sm">
                 Nenhum item. Importe uma planilha ou adicione manualmente.
               </td></tr>
             )}
-            {items.map((item: CompItem) => {
-              const itemPrices = prices.filter((p: ItemPrice) => p.item_id === item.id);
-              const priceValues = itemPrices.filter((p: ItemPrice) => p.price > 0).map((p: ItemPrice) => p.price);
-              const minPrice = priceValues.length > 0 ? Math.min(...priceValues) : null;
-              const maxPrice = priceValues.length > 1 ? Math.max(...priceValues) : null;
+            {(() => {
+              let baseTotal = 0;
+              const supplierTotals: Record<string, number> = {};
+              suppliers.forEach((s: Supplier) => { supplierTotals[s.id] = 0; });
+
+              const rows = items.map((item: CompItem) => {
+                const itemPrices = prices.filter((p: ItemPrice) => p.item_id === item.id);
+                const priceValues = itemPrices.filter((p: ItemPrice) => p.price > 0).map((p: ItemPrice) => p.price);
+                const minPrice = priceValues.length > 0 ? Math.min(...priceValues) : null;
+                const maxPrice = priceValues.length > 1 ? Math.max(...priceValues) : null;
+                const baseImportancia = item.base_price * item.quantity;
+                baseTotal += baseImportancia;
+
+                return (
+                  <tr key={item.id} className="border-b border-border hover:bg-muted/20">
+                    <td className="px-3 py-1.5 text-xs font-mono">{item.code}</td>
+                    <td className="px-3 py-1.5 text-xs leading-tight" title={item.description}>
+                      {item.description.length > 120 ? item.description.substring(0, 120) + '...' : item.description}
+                    </td>
+                    <td className="px-3 py-1.5 text-right text-xs">{item.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
+                    <td className="px-3 py-1.5 text-center text-xs">{item.unit}</td>
+                    <td className="px-3 py-1.5 text-right text-xs">{item.base_price > 0 ? item.base_price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</td>
+                    <td className="px-3 py-1.5 text-right text-xs font-medium">{baseImportancia > 0 ? baseImportancia.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</td>
+                    {suppliers.map((s: Supplier) => {
+                      const pp = itemPrices.find((p: ItemPrice) => p.supplier_id === s.id);
+                      const price = pp?.price || 0;
+                      const total = price * item.quantity;
+                      if (price > 0) supplierTotals[s.id] += total;
+                      const isMin = price > 0 && price === minPrice;
+                      const isMax = price > 0 && price === maxPrice && maxPrice !== minPrice;
+                      const isEditing = editingPrice?.itemId === item.id && editingPrice?.supplierId === s.id;
+
+                      return (
+                        <React.Fragment key={s.id}>
+                          <td className={`px-3 py-1 text-right ${isMin ? 'bg-green-50 dark:bg-green-950/30' : isMax ? 'bg-red-50 dark:bg-red-950/30' : ''}`}>
+                            {isEditing ? (
+                              <Input type="number" step="0.01" className="h-7 w-24 text-xs text-right ml-auto" autoFocus
+                                value={editPriceVal} onChange={e => setEditPriceVal(e.target.value)}
+                                onBlur={() => { if (editPriceVal) savePrice(item.id, s.id, Number(editPriceVal)); else setEditingPrice(null); }}
+                                onKeyDown={e => { if (e.key === 'Enter' && editPriceVal) savePrice(item.id, s.id, Number(editPriceVal)); if (e.key === 'Escape') setEditingPrice(null); }}
+                              />
+                            ) : (
+                              <button className={`text-xs hover:bg-muted rounded px-1 py-0.5 min-w-[60px] text-right block ml-auto ${isMin ? 'text-green-700 dark:text-green-400 font-semibold' : isMax ? 'text-red-700 dark:text-red-400' : ''}`}
+                                onClick={() => { setEditingPrice({ itemId: item.id, supplierId: s.id }); setEditPriceVal(price > 0 ? String(price) : ''); }}>
+                                {price > 0 ? price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
+                              </button>
+                            )}
+                          </td>
+                          <td className={`px-3 py-1.5 text-right text-xs font-medium ${isMin ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30' : isMax ? 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30' : ''}`}>
+                            {price > 0 ? total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
+                          </td>
+                        </React.Fragment>
+                      );
+                    })}
+                    <td className="px-3 py-1.5">
+                      <button onClick={() => deleteItem(item.id)} className="text-destructive hover:text-destructive/80">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              });
 
               return (
-                <tr key={item.id} className="border-b border-border hover:bg-muted/20">
-                  <td className="px-3 py-1.5 text-xs font-mono">{item.code}</td>
-                  <td className="px-3 py-1.5 text-xs leading-tight" title={item.description}>
-                    {item.description.length > 120 ? item.description.substring(0, 120) + '...' : item.description}
-                  </td>
-                  <td className="px-3 py-1.5 text-right text-xs">{item.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
-                  <td className="px-3 py-1.5 text-center text-xs">{item.unit}</td>
-                  {suppliers.map((s: Supplier) => {
-                    const pp = itemPrices.find((p: ItemPrice) => p.supplier_id === s.id);
-                    const price = pp?.price || 0;
-                    const total = price * item.quantity;
-                    const isMin = price > 0 && price === minPrice;
-                    const isMax = price > 0 && price === maxPrice && maxPrice !== minPrice;
-                    const isEditing = editingPrice?.itemId === item.id && editingPrice?.supplierId === s.id;
-
-                    return (
-                      <React.Fragment key={s.id}>
-                        <td className={`px-3 py-1 text-right ${isMin ? 'bg-green-50 dark:bg-green-950/30' : isMax ? 'bg-red-50 dark:bg-red-950/30' : ''}`}>
-                          {isEditing ? (
-                            <Input type="number" step="0.01" className="h-7 w-24 text-xs text-right ml-auto" autoFocus
-                              value={editPriceVal} onChange={e => setEditPriceVal(e.target.value)}
-                              onBlur={() => { if (editPriceVal) savePrice(item.id, s.id, Number(editPriceVal)); else setEditingPrice(null); }}
-                              onKeyDown={e => { if (e.key === 'Enter' && editPriceVal) savePrice(item.id, s.id, Number(editPriceVal)); if (e.key === 'Escape') setEditingPrice(null); }}
-                            />
-                          ) : (
-                            <button className={`text-xs hover:bg-muted rounded px-1 py-0.5 min-w-[60px] text-right block ml-auto ${isMin ? 'text-green-700 dark:text-green-400 font-semibold' : isMax ? 'text-red-700 dark:text-red-400' : ''}`}
-                              onClick={() => { setEditingPrice({ itemId: item.id, supplierId: s.id }); setEditPriceVal(price > 0 ? String(price) : ''); }}>
-                              {price > 0 ? formatCurrency(price) : '—'}
-                            </button>
-                          )}
-                        </td>
-                        <td className={`px-3 py-1.5 text-right text-xs font-medium ${isMin ? 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30' : isMax ? 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30' : ''}`}>
-                          {price > 0 ? formatCurrency(total) : '—'}
-                        </td>
-                      </React.Fragment>
-                    );
-                  })}
-                  <td className="px-3 py-1.5">
-                    <button onClick={() => deleteItem(item.id)} className="text-destructive hover:text-destructive/80">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
-                </tr>
+                <>
+                  {rows}
+                  {items.length > 0 && (
+                    <tr className="bg-muted/40 font-bold text-xs">
+                      <td colSpan={5} className="px-3 py-2 text-left">TOTAL</td>
+                      <td className="px-3 py-2 text-right text-green-700 dark:text-green-400">
+                        {baseTotal > 0 ? baseTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
+                      </td>
+                      {suppliers.map((s: Supplier) => (
+                        <React.Fragment key={s.id}>
+                          <td className="px-3 py-2"></td>
+                          <td className="px-3 py-2 text-right text-green-700 dark:text-green-400">
+                            {supplierTotals[s.id] > 0 ? supplierTotals[s.id].toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
+                          </td>
+                        </React.Fragment>
+                      ))}
+                      <td></td>
+                    </tr>
+                  )}
+                </>
               );
-            })}
+            })()}
           </tbody>
         </table>
       </div>
