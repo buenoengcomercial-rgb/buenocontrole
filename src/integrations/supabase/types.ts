@@ -129,6 +129,7 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          project_id: string | null
           quantity: number
           unit: string
         }
@@ -139,6 +140,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          project_id?: string | null
           quantity?: number
           unit?: string
         }
@@ -149,10 +151,19 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          project_id?: string | null
           quantity?: number
           unit?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bid_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_charges: {
         Row: {
