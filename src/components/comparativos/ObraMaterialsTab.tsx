@@ -32,7 +32,7 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
-const PURCHASE_GROUPS = [
+const BASE_PURCHASE_GROUPS = [
   "HIDRÁULICA", "ELÉTRICA", "CONSTRUÇÃO", "GALVANIZADOS", "PINTURA",
   "FERRAGENS", "MADEIRAS", "IMPERMEABILIZAÇÃO", "LOUÇAS E METAIS", "DIVERSOS",
 ];
