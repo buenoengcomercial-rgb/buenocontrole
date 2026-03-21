@@ -32,7 +32,7 @@ interface Props {
   onRemove: (id: string) => void;
 }
 
-const PURCHASE_GROUPS = [
+const BASE_PURCHASE_GROUPS = [
   "HIDRÁULICA", "ELÉTRICA", "CONSTRUÇÃO", "GALVANIZADOS", "PINTURA",
   "FERRAGENS", "MADEIRAS", "IMPERMEABILIZAÇÃO", "LOUÇAS E METAIS", "DIVERSOS",
 ];
@@ -56,6 +56,13 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
   const [groupFilter, setGroupFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const PURCHASE_GROUPS = useMemo(() => {
+    const extraGroups = groups
+      .map((g) => g.description.toUpperCase())
+      .filter((d) => d && !BASE_PURCHASE_GROUPS.includes(d));
+    return [...BASE_PURCHASE_GROUPS, ...extraGroups];
+  }, [groups]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
