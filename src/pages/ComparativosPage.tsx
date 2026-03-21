@@ -165,21 +165,70 @@ export default function ComparativosPage() {
     }
   };
 
+  // Helper: remove a material's item from its linked comparison group, and delete group if empty
+  const unlinkMaterialFromGroup = async (material: ObraMaterial) => {
+    if (!material.linked_group_id) return;
+    const groupId = material.linked_group_id;
+
+    // Remove matching comparison_item by code+description in that group
+    await supabase.from("comparison_items")
+      .delete()
+      .eq("comparison_id", groupId)
+      .eq("code", material.code)
+      .eq("description", material.description);
+
+    // If currently viewing this group, update items list
+    if (selectedId === groupId) {
+      setItems((prev) => prev.filter((i) => !(i.code === material.code && i.description === material.description)));
+    }
+
+    // Unlink the obra_material
+    await supabase.from("obra_materials").update({ linked_group_id: null } as any).eq("id", material.id);
+    setObraMaterials((prev) => prev.map((m) => m.id === material.id ? { ...m, linked_group_id: null } : m));
+
+    // Check if the group still has any items
+    const { count } = await supabase.from("comparison_items").select("id", { count: "exact", head: true }).eq("comparison_id", groupId);
+    // Also check if any other obra_materials are still linked to this group
+    const linkedCount = obraMaterials.filter((m) => m.id !== material.id && m.linked_group_id === groupId).length;
+
+    if ((count === 0 || count === null) && linkedCount === 0) {
+      // Delete comparison group (and its suppliers/prices)
+      await supabase.from("comparison_suppliers").delete().eq("comparison_id", groupId);
+      await supabase.from("purchase_comparisons").delete().eq("id", groupId);
+      setGroups((prev) => prev.filter((g) => g.id !== groupId));
+      if (selectedId === groupId) {
+        setSelectedId(null);
+        setItems([]);
+        setSuppliers([]);
+        setPrices([]);
+      }
+    }
+  };
+
   const updateObraMaterialGroup = async (id: string, group: string) => {
+    const material = obraMaterials.find((m) => m.id === id);
+    if (!material) return;
+
+    // If was linked, unlink from old group first
+    if (material.linked_group_id) {
+      await unlinkMaterialFromGroup(material);
+    }
+
     await supabase.from("obra_materials").update({ purchase_group: group } as any).eq("id", id);
-    setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, purchase_group: group } : m));
+    setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, purchase_group: group, linked_group_id: null } : m));
   };
 
   const toggleObraMaterialLink = async (id: string, linked: boolean, _groupId: string | null) => {
+    const material = obraMaterials.find((m) => m.id === id);
+    if (!material) return;
+
     if (!linked) {
-      // Unlink
-      await supabase.from("obra_materials").update({ linked_group_id: null } as any).eq("id", id);
-      setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, linked_group_id: null } : m));
+      // Unlink: remove item from fornecimento and possibly delete empty group
+      await unlinkMaterialFromGroup(material);
       return;
     }
 
-    const material = obraMaterials.find((m) => m.id === id);
-    if (!material || !material.purchase_group) return;
+    if (!material.purchase_group) return;
 
     // Find or create a comparison group matching the purchase_group name
     let targetGroup = groups.find((g) => g.description.toUpperCase() === material.purchase_group.toUpperCase());
@@ -208,7 +257,6 @@ export default function ComparativosPage() {
 
     if (itemError) { toast.error("Erro ao adicionar item ao fornecimento"); return; }
 
-    // If currently viewing this group, update items list
     if (selectedId === targetGroup.id && itemData) {
       setItems((prev) => [...prev, { id: itemData.id, code: itemData.code, description: itemData.description, unit: itemData.unit, quantity: itemData.quantity, base_price: itemData.base_price }]);
     }
