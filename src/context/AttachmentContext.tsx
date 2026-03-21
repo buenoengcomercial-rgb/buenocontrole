@@ -39,11 +39,13 @@ function mapRow(r: any): Attachment {
 export function AttachmentProvider({ children }: { children: React.ReactNode }) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
 
-  useEffect(() => {
-    let mounted = true;
-
+  const fetchAttachments = useCallback(() => {
     supabase.from('attachments').select(METADATA_SELECT).then(({ data, error }) => {
-      if (!mounted || error || !data) return;
+      if (error) {
+        console.error('Erro ao carregar anexos:', error.message);
+        return;
+      }
+      if (!data) return;
 
       const mapped = data.map(mapRow);
       setAttachments(prev => {
@@ -54,11 +56,22 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
         return Array.from(merged.values());
       });
     });
+  }, []);
+
+  useEffect(() => {
+    fetchAttachments();
+
+    // Re-fetch when auth state changes (e.g. user logs in)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        fetchAttachments();
+      }
+    });
 
     return () => {
-      mounted = false;
+      subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchAttachments]);
 
   const addAttachment = useCallback(async (a: AttachmentPayload): Promise<boolean> => {
     const { data, error } = await supabase
