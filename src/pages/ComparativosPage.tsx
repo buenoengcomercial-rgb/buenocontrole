@@ -394,6 +394,9 @@ export default function ComparativosPage() {
                   <TabsTrigger value="historico" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
                     <History className="h-3 w-3" /> Histórico de Preços
                   </TabsTrigger>
+                  <TabsTrigger value="otimizado" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                    <Zap className="h-3 w-3" /> Plano de Compras Otimizado
+                  </TabsTrigger>
                 </>
               )}
             </TabsList>
