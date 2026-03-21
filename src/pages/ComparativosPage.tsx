@@ -331,19 +331,8 @@ export default function ComparativosPage() {
                 <PriceHistoryPanel history={history} />
               </TabsContent>
             </>
-          ) : (
-            <>
-              <TabsContent value="fornecimentos" className="mt-0 flex-1 flex items-center justify-center text-sm text-muted-foreground">
-                Selecione um comparativo para ver os fornecimentos
-              </TabsContent>
-              <TabsContent value="analise" className="mt-0 flex-1 flex items-center justify-center text-sm text-muted-foreground">
-                Selecione um comparativo
-              </TabsContent>
-              <TabsContent value="historico" className="mt-0 flex-1 flex items-center justify-center text-sm text-muted-foreground">
-                Selecione um comparativo
-              </TabsContent>
-            </>
-          )}
+          ) : null}
+
         </Tabs>
       </div>
 
