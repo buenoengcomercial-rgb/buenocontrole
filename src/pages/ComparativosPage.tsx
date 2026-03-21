@@ -422,6 +422,9 @@ export default function ComparativosPage() {
               <TabsContent value="historico" className="mt-0 flex-1 overflow-hidden">
                 <PriceHistoryPanel history={history} />
               </TabsContent>
+              <TabsContent value="otimizado" className="mt-0 flex-1 overflow-hidden">
+                <OptimizedPurchasePlan items={items} suppliers={suppliers} prices={prices} groupCode={selected.code} obraName={obraName} />
+              </TabsContent>
             </>
           ) : null}
 
