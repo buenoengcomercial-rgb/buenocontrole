@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Plus, Trash2, Upload, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { ImportItemsDialog, type ImportRow } from "./ImportItemsDialog";
 import type { SupplierData } from "./SuppliersPanel";
 
@@ -36,6 +36,16 @@ function fmt(value: number) {
   return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+type SortKey = "code" | "description" | "quantity" | "unit" | "base_price" | "importance";
+type SortDir = "asc" | "desc";
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  if (!active) return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
+  return dir === "asc"
+    ? <ArrowUp className="ml-1 inline h-3 w-3 text-primary" />
+    : <ArrowDown className="ml-1 inline h-3 w-3 text-primary" />;
+}
+
 export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, onUpdatePrice, onImportItems }: Props) {
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -46,6 +56,17 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
   const [price, setPrice] = useState("");
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
 
   const handleAdd = () => {
     if (!desc || !unit || !qty) return;
@@ -84,6 +105,21 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
     }
     return { supplierId: sup.id, total, complete };
   });
+
+  const sortedItems = useMemo(() => {
+    if (!sortKey) return items;
+    return [...items].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "importance") {
+        cmp = (a.base_price * a.quantity) - (b.base_price * b.quantity);
+      } else if (sortKey === "quantity" || sortKey === "base_price") {
+        cmp = a[sortKey] - b[sortKey];
+      } else {
+        cmp = String(a[sortKey]).localeCompare(String(b[sortKey]), "pt-BR", { sensitivity: "base" });
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [items, sortKey, sortDir]);
 
   return (
     <div className="flex flex-col border-t border-border bg-card">
@@ -140,12 +176,24 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border bg-muted/50 text-left">
-              <th className="w-16 px-2 py-1.5 font-semibold text-muted-foreground">Código</th>
-              <th className="min-w-[280px] px-2 py-1.5 font-semibold text-muted-foreground">Resumo</th>
-              <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground">Quantidade</th>
-              <th className="w-12 px-2 py-1.5 text-center font-semibold text-muted-foreground">Ud</th>
-              <th className="w-24 px-2 py-1.5 text-right font-semibold text-muted-foreground">Preço</th>
-              <th className="w-28 px-2 py-1.5 text-right font-semibold text-muted-foreground">Importância</th>
+              <th className="w-16 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("code")}>
+                Código <SortIcon active={sortKey === "code"} dir={sortDir} />
+              </th>
+              <th className="min-w-[280px] px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("description")}>
+                Resumo <SortIcon active={sortKey === "description"} dir={sortDir} />
+              </th>
+              <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("quantity")}>
+                Quantidade <SortIcon active={sortKey === "quantity"} dir={sortDir} />
+              </th>
+              <th className="w-12 px-2 py-1.5 text-center font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("unit")}>
+                Ud <SortIcon active={sortKey === "unit"} dir={sortDir} />
+              </th>
+              <th className="w-24 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("base_price")}>
+                Preço <SortIcon active={sortKey === "base_price"} dir={sortDir} />
+              </th>
+              <th className="w-28 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("importance")}>
+                Importância <SortIcon active={sortKey === "importance"} dir={sortDir} />
+              </th>
               {suppliers.map((s, idx) => (
                 <th key={s.id} colSpan={2} className="border-l border-border px-2 py-1.5 text-center font-semibold text-muted-foreground">
                   <span className="text-primary">{idx + 1}</span>
@@ -157,9 +205,8 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => {
+            {sortedItems.map((item) => {
               const importance = item.base_price * item.quantity;
-              // Compare supplier prices against each other
               const supplierPricesForItem = suppliers
                 .map((s) => getPrice(item.id, s.id))
                 .filter((p) => p > 0);
