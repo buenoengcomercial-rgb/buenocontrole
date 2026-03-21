@@ -413,7 +413,7 @@ export default function ComparativosPage() {
           </TabsContent>
           {selected ? (
             <>
-              <TabsContent value="fornecimentos" className="mt-0 flex-1 overflow-hidden">
+              <TabsContent value="fornecimentos" className="mt-0 flex-1 overflow-auto">
                 <ItemsTable items={items} suppliers={suppliers} prices={prices} onAddItem={addItem} onRemoveItem={removeItem} onUpdatePrice={updatePrice} onImportItems={importItems} />
               </TabsContent>
               <TabsContent value="analise" className="mt-0 flex-1 overflow-hidden">
