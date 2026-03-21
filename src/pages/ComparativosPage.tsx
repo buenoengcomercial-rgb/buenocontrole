@@ -30,6 +30,7 @@ interface CompItem {
   description: string;
   unit: string;
   quantity: number;
+  base_price: number;
 }
 
 interface ItemPrice {
