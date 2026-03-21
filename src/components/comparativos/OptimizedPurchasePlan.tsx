@@ -144,7 +144,7 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
   };
 
   const comparisonChartData = [
-    { name: bestTraditional ? `Melhor Fornecedor (${bestTraditional.supplier.name})` : "Fornecedor Único", value: totalTraditional },
+    { name: "Preço Original", value: totalBase },
     { name: "Compra Otimizada", value: totalOptimized },
   ];
 
