@@ -1,0 +1,250 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Plus, Trash2, Upload } from "lucide-react";
+import { ImportItemsDialog, type ImportRow } from "./ImportItemsDialog";
+import type { SupplierData } from "./SuppliersPanel";
+
+export interface ItemData {
+  id: string;
+  code: string;
+  description: string;
+  unit: string;
+  quantity: number;
+  base_price: number;
+}
+
+export interface ItemPrice {
+  item_id: string;
+  supplier_id: string;
+  price: number;
+}
+
+interface Props {
+  items: ItemData[];
+  suppliers: SupplierData[];
+  prices: ItemPrice[];
+  onAddItem: (code: string, description: string, unit: string, quantity: number, basePrice: number) => void;
+  onRemoveItem: (id: string) => void;
+  onUpdatePrice: (itemId: string, supplierId: string, price: number) => void;
+  onImportItems: (rows: ImportRow[]) => void;
+}
+
+function fmt(value: number) {
+  return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, onUpdatePrice, onImportItems }: Props) {
+  const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [desc, setDesc] = useState("");
+  const [unit, setUnit] = useState("");
+  const [qty, setQty] = useState("");
+  const [price, setPrice] = useState("");
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  const handleAdd = () => {
+    if (!desc || !unit || !qty) return;
+    onAddItem(code || String(items.length + 1), desc, unit, Number(qty), Number(price) || 0);
+    setCode(""); setDesc(""); setUnit(""); setQty(""); setPrice("");
+    setOpen(false);
+  };
+
+  const startEdit = (key: string, val: number) => {
+    setEditingCell(key);
+    setEditValue(val ? String(val) : "");
+  };
+
+  const finishEdit = (itemId: string, supplierId: string) => {
+    const val = editValue.trim() === "" ? 0 : Number(editValue);
+    onUpdatePrice(itemId, supplierId, val);
+    setEditingCell(null);
+  };
+
+  const getPrice = (itemId: string, supplierId: string): number => {
+    return prices.find((p) => p.item_id === itemId && p.supplier_id === supplierId)?.price ?? 0;
+  };
+
+  const totalContracted = items.reduce((s, i) => s + i.base_price * i.quantity, 0);
+
+  const supplierTotals = suppliers.map((sup) => {
+    let total = 0;
+    let complete = true;
+    for (const item of items) {
+      const p = getPrice(item.id, sup.id);
+      if (p > 0) {
+        total += p * item.quantity;
+      } else {
+        complete = false;
+      }
+    }
+    return { supplierId: sup.id, total, complete };
+  });
+
+  return (
+    <div className="flex flex-col border-t border-border bg-card">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">📦 Fornecimento</span>
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-xs" onClick={() => setImportOpen(true)}>
+            <Upload className="h-3 w-3" />
+            Importar (Excel)
+          </Button>
+          <Button variant="default" size="sm" className="h-7 gap-1.5 px-2.5 text-xs" onClick={() => setOpen(true)}>
+            <Plus className="h-3 w-3" />
+            Adicionar Item
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Novo Item</DialogTitle></DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid grid-cols-4 gap-3">
+              <div>
+                <Label className="text-xs">Código</Label>
+                <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="6011" className="h-8 text-sm" />
+              </div>
+              <div className="col-span-3">
+                <Label className="text-xs">Descrição *</Label>
+                <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="REGISTRO GAVETA BRUTO..." className="h-8 text-sm" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs">Unidade *</Label>
+                <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="UN" className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Quantidade *</Label>
+                <Input type="number" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="0" className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Preço Base</Label>
+                <Input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0,00" className="h-8 text-sm" />
+              </div>
+            </div>
+          </div>
+          <Button onClick={handleAdd} size="sm" disabled={!desc || !unit || !qty}>Adicionar</Button>
+        </DialogContent>
+      </Dialog>
+
+      <ImportItemsDialog open={importOpen} onOpenChange={setImportOpen} onImport={onImportItems} />
+
+      <div className="flex-1 overflow-auto max-h-[calc(100vh-320px)]">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border bg-muted/50 text-left">
+              <th className="w-16 px-2 py-1.5 font-semibold text-muted-foreground">Código</th>
+              <th className="min-w-[280px] px-2 py-1.5 font-semibold text-muted-foreground">Resumo</th>
+              <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground">Quantidade</th>
+              <th className="w-12 px-2 py-1.5 text-center font-semibold text-muted-foreground">Ud</th>
+              <th className="w-24 px-2 py-1.5 text-right font-semibold text-muted-foreground">Preço</th>
+              <th className="w-28 px-2 py-1.5 text-right font-semibold text-muted-foreground">Importância</th>
+              {suppliers.map((s, idx) => (
+                <th key={s.id} colSpan={2} className="border-l border-border px-2 py-1.5 text-center font-semibold text-muted-foreground">
+                  <span className="text-primary">{idx + 1}</span>
+                  <span className="ml-1.5">Preço {idx + 1}</span>
+                  <span className="ml-3">Importância {idx + 1}</span>
+                </th>
+              ))}
+              <th className="w-8"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => {
+              const importance = item.base_price * item.quantity;
+              return (
+                <tr key={item.id} className="border-b border-border hover:bg-muted/30">
+                  <td className="px-2 py-1 font-medium">{item.code}</td>
+                  <td className="px-2 py-1" title={item.description}>
+                    <span className="line-clamp-1">{item.description}</span>
+                  </td>
+                  <td className="px-2 py-1 text-right">{fmt(item.quantity)}</td>
+                  <td className="px-2 py-1 text-center">{item.unit}</td>
+                  <td className="px-2 py-1 text-right font-medium">{fmt(item.base_price)}</td>
+                  <td className="px-2 py-1 text-right font-medium">{fmt(importance)}</td>
+                  {suppliers.map((s) => {
+                    const unitPrice = getPrice(item.id, s.id);
+                    const supImportance = unitPrice > 0 ? unitPrice * item.quantity : 0;
+                    const cellKey = `${item.id}-${s.id}`;
+                    const isCheaper = unitPrice > 0 && unitPrice < item.base_price;
+                    const isExpensive = unitPrice > 0 && unitPrice > item.base_price;
+
+                    return (
+                      <td key={s.id} colSpan={2} className="border-l border-border px-1 py-1">
+                        <div className="flex items-center gap-1">
+                          <div className="flex-1 text-right">
+                            {editingCell === cellKey ? (
+                              <Input
+                                type="number" step="0.01" value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onBlur={() => finishEdit(item.id, s.id)}
+                                onKeyDown={(e) => e.key === "Enter" && finishEdit(item.id, s.id)}
+                                className="h-5 w-20 text-right text-xs" autoFocus
+                              />
+                            ) : (
+                              <button
+                                className={`w-full rounded px-1 py-0.5 text-right text-xs hover:bg-muted ${
+                                  isCheaper ? "text-savings font-semibold" : isExpensive ? "text-destructive font-semibold" : ""
+                                }`}
+                                onClick={() => startEdit(cellKey, unitPrice)}
+                              >
+                                {unitPrice > 0 ? fmt(unitPrice) : "—"}
+                              </button>
+                            )}
+                          </div>
+                          <div className={`flex-1 text-right text-xs ${
+                            isCheaper ? "text-savings font-semibold" : isExpensive ? "text-destructive font-semibold" : "text-muted-foreground"
+                          }`}>
+                            {supImportance > 0 ? fmt(supImportance) : ""}
+                          </div>
+                        </div>
+                      </td>
+                    );
+                  })}
+                  <td className="px-1">
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => onRemoveItem(item.id)}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          {items.length > 0 && (
+            <tfoot>
+              <tr className="border-t-2 border-border bg-muted/40 font-bold">
+                <td colSpan={5} className="px-2 py-1.5 text-xs">TOTAL</td>
+                <td className="px-2 py-1.5 text-right text-xs text-savings">{fmt(totalContracted)}</td>
+                {suppliers.map((s) => {
+                  const st = supplierTotals.find((t) => t.supplierId === s.id);
+                  return (
+                    <td key={s.id} colSpan={2} className="border-l border-border px-2 py-1.5 text-right text-xs">
+                      <div className="flex">
+                        <div className="flex-1"></div>
+                        <div className={`flex-1 text-right ${st && st.complete ? "text-savings" : "text-muted-foreground"}`}>
+                          {st && st.complete ? fmt(st.total) : "—"}
+                        </div>
+                      </div>
+                    </td>
+                  );
+                })}
+                <td></td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+        {items.length === 0 && (
+          <p className="py-8 text-center text-xs text-muted-foreground">Adicione itens manualmente ou importe de uma planilha</p>
+        )}
+      </div>
+    </div>
+  );
+}
