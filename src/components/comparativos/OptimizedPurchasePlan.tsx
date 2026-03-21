@@ -37,7 +37,8 @@ interface OptimizedItem {
   winnerSupplierId: string;
   winnerPrice: number;
   total: number;
-  maxPrice: number;
+  basePrice: number;
+  baseTotal: number;
   diffPercent: number;
   savings: number;
   isTie: boolean;
