@@ -11,6 +11,8 @@ interface ComparisonGroup {
   description: string;
   date: string;
   project_id: string | null;
+  status: string;
+  observations: string;
 }
 
 interface Project {
@@ -25,9 +27,10 @@ interface Props {
   onSelect: (id: string) => void;
   onAdd: (description: string, projectId: string | null) => void;
   onRemove: (id: string) => void;
+  onToggleStatus: (id: string) => void;
 }
 
-export function ComparisonGroupList({ groups, projects, selectedId, onSelect, onAdd, onRemove }: Props) {
+export function ComparisonGroupList({ groups, projects, selectedId, onSelect, onAdd, onRemove, onToggleStatus }: Props) {
   const [open, setOpen] = useState(false);
   const [desc, setDesc] = useState("");
   const [projectId, setProjectId] = useState<string>("none");
@@ -82,6 +85,7 @@ export function ComparisonGroupList({ groups, projects, selectedId, onSelect, on
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border bg-muted/50 text-left">
+              <th className="w-8 px-2 py-1.5"></th>
               <th className="px-2 py-1.5 font-semibold text-muted-foreground">Código</th>
               <th className="px-2 py-1.5 font-semibold text-muted-foreground">Descrição</th>
               <th className="px-2 py-1.5 font-semibold text-muted-foreground">Obra</th>
@@ -92,19 +96,31 @@ export function ComparisonGroupList({ groups, projects, selectedId, onSelect, on
           <tbody>
             {groups.map((g) => {
               const project = projects.find((p) => p.id === g.project_id);
+              const isSelected = selectedId === g.id;
               return (
                 <tr
                   key={g.id}
                   onClick={() => onSelect(g.id)}
                   className={`cursor-pointer border-b border-border transition-colors ${
-                    selectedId === g.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted/50"
+                    isSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted/50"
                   }`}
                 >
+                  <td className="px-2 py-1.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onToggleStatus(g.id); }}
+                      className="hover:opacity-70"
+                      title={g.status === "finalizada" ? "Marcar como aberta" : "Marcar como finalizada"}
+                    >
+                      {g.status === "finalizada" ? (
+                        <CheckCircle2 className={`h-3.5 w-3.5 ${isSelected ? "text-primary-foreground" : "text-savings"}`} />
+                      ) : (
+                        <Circle className={`h-3.5 w-3.5 ${isSelected ? "text-primary-foreground/60" : "text-muted-foreground/50"}`} />
+                      )}
+                    </button>
+                  </td>
                   <td className="whitespace-nowrap px-2 py-1.5 font-medium">{g.code}</td>
                   <td className="px-2 py-1.5">{g.description}</td>
-                  <td className="px-2 py-1.5 text-muted-foreground">{project?.name || "—"}</td>
+                  <td className={`px-2 py-1.5 ${isSelected ? "" : "text-muted-foreground"}`}>{project?.name || "—"}</td>
                   <td className="whitespace-nowrap px-2 py-1.5">
                     {new Date(g.date).toLocaleDateString("pt-BR")}
                   </td>
@@ -113,7 +129,7 @@ export function ComparisonGroupList({ groups, projects, selectedId, onSelect, on
                       variant="ghost"
                       size="sm"
                       className={`h-5 w-5 p-0 ${
-                        selectedId === g.id ? "text-primary-foreground/70 hover:text-primary-foreground" : "text-muted-foreground hover:text-destructive"
+                        isSelected ? "text-primary-foreground/70 hover:text-primary-foreground" : "text-muted-foreground hover:text-destructive"
                       }`}
                       onClick={(e) => { e.stopPropagation(); onRemove(g.id); }}
                     >
