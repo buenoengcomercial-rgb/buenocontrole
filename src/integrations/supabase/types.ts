@@ -204,6 +204,121 @@ export type Database = {
         }
         Relationships: []
       }
+      comparison_item_prices: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          price: number
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          price?: number
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          price?: number
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comparison_item_prices_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "comparison_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comparison_item_prices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "comparison_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comparison_items: {
+        Row: {
+          code: string
+          comparison_id: string
+          created_at: string
+          description: string
+          id: string
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          code?: string
+          comparison_id: string
+          created_at?: string
+          description?: string
+          id?: string
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          code?: string
+          comparison_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          quantity?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comparison_items_comparison_id_fkey"
+            columns: ["comparison_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_comparisons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comparison_suppliers: {
+        Row: {
+          comparison_id: string
+          created_at: string
+          delivery_days: number
+          id: string
+          name: string
+          rating: number
+        }
+        Insert: {
+          comparison_id: string
+          created_at?: string
+          delivery_days?: number
+          id?: string
+          name?: string
+          rating?: number
+        }
+        Update: {
+          comparison_id?: string
+          created_at?: string
+          delivery_days?: number
+          id?: string
+          name?: string
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comparison_suppliers_comparison_id_fkey"
+            columns: ["comparison_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_comparisons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       das_expenses: {
         Row: {
           created_at: string
@@ -886,6 +1001,47 @@ export type Database = {
           },
         ]
       }
+      price_history: {
+        Row: {
+          comparison_id: string | null
+          created_at: string
+          date: string
+          id: string
+          item_code: string
+          item_description: string
+          price: number
+          supplier_name: string
+        }
+        Insert: {
+          comparison_id?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          item_code?: string
+          item_description?: string
+          price?: number
+          supplier_name?: string
+        }
+        Update: {
+          comparison_id?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          item_code?: string
+          item_description?: string
+          price?: number
+          supplier_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_history_comparison_id_fkey"
+            columns: ["comparison_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_comparisons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_quotes: {
         Row: {
           bid_item_id: string
@@ -1137,6 +1293,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      purchase_comparisons: {
+        Row: {
+          code: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          project_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          project_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          project_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_comparisons_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchases: {
         Row: {
