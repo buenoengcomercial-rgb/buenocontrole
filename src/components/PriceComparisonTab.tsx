@@ -138,18 +138,18 @@ export default function PriceComparisonTab({ projectId }: { projectId: string })
         <table className="w-max min-w-full text-sm">
           <thead className="bg-muted/50">
             <tr className="border-b border-border">
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground sticky left-0 bg-muted/50 z-10 min-w-[80px]">Código</th>
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground min-w-[400px]">Descrição</th>
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground min-w-[60px]">Und</th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground min-w-[100px]">Qtd</th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground min-w-[120px] bg-primary/10">Preço Licitação</th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground min-w-[120px] bg-primary/10">Total Licitação</th>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground sticky left-0 bg-muted/50 z-10 w-[80px]">Código</th>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground w-[250px] max-w-[250px]">Descrição</th>
+              <th className="px-3 py-2 text-center font-medium text-muted-foreground w-[50px]">Und</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[80px]">Qtd</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[110px] bg-primary/10">P. Licitação</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[110px] bg-primary/10">T. Licitação</th>
               {supplierNames.map(name => (
                 <React.Fragment key={name}>
-                  <th className="px-3 py-2 text-right font-medium text-muted-foreground min-w-[130px] bg-accent/30">{name} (Unit.)</th>
-                  <th className="px-3 py-2 text-right font-medium text-muted-foreground min-w-[130px] bg-accent/30">{name} (Total)</th>
-                  <th className="px-3 py-2 text-center font-medium text-muted-foreground min-w-[60px] bg-accent/30">Dif %</th>
-                  <th className="px-3 py-2 text-center font-medium text-muted-foreground min-w-[40px]"></th>
+                  <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[110px] bg-accent/30">{name} (Unit.)</th>
+                  <th className="px-3 py-2 text-right font-medium text-muted-foreground w-[110px] bg-accent/30">{name} (Total)</th>
+                  <th className="px-3 py-2 text-center font-medium text-muted-foreground w-[60px] bg-accent/30">Dif %</th>
+                  <th className="px-3 py-2 text-center font-medium text-muted-foreground w-[40px]"></th>
                 </React.Fragment>
               ))}
             </tr>
@@ -160,7 +160,7 @@ export default function PriceComparisonTab({ projectId }: { projectId: string })
               return (
                 <tr key={item.id} className="border-b border-border hover:bg-muted/30">
                   <td className="px-3 py-2 text-xs font-mono sticky left-0 bg-background z-10">{item.code}</td>
-                  <td className="px-3 py-2 whitespace-normal">{item.description}</td>
+                  <td className="px-3 py-2 text-xs leading-tight max-w-[250px]" title={item.description}>{item.description}</td>
                   <td className="px-3 py-2 text-center">{item.unit}</td>
                   <td className="px-3 py-2 text-right">{item.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}</td>
                   <td className="px-3 py-2 text-right bg-primary/5 font-medium">{formatCurrency(item.bid_unit_price)}</td>
