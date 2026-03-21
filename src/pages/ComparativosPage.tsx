@@ -170,10 +170,50 @@ export default function ComparativosPage() {
     setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, purchase_group: group } : m));
   };
 
-  const toggleObraMaterialLink = async (id: string, linked: boolean, groupId: string | null) => {
-    const newId = linked ? groupId : null;
-    await supabase.from("obra_materials").update({ linked_group_id: newId } as any).eq("id", id);
-    setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, linked_group_id: newId } : m));
+  const toggleObraMaterialLink = async (id: string, linked: boolean, _groupId: string | null) => {
+    if (!linked) {
+      // Unlink
+      await supabase.from("obra_materials").update({ linked_group_id: null } as any).eq("id", id);
+      setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, linked_group_id: null } : m));
+      return;
+    }
+
+    const material = obraMaterials.find((m) => m.id === id);
+    if (!material || !material.purchase_group) return;
+
+    // Find or create a comparison group matching the purchase_group name
+    let targetGroup = groups.find((g) => g.description.toUpperCase() === material.purchase_group.toUpperCase());
+
+    if (!targetGroup) {
+      const code = `CMP${String(groups.length + 1).padStart(4, "0")}`;
+      const { data, error } = await supabase.from("purchase_comparisons").insert({ code, description: material.purchase_group, project_id: null }).select().single();
+      if (error || !data) { toast.error("Erro ao criar comparativo"); return; }
+      targetGroup = { id: data.id, code: data.code, description: data.description, date: data.date, project_id: data.project_id, status: (data as any).status || "aberta", observations: (data as any).observations || "" };
+      setGroups((prev) => [targetGroup!, ...prev]);
+    }
+
+    // Link the material to the group
+    await supabase.from("obra_materials").update({ linked_group_id: targetGroup.id } as any).eq("id", id);
+    setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, linked_group_id: targetGroup!.id } : m));
+
+    // Add material as item in the comparison group's "Fornecimentos"
+    const { data: itemData, error: itemError } = await supabase.from("comparison_items").insert({
+      comparison_id: targetGroup.id,
+      code: material.code,
+      description: material.description,
+      unit: material.unit,
+      quantity: material.quantity,
+      base_price: material.price,
+    }).select().single();
+
+    if (itemError) { toast.error("Erro ao adicionar item ao fornecimento"); return; }
+
+    // If currently viewing this group, update items list
+    if (selectedId === targetGroup.id && itemData) {
+      setItems((prev) => [...prev, { id: itemData.id, code: itemData.code, description: itemData.description, unit: itemData.unit, quantity: itemData.quantity, base_price: itemData.base_price }]);
+    }
+
+    toast.success(`Material vinculado ao comparativo "${targetGroup.description}"`);
   };
 
   const removeObraMaterial = async (id: string) => {
