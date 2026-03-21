@@ -44,7 +44,8 @@ export default function ProjectDetailPage() {
   { key: 'outsourced', label: 'Terceirizados', icon: Wrench },
   { key: 'rentals', label: 'Aluguéis', icon: Truck },
   { key: 'docs', label: 'Documentação', icon: FileText },
-  { key: 'costs', label: 'Custos', icon: DollarSign }];
+  { key: 'costs', label: 'Custos', icon: DollarSign },
+  { key: 'quotes', label: 'Cotações', icon: Scale }];
 
 
   return (
