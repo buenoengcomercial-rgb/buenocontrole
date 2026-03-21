@@ -264,7 +264,7 @@ export default function ComparativosPage() {
         )}
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex h-[280px] flex-shrink-0 overflow-hidden">
         <div className="w-[520px] flex-shrink-0 overflow-hidden">
           <ComparisonGroupList
             groups={groups}
