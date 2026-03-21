@@ -105,10 +105,6 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
       vacation_value: v.vacationValue, bonus_value: v.bonusValue, total_paid: v.totalPaid,
       payment_date: v.paymentDate || null, notes: v.notes,
     }).eq('id', v.id);
-    // When vacation is concluded, set employee back to active
-    if (v.status === 'concluidas') {
-      await supabase.from('employees').update({ status: 'ativo' }).eq('id', v.employeeId);
-    }
     setVacations(prev => prev.map(x => x.id === v.id ? v : x));
   }, []);
   const deleteVacation = useCallback(async (id: string) => {
