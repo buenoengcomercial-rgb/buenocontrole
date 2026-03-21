@@ -45,7 +45,7 @@ export default function ProjectDetailPage() {
   { key: 'rentals', label: 'Aluguéis', icon: Truck },
   { key: 'docs', label: 'Documentação', icon: FileText },
   { key: 'costs', label: 'Custos', icon: DollarSign },
-  { key: 'quotes', label: 'Cotações', icon: Scale }];
+  { key: 'costs', label: 'Custos', icon: DollarSign }];
 
 
   return (
