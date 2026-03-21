@@ -121,6 +121,39 @@ export type Database = {
         }
         Relationships: []
       }
+      bid_items: {
+        Row: {
+          bid_total: number
+          bid_unit_price: number
+          code: string
+          created_at: string
+          description: string
+          id: string
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          bid_total?: number
+          bid_unit_price?: number
+          code: string
+          created_at?: string
+          description: string
+          id?: string
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          bid_total?: number
+          bid_unit_price?: number
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          quantity?: number
+          unit?: string
+        }
+        Relationships: []
+      }
       company_charges: {
         Row: {
           charge_type: string
@@ -838,6 +871,54 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_quotes: {
+        Row: {
+          bid_item_id: string
+          created_at: string
+          id: string
+          notes: string
+          project_id: string
+          quoted_price: number
+          supplier_name: string
+          updated_at: string
+        }
+        Insert: {
+          bid_item_id: string
+          created_at?: string
+          id?: string
+          notes?: string
+          project_id: string
+          quoted_price?: number
+          supplier_name?: string
+          updated_at?: string
+        }
+        Update: {
+          bid_item_id?: string
+          created_at?: string
+          id?: string
+          notes?: string
+          project_id?: string
+          quoted_price?: number
+          supplier_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_quotes_bid_item_id_fkey"
+            columns: ["bid_item_id"]
+            isOneToOne: false
+            referencedRelation: "bid_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_quotes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
