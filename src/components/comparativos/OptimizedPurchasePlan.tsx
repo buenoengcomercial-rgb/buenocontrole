@@ -79,15 +79,15 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
       if (supplierPrices.length === 0) return null;
 
       const minPrice = Math.min(...supplierPrices.map((sp) => sp.price));
-      const maxPrice = Math.max(...supplierPrices.map((sp) => sp.price));
       const winners = supplierPrices.filter((sp) => sp.price === minPrice);
       const isTie = winners.length > 1;
       const winner = winners[0];
 
+      const basePrice = item.base_price || 0;
       const total = minPrice * item.quantity;
-      const maxTotal = maxPrice * item.quantity;
-      const savings = maxTotal - total;
-      const diffPercent = maxPrice > 0 && minPrice !== maxPrice ? ((maxPrice - minPrice) / maxPrice) * 100 : 0;
+      const baseTotal = basePrice * item.quantity;
+      const savings = basePrice > 0 ? baseTotal - total : 0;
+      const diffPercent = basePrice > 0 && minPrice !== basePrice ? ((basePrice - minPrice) / basePrice) * 100 : 0;
 
       return {
         code: item.code,
@@ -98,7 +98,8 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
         winnerSupplierId: winner.supplier.id,
         winnerPrice: minPrice,
         total,
-        maxPrice,
+        basePrice,
+        baseTotal,
         diffPercent,
         savings,
         isTie,
