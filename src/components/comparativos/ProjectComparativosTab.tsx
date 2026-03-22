@@ -7,10 +7,9 @@ import { CotacaoAnalysis } from "@/components/comparativos/CotacaoAnalysis";
 import { PriceHistoryPanel } from "@/components/comparativos/PriceHistoryPanel";
 import { PurchaseOrderDialog } from "@/components/comparativos/PurchaseOrderDialog";
 import { OptimizedPurchasePlan } from "@/components/comparativos/OptimizedPurchasePlan";
-import { ObraMaterialsTab, type ObraMaterial } from "@/components/comparativos/ObraMaterialsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Table, History, FileText, Package, Zap } from "lucide-react";
+import { BarChart3, Table, History, FileText, Zap } from "lucide-react";
 import { toast } from "sonner";
 import type { ImportRow } from "@/components/comparativos/ImportItemsDialog";
 
@@ -37,7 +36,6 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
   const [items, setItems] = useState<ItemData[]>([]);
   const [prices, setPrices] = useState<ItemPrice[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [obraMaterials, setObraMaterials] = useState<ObraMaterial[]>([]);
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -46,12 +44,8 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [gRes, mRes] = await Promise.all([
-        supabase.from("purchase_comparisons").select("*").eq("project_id", projectId).order("created_at", { ascending: false }),
-        supabase.from("obra_materials").select("*").order("created_at"),
-      ]);
-      if (gRes.data) setGroups(gRes.data.map((g: any) => ({ id: g.id, code: g.code, description: g.description, date: g.date, project_id: g.project_id, status: g.status || "aberta", observations: g.observations || "" })));
-      if (mRes.data) setObraMaterials(mRes.data.map((m: any) => ({ id: m.id, code: m.code, description: m.description, unit: m.unit, quantity: Number(m.quantity), price: Number(m.price), purchase_group: m.purchase_group, linked_group_id: m.linked_group_id })));
+      const { data } = await supabase.from("purchase_comparisons").select("*").eq("project_id", projectId).order("created_at", { ascending: false });
+      if (data) setGroups(data.map((g: any) => ({ id: g.id, code: g.code, description: g.description, date: g.date, project_id: g.project_id, status: g.status || "aberta", observations: g.observations || "" })));
       setLoading(false);
     };
     load();
@@ -80,7 +74,7 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
     else { setSuppliers([]); setItems([]); setPrices([]); setHistory([]); }
   }, [selectedId, loadGroupData]);
 
-  const addGroup = async (description: string, _projectId: string | null) => {
+  const addGroup = async (description: string) => {
     const code = `CMP${String(groups.length + 1).padStart(4, "0")}`;
     const { data, error } = await supabase.from("purchase_comparisons").insert({ code, description, project_id: projectId }).select().single();
     if (error) { toast.error("Erro ao criar comparativo"); return; }
@@ -154,79 +148,8 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
     if (data) { setItems((prev) => [...prev, ...data.map((i) => ({ id: i.id, code: i.code, description: i.description, unit: i.unit, quantity: i.quantity, base_price: i.base_price }))]); toast.success(`${data.length} itens importados`); }
   };
 
-  const importObraMaterials = async (newItems: Omit<ObraMaterial, "id" | "linked_group_id">[]) => {
-    const inserts = newItems.map((m) => ({ code: m.code, description: m.description, unit: m.unit, quantity: m.quantity, price: m.price, purchase_group: m.purchase_group }));
-    const { data, error } = await supabase.from("obra_materials").insert(inserts).select();
-    if (error) { toast.error("Erro ao importar materiais"); return; }
-    if (data) {
-      setObraMaterials((prev) => [...prev, ...data.map((m: any) => ({ id: m.id, code: m.code, description: m.description, unit: m.unit, quantity: Number(m.quantity), price: Number(m.price), purchase_group: m.purchase_group, linked_group_id: m.linked_group_id }))]);
-      toast.success(`${data.length} materiais importados`);
-    }
-  };
-
-  const unlinkMaterialFromGroup = async (material: ObraMaterial) => {
-    if (!material.linked_group_id) return;
-    const groupId = material.linked_group_id;
-    await supabase.from("comparison_items").delete().eq("comparison_id", groupId).eq("code", material.code).eq("description", material.description);
-    if (selectedId === groupId) {
-      setItems((prev) => prev.filter((i) => !(i.code === material.code && i.description === material.description)));
-    }
-    await supabase.from("obra_materials").update({ linked_group_id: null } as any).eq("id", material.id);
-    setObraMaterials((prev) => prev.map((m) => m.id === material.id ? { ...m, linked_group_id: null } : m));
-    const { count } = await supabase.from("comparison_items").select("id", { count: "exact", head: true }).eq("comparison_id", groupId);
-    const linkedCount = obraMaterials.filter((m) => m.id !== material.id && m.linked_group_id === groupId).length;
-    if ((count === 0 || count === null) && linkedCount === 0) {
-      await supabase.from("comparison_suppliers").delete().eq("comparison_id", groupId);
-      await supabase.from("purchase_comparisons").delete().eq("id", groupId);
-      setGroups((prev) => prev.filter((g) => g.id !== groupId));
-      if (selectedId === groupId) { setSelectedId(null); setItems([]); setSuppliers([]); setPrices([]); }
-    }
-  };
-
-  const updateObraMaterialGroup = async (id: string, group: string) => {
-    const material = obraMaterials.find((m) => m.id === id);
-    if (!material) return;
-    if (material.linked_group_id) { await unlinkMaterialFromGroup(material); }
-    await supabase.from("obra_materials").update({ purchase_group: group } as any).eq("id", id);
-    setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, purchase_group: group, linked_group_id: null } : m));
-  };
-
-  const toggleObraMaterialLink = async (id: string, linked: boolean, _groupId: string | null) => {
-    const material = obraMaterials.find((m) => m.id === id);
-    if (!material) return;
-    if (!linked) { await unlinkMaterialFromGroup(material); return; }
-    if (!material.purchase_group) return;
-
-    let targetGroup = groups.find((g) => g.description.toUpperCase() === material.purchase_group.toUpperCase());
-    if (!targetGroup) {
-      const code = `CMP${String(groups.length + 1).padStart(4, "0")}`;
-      const { data, error } = await supabase.from("purchase_comparisons").insert({ code, description: material.purchase_group, project_id: projectId }).select().single();
-      if (error || !data) { toast.error("Erro ao criar comparativo"); return; }
-      targetGroup = { id: data.id, code: data.code, description: data.description, date: data.date, project_id: data.project_id, status: (data as any).status || "aberta", observations: (data as any).observations || "" };
-      setGroups((prev) => [targetGroup!, ...prev]);
-    }
-
-    await supabase.from("obra_materials").update({ linked_group_id: targetGroup.id } as any).eq("id", id);
-    setObraMaterials((prev) => prev.map((m) => m.id === id ? { ...m, linked_group_id: targetGroup!.id } : m));
-
-    const { data: itemData, error: itemError } = await supabase.from("comparison_items").insert({
-      comparison_id: targetGroup.id, code: material.code, description: material.description, unit: material.unit, quantity: material.quantity, base_price: material.price,
-    }).select().single();
-    if (itemError) { toast.error("Erro ao adicionar item ao fornecimento"); return; }
-    if (selectedId === targetGroup.id && itemData) {
-      setItems((prev) => [...prev, { id: itemData.id, code: itemData.code, description: itemData.description, unit: itemData.unit, quantity: itemData.quantity, base_price: itemData.base_price }]);
-    }
-    toast.success(`Material vinculado ao comparativo "${targetGroup.description}"`);
-  };
-
-  const removeObraMaterial = async (id: string) => {
-    await supabase.from("obra_materials").delete().eq("id", id);
-    setObraMaterials((prev) => prev.filter((m) => m.id !== id));
-  };
-
   if (loading) return <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">Carregando...</div>;
 
-  // Simplified group list for this project - no project selector needed
   const projectsForList = [{ id: projectId, name: projectName }];
 
   return (
@@ -265,59 +188,40 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
         </div>
       </div>
 
-      <div className="min-h-0 flex-[5] overflow-hidden">
-        <Tabs defaultValue="obraMaterials" className="flex h-full flex-col">
-          <div className="flex items-center border-t border-border bg-card px-3">
-            <TabsList className="h-8 bg-transparent p-0">
-              <TabsTrigger value="obraMaterials" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
-                <Package className="h-3 w-3" /> Fornecimentos da Obra
-              </TabsTrigger>
-              {selected && (
-                <>
-                  <TabsTrigger value="fornecimentos" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
-                    <Table className="h-3 w-3" /> Fornecimentos
-                  </TabsTrigger>
-                  <TabsTrigger value="analise" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
-                    <BarChart3 className="h-3 w-3" /> Análise de Cotação
-                  </TabsTrigger>
-                  <TabsTrigger value="historico" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
-                    <History className="h-3 w-3" /> Histórico de Preços
-                  </TabsTrigger>
-                  <TabsTrigger value="otimizado" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
-                    <Zap className="h-3 w-3" /> Plano de Compras Otimizado
-                  </TabsTrigger>
-                </>
-              )}
-            </TabsList>
-          </div>
-          <TabsContent value="obraMaterials" className="mt-0 flex-1 overflow-hidden">
-            <ObraMaterialsTab
-              materials={obraMaterials}
-              groups={groups.map((g) => ({ id: g.id, code: g.code, description: g.description }))}
-              onImport={importObraMaterials}
-              onUpdateGroup={updateObraMaterialGroup}
-              onToggleLink={toggleObraMaterialLink}
-              onRemove={removeObraMaterial}
-            />
-          </TabsContent>
-          {selected ? (
-            <>
-              <TabsContent value="fornecimentos" className="mt-0 flex-1 overflow-auto">
-                <ItemsTable items={items} suppliers={suppliers} prices={prices} onAddItem={addItem} onRemoveItem={removeItem} onUpdatePrice={updatePrice} onImportItems={importItems} />
-              </TabsContent>
-              <TabsContent value="analise" className="mt-0 flex-1 overflow-hidden">
-                <CotacaoAnalysis items={items} suppliers={suppliers} prices={prices} />
-              </TabsContent>
-              <TabsContent value="historico" className="mt-0 flex-1 overflow-hidden">
-                <PriceHistoryPanel history={history} />
-              </TabsContent>
-              <TabsContent value="otimizado" className="mt-0 flex-1 overflow-hidden">
-                <OptimizedPurchasePlan items={items} suppliers={suppliers} prices={prices} groupCode={selected.code} obraName={projectName} />
-              </TabsContent>
-            </>
-          ) : null}
-        </Tabs>
-      </div>
+      {selected && (
+        <div className="min-h-0 flex-[5] overflow-hidden">
+          <Tabs defaultValue="fornecimentos" className="flex h-full flex-col">
+            <div className="flex items-center border-t border-border bg-card px-3">
+              <TabsList className="h-8 bg-transparent p-0">
+                <TabsTrigger value="fornecimentos" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                  <Table className="h-3 w-3" /> Fornecimentos
+                </TabsTrigger>
+                <TabsTrigger value="analise" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                  <BarChart3 className="h-3 w-3" /> Análise de Cotação
+                </TabsTrigger>
+                <TabsTrigger value="historico" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                  <History className="h-3 w-3" /> Histórico de Preços
+                </TabsTrigger>
+                <TabsTrigger value="otimizado" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-1.5 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
+                  <Zap className="h-3 w-3" /> Plano de Compras Otimizado
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="fornecimentos" className="mt-0 flex-1 overflow-auto">
+              <ItemsTable items={items} suppliers={suppliers} prices={prices} onAddItem={addItem} onRemoveItem={removeItem} onUpdatePrice={updatePrice} onImportItems={importItems} />
+            </TabsContent>
+            <TabsContent value="analise" className="mt-0 flex-1 overflow-hidden">
+              <CotacaoAnalysis items={items} suppliers={suppliers} prices={prices} />
+            </TabsContent>
+            <TabsContent value="historico" className="mt-0 flex-1 overflow-hidden">
+              <PriceHistoryPanel history={history} />
+            </TabsContent>
+            <TabsContent value="otimizado" className="mt-0 flex-1 overflow-hidden">
+              <OptimizedPurchasePlan items={items} suppliers={suppliers} prices={prices} groupCode={selected.code} obraName={projectName} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
 
       {selected && (
         <PurchaseOrderDialog
