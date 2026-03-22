@@ -39,6 +39,7 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
         setGroups(mapped);
         groupsRef.current = mapped;
       }
+      if (pRes.data) setProjects(pRes.data.map((p: any) => ({ id: p.id, name: p.name })));
       setLoading(false);
     };
     load();
