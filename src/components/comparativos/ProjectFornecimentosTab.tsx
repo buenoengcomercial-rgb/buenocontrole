@@ -110,6 +110,19 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
     setObraMaterials((prev) => prev.filter((m) => m.id !== id));
   };
 
+  const addGroup = async (description: string, linkedProjectId: string | null) => {
+    const { data: allGroups } = await supabase.from("purchase_comparisons").select("id").eq("project_id", linkedProjectId || projectId);
+    const code = `CMP${String((allGroups?.length || 0) + 1).padStart(4, "0")}`;
+    const { data, error } = await supabase.from("purchase_comparisons").insert({ code, description, project_id: linkedProjectId || projectId }).select().single();
+    if (error) { toast.error("Erro ao criar comparativo"); return; }
+    if (data) {
+      const newGroup = { id: data.id, code: data.code, description: data.description };
+      groupsRef.current = [newGroup, ...groupsRef.current];
+      setGroups((prev) => [newGroup, ...prev]);
+      toast.success(`Comparativo "${description}" criado com sucesso`);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">Carregando...</div>;
 
   return (
@@ -117,10 +130,13 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
       <ObraMaterialsTab
         materials={obraMaterials}
         groups={groups}
+        projects={projects}
+        currentProjectId={projectId}
         onImport={importObraMaterials}
         onUpdateGroup={updateObraMaterialGroup}
         onToggleLink={toggleObraMaterialLink}
         onRemove={removeObraMaterial}
+        onAddGroup={addGroup}
       />
     </div>
   );
