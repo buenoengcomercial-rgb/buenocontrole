@@ -27,7 +27,11 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
         supabase.from("purchase_comparisons").select("id, code, description").eq("project_id", projectId).order("created_at", { ascending: false }),
       ]);
       if (mRes.data) setObraMaterials(mRes.data.map((m: any) => ({ id: m.id, code: m.code, description: m.description, unit: m.unit, quantity: Number(m.quantity), price: Number(m.price), purchase_group: m.purchase_group, linked_group_id: m.linked_group_id })));
-      if (gRes.data) setGroups(gRes.data.map((g: any) => ({ id: g.id, code: g.code, description: g.description })));
+      if (gRes.data) {
+        const mapped = gRes.data.map((g: any) => ({ id: g.id, code: g.code, description: g.description }));
+        setGroups(mapped);
+        groupsRef.current = mapped;
+      }
       setLoading(false);
     };
     load();
