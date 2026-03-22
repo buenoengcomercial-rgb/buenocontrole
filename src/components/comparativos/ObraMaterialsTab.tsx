@@ -1,12 +1,11 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2, Upload, Search, ArrowUp, ArrowDown, ArrowUpDown, ListChecks, Link2, Unlink } from "lucide-react";
+import { Trash2, Upload, Search, ArrowUp, ArrowDown, ArrowUpDown, Link2, Unlink, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -55,14 +54,13 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
     : <ArrowDown className="ml-1 inline h-3 w-3 text-primary" />;
 }
 
-type BatchAction = "link-all" | "unlink-all" | "link-selected" | "unlink-selected";
+type BatchAction = "link-all" | "unlink-all";
 
 export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, onToggleLink, onRemove }: Props) {
   const [filter, setFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmAction, setConfirmAction] = useState<BatchAction | null>(null);
 
   const PURCHASE_GROUPS = useMemo(() => {
@@ -146,47 +144,12 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
     return result;
   }, [materials, filter, groupFilter, sortKey, sortDir]);
 
-  const filteredIds = useMemo(() => new Set(filtered.map((m) => m.id)), [filtered]);
-
-  // Clean up selected IDs that are no longer in filtered list
-  useEffect(() => {
-    setSelectedIds((prev) => {
-      const next = new Set<string>();
-      prev.forEach((id) => { if (filteredIds.has(id)) next.add(id); });
-      return next.size === prev.size ? prev : next;
-    });
-  }, [filteredIds]);
-
-  const allFilteredSelected = filtered.length > 0 && filtered.every((m) => selectedIds.has(m.id));
-
-  const toggleSelectAll = () => {
-    if (allFilteredSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filtered.map((m) => m.id)));
-    }
-  };
-
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
   const executeBatchAction = useCallback(async (action: BatchAction) => {
-    const getTargets = () => {
-      if (action === "link-all" || action === "unlink-all") return filtered;
-      return filtered.filter((m) => selectedIds.has(m.id));
-    };
-
-    const targets = getTargets();
-    const isLink = action === "link-all" || action === "link-selected";
-
+    const isLink = action === "link-all";
     let count = 0;
-    for (const m of targets) {
-      if (!m.purchase_group) continue; // skip items without group
+
+    for (const m of filtered) {
+      if (!m.purchase_group) continue;
       const alreadyLinked = !!m.linked_group_id;
       if (isLink && alreadyLinked) continue;
       if (!isLink && !alreadyLinked) continue;
@@ -205,66 +168,13 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
     }
 
     setConfirmAction(null);
-  }, [filtered, selectedIds, groups, onToggleLink]);
-
-  const requestAction = (action: BatchAction) => {
-    if (action === "link-all" || action === "unlink-all") {
-      setConfirmAction(action);
-    } else {
-      if (selectedIds.size === 0) {
-        toast.warning("Selecione ao menos um item");
-        return;
-      }
-      executeBatchAction(action);
-    }
-  };
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "a" && !e.shiftKey) {
-        const active = document.activeElement;
-        if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
-        e.preventDefault();
-        toggleSelectAll();
-      }
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "v") {
-        e.preventDefault();
-        requestAction("link-all");
-      }
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "d") {
-        e.preventDefault();
-        requestAction("unlink-all");
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, selectedIds]);
+  }, [filtered, groups, onToggleLink]);
 
   const confirmLabel = confirmAction === "link-all"
     ? `Vincular todos os ${filtered.length} itens filtrados?`
     : confirmAction === "unlink-all"
     ? `Desvincular todos os ${filtered.length} itens filtrados?`
     : "";
-
-  const batchMenuItems = (
-    <>
-      <DropdownMenuItem onClick={() => requestAction("link-all")} className="gap-2 text-xs">
-        <Link2 className="h-3.5 w-3.5" /> Vincular todos
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => requestAction("unlink-all")} className="gap-2 text-xs">
-        <Unlink className="h-3.5 w-3.5" /> Desvincular todos
-      </DropdownMenuItem>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => requestAction("link-selected")} disabled={selectedIds.size === 0} className="gap-2 text-xs">
-        <Link2 className="h-3.5 w-3.5" /> Vincular selecionados ({selectedIds.size})
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => requestAction("unlink-selected")} disabled={selectedIds.size === 0} className="gap-2 text-xs">
-        <Unlink className="h-3.5 w-3.5" /> Desvincular selecionados ({selectedIds.size})
-      </DropdownMenuItem>
-    </>
-  );
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -292,17 +202,6 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
             </SelectContent>
           </Select>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-xs">
-                <ListChecks className="h-3.5 w-3.5" /> Ações em Lote
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {batchMenuItems}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           <label className="cursor-pointer">
             <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
             <Button variant="outline" size="sm" className="h-7 gap-1.5 px-2.5 text-xs pointer-events-none">
@@ -312,127 +211,108 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
         </div>
       </div>
 
-      <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <div className="flex-1 overflow-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border bg-muted/50 text-left">
-                  <th className="w-8 px-2 py-1.5 text-center">
-                    <Checkbox
-                      checked={allFilteredSelected && filtered.length > 0}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                  </th>
-                  <th className="w-16 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("code")}>
-                    Código <SortIcon active={sortKey === "code"} dir={sortDir} />
-                  </th>
-                  <th className="w-12 px-2 py-1.5 text-center font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("unit")}>
-                    Ud <SortIcon active={sortKey === "unit"} dir={sortDir} />
-                  </th>
-                  <th className="min-w-[200px] px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("description")}>
-                    Resumo <SortIcon active={sortKey === "description"} dir={sortDir} />
-                  </th>
-                  <th className="w-16 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("quantity")}>
-                    Qtd <SortIcon active={sortKey === "quantity"} dir={sortDir} />
-                  </th>
-                  <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("price")}>
-                    Preço <SortIcon active={sortKey === "price"} dir={sortDir} />
-                  </th>
-                  <th className="w-40 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("purchase_group")}>
-                    Grupo de Compras <SortIcon active={sortKey === "purchase_group"} dir={sortDir} />
-                  </th>
-                  <th className="w-16 px-2 py-1.5 text-center font-semibold text-muted-foreground">Vinculado</th>
-                  <th className="w-8"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((m) => {
-                  const matchingGroup = groups.find((g) =>
-                    g.description.toUpperCase().includes(m.purchase_group.toUpperCase()) && m.purchase_group
-                  );
-                  const isSelected = selectedIds.has(m.id);
-                  return (
-                    <tr
-                      key={m.id}
-                      className={`border-b border-border hover:bg-muted/30 ${isSelected ? "bg-primary/5" : ""}`}
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border bg-muted/50 text-left">
+              <th className="w-16 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("code")}>
+                Código <SortIcon active={sortKey === "code"} dir={sortDir} />
+              </th>
+              <th className="w-12 px-2 py-1.5 text-center font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("unit")}>
+                Ud <SortIcon active={sortKey === "unit"} dir={sortDir} />
+              </th>
+              <th className="min-w-[200px] px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("description")}>
+                Resumo <SortIcon active={sortKey === "description"} dir={sortDir} />
+              </th>
+              <th className="w-16 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("quantity")}>
+                Qtd <SortIcon active={sortKey === "quantity"} dir={sortDir} />
+              </th>
+              <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("price")}>
+                Preço <SortIcon active={sortKey === "price"} dir={sortDir} />
+              </th>
+              <th className="w-40 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("purchase_group")}>
+                Grupo de Compras <SortIcon active={sortKey === "purchase_group"} dir={sortDir} />
+              </th>
+              <th className="w-20 px-2 py-1.5 text-center font-semibold text-muted-foreground">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                      Vinculado <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center">
+                    <DropdownMenuItem onClick={() => setConfirmAction("link-all")} className="gap-2 text-xs">
+                      <Link2 className="h-3.5 w-3.5" /> Vincular todos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setConfirmAction("unlink-all")} className="gap-2 text-xs">
+                      <Unlink className="h-3.5 w-3.5" /> Desvincular todos
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </th>
+              <th className="w-8"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((m) => {
+              const matchingGroup = groups.find((g) =>
+                g.description.toUpperCase().includes(m.purchase_group.toUpperCase()) && m.purchase_group
+              );
+              return (
+                <tr key={m.id} className="border-b border-border hover:bg-muted/30">
+                  <td className="px-2 py-1 font-medium">{m.code}</td>
+                  <td className="px-2 py-1 text-center">{m.unit}</td>
+                  <td className="px-2 py-1" title={m.description}>
+                    <span className="line-clamp-1">{m.description}</span>
+                  </td>
+                  <td className="px-2 py-1 text-right">{fmt(m.quantity)}</td>
+                  <td className="px-2 py-1 text-right">{fmt(m.price)}</td>
+                  <td className="px-2 py-1">
+                    <Select
+                      value={m.purchase_group || "none"}
+                      onValueChange={(v) => onUpdateGroup(m.id, v === "none" ? "" : v)}
                     >
-                      <td className="px-2 py-1 text-center">
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSelect(m.id)}
-                        />
-                      </td>
-                      <td className="px-2 py-1 font-medium">{m.code}</td>
-                      <td className="px-2 py-1 text-center">{m.unit}</td>
-                      <td className="px-2 py-1" title={m.description}>
-                        <span className="line-clamp-1">{m.description}</span>
-                      </td>
-                      <td className="px-2 py-1 text-right">{fmt(m.quantity)}</td>
-                      <td className="px-2 py-1 text-right">{fmt(m.price)}</td>
-                      <td className="px-2 py-1">
-                        <Select
-                          value={m.purchase_group || "none"}
-                          onValueChange={(v) => onUpdateGroup(m.id, v === "none" ? "" : v)}
-                        >
-                          <SelectTrigger className="h-6 text-xs">
-                            <SelectValue placeholder="Selecionar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">— Nenhum —</SelectItem>
-                            {PURCHASE_GROUPS.map((g) => (
-                              <SelectItem key={g} value={g}>{g}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-2 py-1 text-center">
-                        <Checkbox
-                          checked={!!m.linked_group_id}
-                          onCheckedChange={(checked) =>
-                            onToggleLink(m.id, !!checked, matchingGroup?.id ?? null)
-                          }
-                          disabled={!m.purchase_group}
-                        />
-                      </td>
-                      <td className="px-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => onRemove(m.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <p className="py-8 text-center text-xs text-muted-foreground">
-                {materials.length === 0 ? "Importe uma planilha de materiais da obra" : "Nenhum item encontrado"}
-              </p>
-            )}
-          </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem onClick={() => requestAction("link-all")} className="gap-2 text-xs">
-            <Link2 className="h-3.5 w-3.5" /> Vincular todos
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => requestAction("unlink-all")} className="gap-2 text-xs">
-            <Unlink className="h-3.5 w-3.5" /> Desvincular todos
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onClick={() => requestAction("link-selected")} disabled={selectedIds.size === 0} className="gap-2 text-xs">
-            <Link2 className="h-3.5 w-3.5" /> Vincular selecionados ({selectedIds.size})
-          </ContextMenuItem>
-          <ContextMenuItem onClick={() => requestAction("unlink-selected")} disabled={selectedIds.size === 0} className="gap-2 text-xs">
-            <Unlink className="h-3.5 w-3.5" /> Desvincular selecionados ({selectedIds.size})
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+                      <SelectTrigger className="h-6 text-xs">
+                        <SelectValue placeholder="Selecionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">— Nenhum —</SelectItem>
+                        {PURCHASE_GROUPS.map((g) => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-2 py-1 text-center">
+                    <Checkbox
+                      checked={!!m.linked_group_id}
+                      onCheckedChange={(checked) =>
+                        onToggleLink(m.id, !!checked, matchingGroup?.id ?? null)
+                      }
+                      disabled={!m.purchase_group}
+                    />
+                  </td>
+                  <td className="px-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => onRemove(m.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {filtered.length === 0 && (
+          <p className="py-8 text-center text-xs text-muted-foreground">
+            {materials.length === 0 ? "Importe uma planilha de materiais da obra" : "Nenhum item encontrado"}
+          </p>
+        )}
+      </div>
 
       <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
         <AlertDialogContent>
@@ -448,21 +328,6 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 border-t border-border bg-muted/50 px-3 py-1.5">
-          <span className="text-xs text-muted-foreground font-medium">{selectedIds.size} {selectedIds.size === 1 ? "item selecionado" : "itens selecionados"}</span>
-          <Button variant="outline" size="sm" className="h-6 gap-1 px-2 text-xs" onClick={() => requestAction("link-selected")}>
-            <Link2 className="h-3 w-3" /> Vincular
-          </Button>
-          <Button variant="outline" size="sm" className="h-6 gap-1 px-2 text-xs" onClick={() => requestAction("unlink-selected")}>
-            <Unlink className="h-3 w-3" /> Desvincular
-          </Button>
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => setSelectedIds(new Set())}>
-            Limpar seleção
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
