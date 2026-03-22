@@ -74,8 +74,7 @@ export default function ProjectDetailPage() {
       {tab === 'rentals' && <RentalsTab projectId={id!} rentals={projRentals} onAdd={addEquipmentRental} onUpdate={updateEquipmentRental} onDelete={deleteEquipmentRental} />}
       {tab === 'docs' && <DocsTab projectId={id!} docs={projDocs} onAdd={addProjectDocument} onUpdate={updateProjectDocument} onDelete={deleteProjectDocument} />}
       {tab === 'costs' && <CostsTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
-      {tab === 'fornecimentos_obra' && <ProjectFornecimentosTab projectId={id!} />}
-      {tab === 'comparativos' && <ProjectComparativosTab projectId={id!} projectName={project.name} />}
+      {tab === 'comparativos' && <ComparativosWrapper projectId={id!} projectName={project.name} />}
     </div>);
 
 }
