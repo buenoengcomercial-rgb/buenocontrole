@@ -102,6 +102,12 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
     setGroups((prev) => prev.map((g) => g.id === id ? { ...g, status: newStatus } : g));
   };
 
+  const addGroupFromCadastrado = async (description: string) => {
+    const exists = groups.find((g) => g.description.toUpperCase() === description.toUpperCase());
+    if (exists) { toast.info(`Comparativo "${description}" já existe`); setSelectedId(exists.id); return; }
+    await addGroup(description, projectId);
+  };
+
   const addSupplier = async (name: string, deliveryDays: number, rating: number) => {
     if (!selectedId) return;
     const { data, error } = await supabase.from("comparison_suppliers").insert({ comparison_id: selectedId, name, delivery_days: deliveryDays, rating }).select().single();
