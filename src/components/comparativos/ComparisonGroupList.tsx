@@ -81,7 +81,7 @@ export function ComparisonGroupList({ groups, projects, selectedId, onSelect, on
           </DialogContent>
         </Dialog>
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="overflow-y-auto" style={{ maxHeight: "calc(4 * 28px + 29px)" }}>
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border bg-muted/50 text-left">
