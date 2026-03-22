@@ -74,7 +74,7 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
     else { setSuppliers([]); setItems([]); setPrices([]); setHistory([]); }
   }, [selectedId, loadGroupData]);
 
-  const addGroup = async (description: string) => {
+  const addGroup = async (description: string, _projectId: string | null) => {
     const code = `CMP${String(groups.length + 1).padStart(4, "0")}`;
     const { data, error } = await supabase.from("purchase_comparisons").insert({ code, description, project_id: projectId }).select().single();
     if (error) { toast.error("Erro ao criar comparativo"); return; }
