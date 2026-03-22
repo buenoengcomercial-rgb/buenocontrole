@@ -9,8 +9,7 @@ import { PurchaseOrderDialog } from "@/components/comparativos/PurchaseOrderDial
 import { OptimizedPurchasePlan } from "@/components/comparativos/OptimizedPurchasePlan";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BarChart3, Table, History, FileText, Zap, ClipboardList } from "lucide-react";
+import { BarChart3, Table, History, FileText, Zap } from "lucide-react";
 import { toast } from "sonner";
 import type { ImportRow } from "@/components/comparativos/ImportItemsDialog";
 
@@ -171,20 +170,6 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
         <div className="rounded bg-primary px-2 py-0.5"><span className="text-xs font-bold text-primary-foreground">CMP</span></div>
         <h2 className="text-sm font-bold">Comparativos — {projectName}</h2>
         <div className="flex-1" />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-              <ClipboardList className="h-3.5 w-3.5" /> Cadastrados
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
-            {CADASTRADOS.map((cat) => (
-              <DropdownMenuItem key={cat} onClick={() => addGroupFromCadastrado(cat)}>
-                {cat}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
         {selected && (
           <Button size="sm" className="h-7 gap-1.5 text-xs" onClick={() => setOrderDialogOpen(true)}>
             <FileText className="h-3.5 w-3.5" /> Gerar Pedido de Compra
@@ -202,6 +187,8 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
             onAdd={addGroup}
             onRemove={removeGroup}
             onToggleStatus={toggleStatus}
+            cadastrados={CADASTRADOS}
+            onAddFromCadastrado={addGroupFromCadastrado}
           />
         </div>
         <div className="flex-1 overflow-hidden">
