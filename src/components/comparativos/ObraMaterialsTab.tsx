@@ -65,12 +65,15 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
 
 type BatchAction = "link-all" | "unlink-all";
 
-export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, onToggleLink, onRemove }: Props) {
+export function ObraMaterialsTab({ materials, groups, projects, currentProjectId, onImport, onUpdateGroup, onToggleLink, onRemove, onAddGroup }: Props) {
   const [filter, setFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [confirmAction, setConfirmAction] = useState<BatchAction | null>(null);
+  const [newGroupOpen, setNewGroupOpen] = useState(false);
+  const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [newGroupProjectId, setNewGroupProjectId] = useState<string>("none");
 
   const PURCHASE_GROUPS = useMemo(() => {
     const extraGroups = groups
