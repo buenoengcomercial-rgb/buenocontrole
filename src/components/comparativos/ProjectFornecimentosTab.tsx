@@ -58,7 +58,7 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
     if ((count === 0 || count === null) && linkedCount === 0) {
       await supabase.from("comparison_suppliers").delete().eq("comparison_id", groupId);
       await supabase.from("purchase_comparisons").delete().eq("id", groupId);
-      setGroups((prev) => prev.filter((g) => g.id !== groupId));
+      setGroups((prev) => { const next = prev.filter((g) => g.id !== groupId); groupsRef.current = next; return next; });
     }
   };
 
