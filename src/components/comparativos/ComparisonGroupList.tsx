@@ -29,6 +29,8 @@ interface Props {
   onAdd: (description: string, projectId: string | null) => void;
   onRemove: (id: string) => void;
   onToggleStatus: (id: string) => void;
+  cadastrados?: string[];
+  onAddFromCadastrado?: (desc: string) => void;
 }
 
 export function ComparisonGroupList({ groups, projects, selectedId, onSelect, onAdd, onRemove, onToggleStatus }: Props) {
