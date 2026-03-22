@@ -46,7 +46,7 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
   }, [projectId]);
 
   const importObraMaterials = async (newItems: Omit<ObraMaterial, "id" | "linked_group_id">[]) => {
-    const inserts = newItems.map((m) => ({ code: m.code, description: m.description, unit: m.unit, quantity: m.quantity, price: m.price, purchase_group: m.purchase_group }));
+    const inserts = newItems.map((m) => ({ code: m.code, description: m.description, unit: m.unit, quantity: m.quantity, price: m.price, purchase_group: m.purchase_group, project_id: projectId }));
     const { data, error } = await supabase.from("obra_materials").insert(inserts).select();
     if (error) { toast.error("Erro ao importar materiais"); return; }
     if (data) {
