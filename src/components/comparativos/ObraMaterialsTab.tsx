@@ -148,6 +148,7 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
     const isLink = action === "link-all";
     let count = 0;
 
+    // Process sequentially so group creation is shared across materials with same purchase_group
     for (const m of filtered) {
       if (!m.purchase_group) continue;
       const alreadyLinked = !!m.linked_group_id;
@@ -155,9 +156,9 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
       if (!isLink && !alreadyLinked) continue;
 
       const matchingGroup = groups.find((g) =>
-        g.description.toUpperCase().includes(m.purchase_group.toUpperCase())
+        g.description.toUpperCase() === m.purchase_group.toUpperCase()
       );
-      onToggleLink(m.id, isLink, matchingGroup?.id ?? null);
+      await onToggleLink(m.id, isLink, matchingGroup?.id ?? null);
       count++;
     }
 

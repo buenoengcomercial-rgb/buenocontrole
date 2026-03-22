@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ObraMaterialsTab, type ObraMaterial } from "@/components/comparativos/ObraMaterialsTab";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ interface Props {
 export function ProjectFornecimentosTab({ projectId }: Props) {
   const [obraMaterials, setObraMaterials] = useState<ObraMaterial[]>([]);
   const [groups, setGroups] = useState<ComparisonGroup[]>([]);
+  const groupsRef = useRef<ComparisonGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +27,11 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
         supabase.from("purchase_comparisons").select("id, code, description").eq("project_id", projectId).order("created_at", { ascending: false }),
       ]);
       if (mRes.data) setObraMaterials(mRes.data.map((m: any) => ({ id: m.id, code: m.code, description: m.description, unit: m.unit, quantity: Number(m.quantity), price: Number(m.price), purchase_group: m.purchase_group, linked_group_id: m.linked_group_id })));
-      if (gRes.data) setGroups(gRes.data.map((g: any) => ({ id: g.id, code: g.code, description: g.description })));
+      if (gRes.data) {
+        const mapped = gRes.data.map((g: any) => ({ id: g.id, code: g.code, description: g.description }));
+        setGroups(mapped);
+        groupsRef.current = mapped;
+      }
       setLoading(false);
     };
     load();
@@ -53,7 +58,7 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
     if ((count === 0 || count === null) && linkedCount === 0) {
       await supabase.from("comparison_suppliers").delete().eq("comparison_id", groupId);
       await supabase.from("purchase_comparisons").delete().eq("id", groupId);
-      setGroups((prev) => prev.filter((g) => g.id !== groupId));
+      setGroups((prev) => { const next = prev.filter((g) => g.id !== groupId); groupsRef.current = next; return next; });
     }
   };
 
@@ -71,13 +76,14 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
     if (!linked) { await unlinkMaterialFromGroup(material); return; }
     if (!material.purchase_group) return;
 
-    let targetGroup = groups.find((g) => g.description.toUpperCase() === material.purchase_group.toUpperCase());
+    let targetGroup = groupsRef.current.find((g) => g.description.toUpperCase() === material.purchase_group.toUpperCase());
     if (!targetGroup) {
       const { data: allGroups } = await supabase.from("purchase_comparisons").select("id").eq("project_id", projectId);
       const code = `CMP${String((allGroups?.length || 0) + 1).padStart(4, "0")}`;
       const { data, error } = await supabase.from("purchase_comparisons").insert({ code, description: material.purchase_group, project_id: projectId }).select().single();
       if (error || !data) { toast.error("Erro ao criar comparativo"); return; }
       targetGroup = { id: data.id, code: data.code, description: data.description };
+      groupsRef.current = [targetGroup, ...groupsRef.current];
       setGroups((prev) => [targetGroup!, ...prev]);
     }
 
