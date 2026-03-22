@@ -27,13 +27,21 @@ interface ComparisonGroup {
   description: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 interface Props {
   materials: ObraMaterial[];
   groups: ComparisonGroup[];
+  projects?: Project[];
+  currentProjectId?: string;
   onImport: (items: Omit<ObraMaterial, "id" | "linked_group_id">[]) => void;
   onUpdateGroup: (id: string, group: string) => void;
   onToggleLink: (id: string, linked: boolean, groupId: string | null) => void;
   onRemove: (id: string) => void;
+  onAddGroup?: (description: string, projectId: string | null) => void;
 }
 
 const BASE_PURCHASE_GROUPS = [
