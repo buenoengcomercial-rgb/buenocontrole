@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ProjectComparativosTab } from '@/components/comparativos/ProjectComparativosTab';
 import { useProjectData } from '@/context/ProjectContext';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useAppData } from '@/context/AppContext';
@@ -10,11 +11,11 @@ import { calculate13thDailyCost } from '@/types/employee';
 import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES, EQUIPMENT_TYPES, BILLING_TYPES, PAYMENT_METHODS } from '@/types/project';
 import { MATERIAL_CATEGORIES, UNITS } from '@/types';
 import type { ProjectDocType, MeasurementStatus, Measurement, EquipmentRental, EquipmentType, BillingType } from '@/types/project';
-import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck, Paperclip } from 'lucide-react';
+import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck, Paperclip, Scale } from 'lucide-react';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
-type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs';
+type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs' | 'comparativos';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{id: string;}>();
@@ -44,7 +45,7 @@ export default function ProjectDetailPage() {
   { key: 'rentals', label: 'Aluguéis', icon: Truck },
   { key: 'docs', label: 'Documentação', icon: FileText },
   { key: 'costs', label: 'Custos', icon: DollarSign },
-  { key: 'costs', label: 'Custos', icon: DollarSign }];
+  { key: 'comparativos', label: 'Comparativos', icon: Scale }];
 
 
   return (
@@ -73,6 +74,7 @@ export default function ProjectDetailPage() {
       {tab === 'rentals' && <RentalsTab projectId={id!} rentals={projRentals} onAdd={addEquipmentRental} onUpdate={updateEquipmentRental} onDelete={deleteEquipmentRental} />}
       {tab === 'docs' && <DocsTab projectId={id!} docs={projDocs} onAdd={addProjectDocument} onUpdate={updateProjectDocument} onDelete={deleteProjectDocument} />}
       {tab === 'costs' && <CostsTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
+      {tab === 'comparativos' && <ProjectComparativosTab projectId={id!} projectName={project.name} />}
     </div>);
 
 }
