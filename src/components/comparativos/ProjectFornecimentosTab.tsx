@@ -76,13 +76,14 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
     if (!linked) { await unlinkMaterialFromGroup(material); return; }
     if (!material.purchase_group) return;
 
-    let targetGroup = groups.find((g) => g.description.toUpperCase() === material.purchase_group.toUpperCase());
+    let targetGroup = groupsRef.current.find((g) => g.description.toUpperCase() === material.purchase_group.toUpperCase());
     if (!targetGroup) {
       const { data: allGroups } = await supabase.from("purchase_comparisons").select("id").eq("project_id", projectId);
       const code = `CMP${String((allGroups?.length || 0) + 1).padStart(4, "0")}`;
       const { data, error } = await supabase.from("purchase_comparisons").insert({ code, description: material.purchase_group, project_id: projectId }).select().single();
       if (error || !data) { toast.error("Erro ao criar comparativo"); return; }
       targetGroup = { id: data.id, code: data.code, description: data.description };
+      groupsRef.current = [targetGroup, ...groupsRef.current];
       setGroups((prev) => [targetGroup!, ...prev]);
     }
 
