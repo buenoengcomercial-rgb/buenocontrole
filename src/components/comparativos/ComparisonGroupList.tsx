@@ -49,7 +49,25 @@ export function ComparisonGroupList({ groups, projects, selectedId, onSelect, on
   return (
     <div className="flex h-full flex-col border-r border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Comparativos</span>
+        <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Comparativos
+          {cadastrados && onAddFromCadastrado && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="rounded p-0.5 hover:bg-muted" title="Cadastrados">
+                  <ClipboardList className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+                {cadastrados.map((cat) => (
+                  <DropdownMenuItem key={cat} onClick={() => onAddFromCadastrado(cat)}>
+                    {cat}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </span>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
