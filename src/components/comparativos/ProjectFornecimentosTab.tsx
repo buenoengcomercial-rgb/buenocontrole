@@ -16,6 +16,7 @@ interface Props {
 export function ProjectFornecimentosTab({ projectId }: Props) {
   const [obraMaterials, setObraMaterials] = useState<ObraMaterial[]>([]);
   const [groups, setGroups] = useState<ComparisonGroup[]>([]);
+  const groupsRef = useRef<ComparisonGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
