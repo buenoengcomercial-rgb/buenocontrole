@@ -25,6 +25,12 @@ interface ComparisonGroup {
 }
 interface HistoryEntry { id: string; item_code: string; item_description: string; supplier_name: string; price: number; date: string; comparison_id: string | null; }
 
+const CADASTRADOS = [
+  "HIDRANTE", "SPDA", "ALARME", "SINALIZAÇÃO", "LUMINÁRIA", "EXTINTOR",
+  "BOMBA-COMANDO", "CIVIL", "ELÉTRICA", "HIDRÁULICA", "FERRAMENTAS",
+  "SERRALHERIA", "PORTAS", "REPAROS",
+];
+
 interface Props {
   projectId: string;
   projectName: string;
