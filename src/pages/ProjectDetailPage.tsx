@@ -46,7 +46,8 @@ export default function ProjectDetailPage() {
   { key: 'rentals', label: 'Aluguéis', icon: Truck },
   { key: 'docs', label: 'Documentação', icon: FileText },
   { key: 'costs', label: 'Custos', icon: DollarSign },
-  { key: 'comparativos', label: 'Comparativos', icon: Package }];
+  { key: 'fornecimentos_obra', label: 'Fornecimentos da Obra', icon: Package },
+  { key: 'comparativos', label: 'Comparativos', icon: Scale }];
 
 
   return (
