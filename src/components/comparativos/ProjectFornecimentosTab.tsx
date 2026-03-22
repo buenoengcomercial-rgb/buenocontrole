@@ -3,6 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { ObraMaterialsTab, type ObraMaterial } from "@/components/comparativos/ObraMaterialsTab";
 import { toast } from "sonner";
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 interface ComparisonGroup {
   id: string;
   code: string;
