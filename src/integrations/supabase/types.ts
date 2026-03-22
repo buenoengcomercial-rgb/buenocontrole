@@ -915,6 +915,7 @@ export type Database = {
           id: string
           linked_group_id: string | null
           price: number
+          project_id: string | null
           purchase_group: string
           quantity: number
           unit: string
@@ -926,6 +927,7 @@ export type Database = {
           id?: string
           linked_group_id?: string | null
           price?: number
+          project_id?: string | null
           purchase_group?: string
           quantity?: number
           unit?: string
@@ -937,6 +939,7 @@ export type Database = {
           id?: string
           linked_group_id?: string | null
           price?: number
+          project_id?: string | null
           purchase_group?: string
           quantity?: number
           unit?: string
@@ -947,6 +950,13 @@ export type Database = {
             columns: ["linked_group_id"]
             isOneToOne: false
             referencedRelation: "purchase_comparisons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_materials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
