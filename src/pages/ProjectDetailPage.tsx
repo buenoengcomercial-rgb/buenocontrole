@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ProjectComparativosTab } from '@/components/comparativos/ProjectComparativosTab';
+import { ProjectFornecimentosTab } from '@/components/comparativos/ProjectFornecimentosTab';
 import { useProjectData } from '@/context/ProjectContext';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useAppData } from '@/context/AppContext';
@@ -15,7 +16,7 @@ import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, 
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
-type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs' | 'comparativos';
+type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs' | 'fornecimentos_obra' | 'comparativos';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{id: string;}>();
@@ -45,7 +46,8 @@ export default function ProjectDetailPage() {
   { key: 'rentals', label: 'Aluguéis', icon: Truck },
   { key: 'docs', label: 'Documentação', icon: FileText },
   { key: 'costs', label: 'Custos', icon: DollarSign },
-  { key: 'comparativos', label: 'Comparativos', icon: Package }];
+  { key: 'fornecimentos_obra', label: 'Fornecimentos da Obra', icon: Package },
+  { key: 'comparativos', label: 'Comparativos', icon: Scale }];
 
 
   return (
@@ -74,6 +76,7 @@ export default function ProjectDetailPage() {
       {tab === 'rentals' && <RentalsTab projectId={id!} rentals={projRentals} onAdd={addEquipmentRental} onUpdate={updateEquipmentRental} onDelete={deleteEquipmentRental} />}
       {tab === 'docs' && <DocsTab projectId={id!} docs={projDocs} onAdd={addProjectDocument} onUpdate={updateProjectDocument} onDelete={deleteProjectDocument} />}
       {tab === 'costs' && <CostsTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
+      {tab === 'fornecimentos_obra' && <ProjectFornecimentosTab projectId={id!} />}
       {tab === 'comparativos' && <ProjectComparativosTab projectId={id!} projectName={project.name} />}
     </div>);
 
