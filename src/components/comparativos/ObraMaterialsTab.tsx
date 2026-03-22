@@ -243,8 +243,57 @@ export function ObraMaterialsTab({ materials, groups, projects, currentProjectId
               <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("price")}>
                 Preço <SortIcon active={sortKey === "price"} dir={sortDir} />
               </th>
-              <th className="w-40 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("purchase_group")}>
-                Grupo de Compras <SortIcon active={sortKey === "purchase_group"} dir={sortDir} />
+              <th className="w-40 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <span onClick={() => toggleSort("purchase_group")}>
+                    Grupo de Compras <SortIcon active={sortKey === "purchase_group"} dir={sortDir} />
+                  </span>
+                  {onAddGroup && (
+                    <Dialog open={newGroupOpen} onOpenChange={setNewGroupOpen}>
+                      <DialogTrigger asChild>
+                        <button
+                          className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-accent hover:text-accent-foreground transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Novo Comparativo"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Novo Comparativo</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 py-2">
+                          <div>
+                            <label className="text-sm font-medium">Descrição</label>
+                            <Input value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} placeholder="Ex: Comparativo de TINTAS E SOLVENTES" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Obra Vinculada</label>
+                            <Select value={newGroupProjectId} onValueChange={setNewGroupProjectId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma obra" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">— Nenhuma —</SelectItem>
+                                {(projects || []).map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <Button onClick={() => {
+                          if (!newGroupDesc.trim()) return;
+                          onAddGroup(newGroupDesc.trim(), newGroupProjectId === "none" ? null : newGroupProjectId);
+                          setNewGroupDesc("");
+                          setNewGroupProjectId(currentProjectId || "none");
+                          setNewGroupOpen(false);
+                        }}>Criar</Button>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </span>
               </th>
               <th className="w-20 px-2 py-1.5 text-center font-semibold text-muted-foreground">
                 <DropdownMenu>
