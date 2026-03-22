@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ProjectComparativosTab } from '@/components/comparativos/ProjectComparativosTab';
+import { ProjectFornecimentosTab } from '@/components/comparativos/ProjectFornecimentosTab';
 import { useProjectData } from '@/context/ProjectContext';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useAppData } from '@/context/AppContext';
