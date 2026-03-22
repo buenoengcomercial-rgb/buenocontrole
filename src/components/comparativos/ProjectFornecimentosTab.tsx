@@ -28,9 +28,10 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [mRes, gRes] = await Promise.all([
+      const [mRes, gRes, pRes] = await Promise.all([
         supabase.from("obra_materials").select("*").order("created_at"),
         supabase.from("purchase_comparisons").select("id, code, description").eq("project_id", projectId).order("created_at", { ascending: false }),
+        supabase.from("projects").select("id, name").order("name"),
       ]);
       if (mRes.data) setObraMaterials(mRes.data.map((m: any) => ({ id: m.id, code: m.code, description: m.description, unit: m.unit, quantity: Number(m.quantity), price: Number(m.price), purchase_group: m.purchase_group, linked_group_id: m.linked_group_id })));
       if (gRes.data) {
