@@ -3,6 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { ObraMaterialsTab, type ObraMaterial } from "@/components/comparativos/ObraMaterialsTab";
 import { toast } from "sonner";
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 interface ComparisonGroup {
   id: string;
   code: string;
@@ -16,15 +21,17 @@ interface Props {
 export function ProjectFornecimentosTab({ projectId }: Props) {
   const [obraMaterials, setObraMaterials] = useState<ObraMaterial[]>([]);
   const [groups, setGroups] = useState<ComparisonGroup[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const groupsRef = useRef<ComparisonGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const [mRes, gRes] = await Promise.all([
+      const [mRes, gRes, pRes] = await Promise.all([
         supabase.from("obra_materials").select("*").order("created_at"),
         supabase.from("purchase_comparisons").select("id, code, description").eq("project_id", projectId).order("created_at", { ascending: false }),
+        supabase.from("projects").select("id, name").order("name"),
       ]);
       if (mRes.data) setObraMaterials(mRes.data.map((m: any) => ({ id: m.id, code: m.code, description: m.description, unit: m.unit, quantity: Number(m.quantity), price: Number(m.price), purchase_group: m.purchase_group, linked_group_id: m.linked_group_id })));
       if (gRes.data) {
@@ -32,6 +39,7 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
         setGroups(mapped);
         groupsRef.current = mapped;
       }
+      if (pRes.data) setProjects(pRes.data.map((p: any) => ({ id: p.id, name: p.name })));
       setLoading(false);
     };
     load();
@@ -102,6 +110,19 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
     setObraMaterials((prev) => prev.filter((m) => m.id !== id));
   };
 
+  const addGroup = async (description: string, linkedProjectId: string | null) => {
+    const { data: allGroups } = await supabase.from("purchase_comparisons").select("id").eq("project_id", linkedProjectId || projectId);
+    const code = `CMP${String((allGroups?.length || 0) + 1).padStart(4, "0")}`;
+    const { data, error } = await supabase.from("purchase_comparisons").insert({ code, description, project_id: linkedProjectId || projectId }).select().single();
+    if (error) { toast.error("Erro ao criar comparativo"); return; }
+    if (data) {
+      const newGroup = { id: data.id, code: data.code, description: data.description };
+      groupsRef.current = [newGroup, ...groupsRef.current];
+      setGroups((prev) => [newGroup, ...prev]);
+      toast.success(`Comparativo "${description}" criado com sucesso`);
+    }
+  };
+
   if (loading) return <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">Carregando...</div>;
 
   return (
@@ -109,10 +130,13 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
       <ObraMaterialsTab
         materials={obraMaterials}
         groups={groups}
+        projects={projects}
+        currentProjectId={projectId}
         onImport={importObraMaterials}
         onUpdateGroup={updateObraMaterialGroup}
         onToggleLink={toggleObraMaterialLink}
         onRemove={removeObraMaterial}
+        onAddGroup={addGroup}
       />
     </div>
   );

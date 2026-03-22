@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Trash2, Upload, Search, ArrowUp, ArrowDown, ArrowUpDown, Link2, Unlink, ChevronDown } from "lucide-react";
+import { Trash2, Upload, Search, ArrowUp, ArrowDown, ArrowUpDown, Link2, Unlink, ChevronDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -26,13 +27,21 @@ interface ComparisonGroup {
   description: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 interface Props {
   materials: ObraMaterial[];
   groups: ComparisonGroup[];
+  projects?: Project[];
+  currentProjectId?: string;
   onImport: (items: Omit<ObraMaterial, "id" | "linked_group_id">[]) => void;
   onUpdateGroup: (id: string, group: string) => void;
   onToggleLink: (id: string, linked: boolean, groupId: string | null) => void;
   onRemove: (id: string) => void;
+  onAddGroup?: (description: string, projectId: string | null) => void;
 }
 
 const BASE_PURCHASE_GROUPS = [
@@ -56,12 +65,15 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
 
 type BatchAction = "link-all" | "unlink-all";
 
-export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, onToggleLink, onRemove }: Props) {
+export function ObraMaterialsTab({ materials, groups, projects, currentProjectId, onImport, onUpdateGroup, onToggleLink, onRemove, onAddGroup }: Props) {
   const [filter, setFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [confirmAction, setConfirmAction] = useState<BatchAction | null>(null);
+  const [newGroupOpen, setNewGroupOpen] = useState(false);
+  const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [newGroupProjectId, setNewGroupProjectId] = useState<string>("none");
 
   const PURCHASE_GROUPS = useMemo(() => {
     const extraGroups = groups
@@ -231,8 +243,57 @@ export function ObraMaterialsTab({ materials, groups, onImport, onUpdateGroup, o
               <th className="w-20 px-2 py-1.5 text-right font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("price")}>
                 Preço <SortIcon active={sortKey === "price"} dir={sortDir} />
               </th>
-              <th className="w-40 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort("purchase_group")}>
-                Grupo de Compras <SortIcon active={sortKey === "purchase_group"} dir={sortDir} />
+              <th className="w-40 px-2 py-1.5 font-semibold text-muted-foreground cursor-pointer select-none hover:text-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <span onClick={() => toggleSort("purchase_group")}>
+                    Grupo de Compras <SortIcon active={sortKey === "purchase_group"} dir={sortDir} />
+                  </span>
+                  {onAddGroup && (
+                    <Dialog open={newGroupOpen} onOpenChange={setNewGroupOpen}>
+                      <DialogTrigger asChild>
+                        <button
+                          className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded hover:bg-accent hover:text-accent-foreground transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Novo Comparativo"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Novo Comparativo</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3 py-2">
+                          <div>
+                            <label className="text-sm font-medium">Descrição</label>
+                            <Input value={newGroupDesc} onChange={(e) => setNewGroupDesc(e.target.value)} placeholder="Ex: Comparativo de TINTAS E SOLVENTES" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Obra Vinculada</label>
+                            <Select value={newGroupProjectId} onValueChange={setNewGroupProjectId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma obra" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">— Nenhuma —</SelectItem>
+                                {(projects || []).map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <Button onClick={() => {
+                          if (!newGroupDesc.trim()) return;
+                          onAddGroup(newGroupDesc.trim(), newGroupProjectId === "none" ? null : newGroupProjectId);
+                          setNewGroupDesc("");
+                          setNewGroupProjectId(currentProjectId || "none");
+                          setNewGroupOpen(false);
+                        }}>Criar</Button>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </span>
               </th>
               <th className="w-20 px-2 py-1.5 text-center font-semibold text-muted-foreground">
                 <DropdownMenu>
