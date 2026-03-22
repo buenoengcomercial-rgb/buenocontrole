@@ -29,7 +29,7 @@ export function ProjectFornecimentosTab({ projectId }: Props) {
     const load = async () => {
       setLoading(true);
       const [mRes, gRes, pRes] = await Promise.all([
-        supabase.from("obra_materials").select("*").order("created_at"),
+        supabase.from("obra_materials").select("*").eq("project_id", projectId).order("created_at"),
         supabase.from("purchase_comparisons").select("id, code, description").eq("project_id", projectId).order("created_at", { ascending: false }),
         supabase.from("projects").select("id, name").order("name"),
       ]);
