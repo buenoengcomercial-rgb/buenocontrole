@@ -16,7 +16,7 @@ import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, 
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
-type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs' | 'comparativos';
+type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs' | 'fornecimentos_obra' | 'comparativos';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{id: string;}>();
