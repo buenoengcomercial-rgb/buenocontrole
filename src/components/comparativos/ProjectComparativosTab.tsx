@@ -9,8 +9,7 @@ import { PurchaseOrderDialog } from "@/components/comparativos/PurchaseOrderDial
 import { OptimizedPurchasePlan } from "@/components/comparativos/OptimizedPurchasePlan";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { BarChart3, Table, History, FileText, Zap, ClipboardList } from "lucide-react";
+import { BarChart3, Table, History, FileText, Zap } from "lucide-react";
 import { toast } from "sonner";
 import type { ImportRow } from "@/components/comparativos/ImportItemsDialog";
 
