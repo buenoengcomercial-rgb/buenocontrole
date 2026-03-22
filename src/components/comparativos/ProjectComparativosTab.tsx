@@ -9,7 +9,8 @@ import { PurchaseOrderDialog } from "@/components/comparativos/PurchaseOrderDial
 import { OptimizedPurchasePlan } from "@/components/comparativos/OptimizedPurchasePlan";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Table, History, FileText, Zap } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { BarChart3, Table, History, FileText, Zap, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import type { ImportRow } from "@/components/comparativos/ImportItemsDialog";
 
@@ -23,6 +24,12 @@ interface ComparisonGroup {
   observations: string;
 }
 interface HistoryEntry { id: string; item_code: string; item_description: string; supplier_name: string; price: number; date: string; comparison_id: string | null; }
+
+const CADASTRADOS = [
+  "HIDRANTE", "SPDA", "ALARME", "SINALIZAÇÃO", "LUMINÁRIA", "EXTINTOR",
+  "BOMBA-COMANDO", "CIVIL", "ELÉTRICA", "HIDRÁULICA", "FERRAMENTAS",
+  "SERRALHERIA", "PORTAS", "REPAROS",
+];
 
 interface Props {
   projectId: string;
@@ -95,6 +102,12 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
     setGroups((prev) => prev.map((g) => g.id === id ? { ...g, status: newStatus } : g));
   };
 
+  const addGroupFromCadastrado = async (description: string) => {
+    const exists = groups.find((g) => g.description.toUpperCase() === description.toUpperCase());
+    if (exists) { toast.info(`Comparativo "${description}" já existe`); setSelectedId(exists.id); return; }
+    await addGroup(description, projectId);
+  };
+
   const addSupplier = async (name: string, deliveryDays: number, rating: number) => {
     if (!selectedId) return;
     const { data, error } = await supabase.from("comparison_suppliers").insert({ comparison_id: selectedId, name, delivery_days: deliveryDays, rating }).select().single();
@@ -158,6 +171,20 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
         <div className="rounded bg-primary px-2 py-0.5"><span className="text-xs font-bold text-primary-foreground">CMP</span></div>
         <h2 className="text-sm font-bold">Comparativos — {projectName}</h2>
         <div className="flex-1" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+              <ClipboardList className="h-3.5 w-3.5" /> Cadastrados
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
+            {CADASTRADOS.map((cat) => (
+              <DropdownMenuItem key={cat} onClick={() => addGroupFromCadastrado(cat)}>
+                {cat}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         {selected && (
           <Button size="sm" className="h-7 gap-1.5 text-xs" onClick={() => setOrderDialogOpen(true)}>
             <FileText className="h-3.5 w-3.5" /> Gerar Pedido de Compra
