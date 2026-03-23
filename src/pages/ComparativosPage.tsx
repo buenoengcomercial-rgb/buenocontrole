@@ -102,6 +102,12 @@ export default function ComparativosPage() {
     setGroups((prev) => prev.map((g) => g.id === id ? { ...g, status: newStatus } : g));
   };
 
+  const updateGroupDescription = async (id: string, description: string) => {
+    await supabase.from("purchase_comparisons").update({ description } as any).eq("id", id);
+    setGroups((prev) => prev.map((g) => g.id === id ? { ...g, description } : g));
+    toast.success("Descrição atualizada");
+  };
+
   const addSupplier = async (name: string, deliveryDays: number, rating: number) => {
     if (!selectedId) return;
     const { data, error } = await supabase.from("comparison_suppliers").insert({ comparison_id: selectedId, name, delivery_days: deliveryDays, rating }).select().single();
@@ -368,6 +374,7 @@ export default function ComparativosPage() {
             onAdd={addGroup}
             onRemove={removeGroup}
             onToggleStatus={toggleStatus}
+            onUpdateDescription={updateGroupDescription}
           />
         </div>
         <div className="flex-1 overflow-hidden">

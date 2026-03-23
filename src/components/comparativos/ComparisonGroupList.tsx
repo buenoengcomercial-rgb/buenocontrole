@@ -29,14 +29,17 @@ interface Props {
   onAdd: (description: string, projectId: string | null) => void;
   onRemove: (id: string) => void;
   onToggleStatus: (id: string) => void;
+  onUpdateDescription?: (id: string, description: string) => void;
   cadastrados?: string[];
   onAddFromCadastrado?: (desc: string) => void;
 }
 
-export function ComparisonGroupList({ groups, projects, selectedId, onSelect, onAdd, onRemove, onToggleStatus, cadastrados, onAddFromCadastrado }: Props) {
+export function ComparisonGroupList({ groups, projects, selectedId, onSelect, onAdd, onRemove, onToggleStatus, onUpdateDescription, cadastrados, onAddFromCadastrado }: Props) {
   const [open, setOpen] = useState(false);
   const [desc, setDesc] = useState("");
   const [projectId, setProjectId] = useState<string>("none");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   const handleAdd = () => {
     if (!desc.trim()) return;
@@ -140,7 +143,36 @@ export function ComparisonGroupList({ groups, projects, selectedId, onSelect, on
                     </button>
                   </td>
                   <td className="whitespace-nowrap px-2 py-1.5 font-medium">{g.code}</td>
-                  <td className="px-2 py-1.5">{g.description}</td>
+                  <td className="px-2 py-1.5" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                    {editingId === g.id ? (
+                      <textarea
+                        className="w-full rounded border border-input bg-background px-1 py-0.5 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-ring"
+                        value={editValue}
+                        autoFocus
+                        rows={2}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => {
+                          if (editValue.trim() && editValue !== g.description) {
+                            onUpdateDescription?.(g.id, editValue.trim());
+                          }
+                          setEditingId(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); (e.target as HTMLTextAreaElement).blur(); }
+                          if (e.key === "Escape") { setEditingId(null); }
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className="cursor-text"
+                        onDoubleClick={(e) => { e.stopPropagation(); setEditingId(g.id); setEditValue(g.description); }}
+                        title="Duplo clique para editar"
+                      >
+                        {g.description}
+                      </span>
+                    )}
+                  </td>
                   <td className={`px-2 py-1.5 ${isSelected ? "" : "text-muted-foreground"}`}>{project?.name || "—"}</td>
                   <td className="whitespace-nowrap px-2 py-1.5">
                     {new Date(g.date).toLocaleDateString("pt-BR")}

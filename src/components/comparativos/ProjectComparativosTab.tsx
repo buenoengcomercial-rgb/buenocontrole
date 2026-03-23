@@ -101,6 +101,12 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
     setGroups((prev) => prev.map((g) => g.id === id ? { ...g, status: newStatus } : g));
   };
 
+  const updateGroupDescription = async (id: string, description: string) => {
+    await supabase.from("purchase_comparisons").update({ description } as any).eq("id", id);
+    setGroups((prev) => prev.map((g) => g.id === id ? { ...g, description } : g));
+    toast.success("Descrição atualizada");
+  };
+
   const addGroupFromCadastrado = async (description: string) => {
     const exists = groups.find((g) => g.description.toUpperCase() === description.toUpperCase());
     if (exists) { toast.info(`Comparativo "${description}" já existe`); setSelectedId(exists.id); return; }
@@ -192,6 +198,7 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
             onAdd={addGroup}
             onRemove={removeGroup}
             onToggleStatus={toggleStatus}
+            onUpdateDescription={updateGroupDescription}
             cadastrados={CADASTRADOS}
             onAddFromCadastrado={addGroupFromCadastrado}
           />
