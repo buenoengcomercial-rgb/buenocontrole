@@ -368,6 +368,7 @@ export default function ComparativosPage() {
             onAdd={addGroup}
             onRemove={removeGroup}
             onToggleStatus={toggleStatus}
+            onUpdateDescription={updateGroupDescription}
           />
         </div>
         <div className="flex-1 overflow-hidden">
