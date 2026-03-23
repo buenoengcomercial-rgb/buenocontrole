@@ -57,6 +57,8 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
   const [price, setPrice] = useState("");
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [editingDesc, setEditingDesc] = useState<string | null>(null);
+  const [editDescValue, setEditDescValue] = useState("");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
