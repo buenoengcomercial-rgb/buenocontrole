@@ -227,7 +227,7 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
               </TabsList>
             </div>
             <TabsContent value="fornecimentos" className="mt-0 flex-1 overflow-auto">
-              <ItemsTable items={items} suppliers={suppliers} prices={prices} onAddItem={addItem} onRemoveItem={removeItem} onUpdatePrice={updatePrice} onImportItems={importItems} />
+              <ItemsTable items={items} suppliers={suppliers} prices={prices} onAddItem={addItem} onRemoveItem={removeItem} onUpdateItem={updateItem} onUpdatePrice={updatePrice} onImportItems={importItems} />
             </TabsContent>
             <TabsContent value="analise" className="mt-0 flex-1 overflow-hidden">
               <CotacaoAnalysis items={items} suppliers={suppliers} prices={prices} />
