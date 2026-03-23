@@ -29,6 +29,7 @@ interface Props {
   onAdd: (description: string, projectId: string | null) => void;
   onRemove: (id: string) => void;
   onToggleStatus: (id: string) => void;
+  onUpdateDescription?: (id: string, description: string) => void;
   cadastrados?: string[];
   onAddFromCadastrado?: (desc: string) => void;
 }
