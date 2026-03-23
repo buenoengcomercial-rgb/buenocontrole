@@ -220,8 +220,41 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
               return (
                 <tr key={item.id} className="border-b border-border hover:bg-muted/30">
                   <td className="px-2 py-1 font-medium">{item.code}</td>
-                  <td className="px-2 py-1" title={item.description}>
-                    <span className="line-clamp-1">{item.description}</span>
+                  <td className="px-2 py-1" style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                    {editingDesc === item.id ? (
+                      <textarea
+                        className="w-full min-h-[28px] rounded border border-input bg-background px-1 py-0.5 text-xs resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+                        autoFocus
+                        value={editDescValue}
+                        rows={Math.max(2, Math.ceil(editDescValue.length / 60))}
+                        onChange={(e) => setEditDescValue(e.target.value)}
+                        onBlur={() => {
+                          if (editDescValue.trim() && editDescValue.trim() !== item.description) {
+                            onUpdateItem(item.id, 'description', editDescValue.trim());
+                          }
+                          setEditingDesc(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') setEditingDesc(null);
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (editDescValue.trim() && editDescValue.trim() !== item.description) {
+                              onUpdateItem(item.id, 'description', editDescValue.trim());
+                            }
+                            setEditingDesc(null);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className="cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 block text-xs leading-snug"
+                        style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}
+                        onDoubleClick={() => { setEditingDesc(item.id); setEditDescValue(item.description); }}
+                        title="Duplo clique para editar"
+                      >
+                        {item.description}
+                      </span>
+                    )}
                   </td>
                   <td className="px-2 py-1 text-right">{fmt(item.quantity)}</td>
                   <td className="px-2 py-1 text-center">{item.unit}</td>
