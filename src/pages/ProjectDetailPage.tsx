@@ -1026,7 +1026,7 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Terceirizados</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalOutsourced)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Aluguéis</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalRentals)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Documentação</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalDocsCost)}</p></div>
-        <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">DAS Proporcional</span><p className="text-xl font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
+        <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">DAS</span><p className="text-xl font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
         <div className="bg-primary text-primary-foreground rounded-xl p-5 shadow-card"><span className="label-caps text-xs text-primary-foreground/70">Custo Total</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalCost)}</p></div>
       </div>
       {project.contractValue > 0 &&
