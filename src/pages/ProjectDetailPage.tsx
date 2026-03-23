@@ -105,11 +105,10 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return totalCharges / (allProjects.length || 1);
   }, [charges, allProjects]);
 
-  // DAS proportional
-  const activeProjectCount = allProjects.length || 1;
+  // DAS direct per project
   const dasCost = useMemo(() => {
-    return dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount;
-  }, [dasExpenses, activeProjectCount]);
+    return dasExpenses.filter((d: any) => d.projectId === project.id).reduce((s: number, d: any) => s + d.value, 0);
+  }, [dasExpenses, project.id]);
 
   const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost + totalRentals;
 
