@@ -198,6 +198,7 @@ export function ProjectComparativosTab({ projectId, projectName }: Props) {
             onAdd={addGroup}
             onRemove={removeGroup}
             onToggleStatus={toggleStatus}
+            onUpdateDescription={updateGroupDescription}
             cadastrados={CADASTRADOS}
             onAddFromCadastrado={addGroupFromCadastrado}
           />
