@@ -162,9 +162,8 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     (rentals || []).forEach((r: any) => { const m = r.startDate.slice(0, 7); ensure(m); months[m].alugueis += r.totalValue; });
     // Documentation
     (projectDocs || []).forEach((d: any) => { if (d.value > 0) { const m = d.documentDate.slice(0, 7); ensure(m); months[m].documentacao += d.value; } });
-    // DAS proportional
-    const pCount = allProjects.length || 1;
-    dasExpenses.forEach((d: any) => { ensure(d.month); months[d.month].das += d.value / pCount; });
+    // DAS direct per project
+    dasExpenses.filter((d: any) => d.projectId === project.id).forEach((d: any) => { ensure(d.month); months[d.month].das += d.value; });
 
     return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, data]) => ({
       monthKey: month,
