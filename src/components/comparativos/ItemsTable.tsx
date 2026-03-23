@@ -28,6 +28,7 @@ interface Props {
   prices: ItemPrice[];
   onAddItem: (code: string, description: string, unit: string, quantity: number, basePrice: number) => void;
   onRemoveItem: (id: string) => void;
+  onUpdateItem: (id: string, field: keyof ItemData, value: string | number) => void;
   onUpdatePrice: (itemId: string, supplierId: string, price: number) => void;
   onImportItems: (rows: ImportRow[]) => void;
 }
