@@ -102,6 +102,7 @@ export interface DASExpense {
   dueDate: string;
   value: number;
   paid: boolean;
+  projectId: string | null;
   createdAt: string;
 }
 

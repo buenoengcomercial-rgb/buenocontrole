@@ -171,13 +171,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const addDASExpense = useCallback(async (d: Omit<DASExpense, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('das_expenses').insert({
-      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid,
+      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid, project_id: d.projectId || null,
     }).select().single();
     if (data) setDASExpenses(prev => [...prev, mapDAS(data)]);
   }, []);
   const updateDASExpense = useCallback(async (d: DASExpense) => {
     await supabase.from('das_expenses').update({
-      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid,
+      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid, project_id: d.projectId || null,
     }).eq('id', d.id);
     setDASExpenses(prev => prev.map(x => x.id === d.id ? d : x));
   }, []);
