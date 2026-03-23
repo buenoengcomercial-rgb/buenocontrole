@@ -47,7 +47,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
     : <ArrowDown className="ml-1 inline h-3 w-3 text-primary" />;
 }
 
-export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, onUpdatePrice, onImportItems }: Props) {
+export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, onUpdateItem, onUpdatePrice, onImportItems }: Props) {
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [code, setCode] = useState("");
