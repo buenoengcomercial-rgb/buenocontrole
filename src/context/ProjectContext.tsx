@@ -54,7 +54,7 @@ function mapMeasurement(r: any): Measurement {
   return { id: r.id, projectId: r.project_id, number: r.number, date: r.date, description: r.description, value: Number(r.value), percentExecuted: Number(r.percent_executed), status: r.status as Measurement['status'], createdAt: r.created_at };
 }
 function mapDAS(r: any): DASExpense {
-  return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, createdAt: r.created_at };
+  return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, projectId: r.project_id || null, createdAt: r.created_at };
 }
 function mapProjectPurchase(r: any): ProjectPurchase {
   return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), freightValue: Number(r.freight_value || 0), icmsValue: Number(r.icms_value || 0), description: r.description, notes: r.notes, paymentMethod: r.payment_method || '', installments: r.installments || 1, createdAt: r.created_at };
