@@ -128,6 +128,11 @@ export default function ComparativosPage() {
     setPrices((prev) => prev.filter((p) => p.item_id !== id));
   };
 
+  const updateItem = async (id: string, field: keyof ItemData, value: string | number) => {
+    await supabase.from("comparison_items").update({ [field]: value } as any).eq("id", id);
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, [field]: value } : i));
+  };
+
   const updatePrice = async (itemId: string, supplierId: string, price: number) => {
     const existing = prices.find((p) => p.item_id === itemId && p.supplier_id === supplierId);
     if (existing) { await supabase.from("comparison_item_prices").update({ price }).eq("item_id", itemId).eq("supplier_id", supplierId); }
@@ -414,7 +419,7 @@ export default function ComparativosPage() {
           {selected ? (
             <>
               <TabsContent value="fornecimentos" className="mt-0 flex-1 overflow-auto">
-                <ItemsTable items={items} suppliers={suppliers} prices={prices} onAddItem={addItem} onRemoveItem={removeItem} onUpdatePrice={updatePrice} onImportItems={importItems} />
+                <ItemsTable items={items} suppliers={suppliers} prices={prices} onAddItem={addItem} onRemoveItem={removeItem} onUpdateItem={updateItem} onUpdatePrice={updatePrice} onImportItems={importItems} />
               </TabsContent>
               <TabsContent value="analise" className="mt-0 flex-1 overflow-hidden">
                 <CotacaoAnalysis items={items} suppliers={suppliers} prices={prices} />
