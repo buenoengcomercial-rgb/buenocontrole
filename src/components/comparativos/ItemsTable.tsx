@@ -59,6 +59,8 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
   const [editValue, setEditValue] = useState("");
   const [editingDesc, setEditingDesc] = useState<string | null>(null);
   const [editDescValue, setEditDescValue] = useState("");
+  const [editingQty, setEditingQty] = useState<string | null>(null);
+  const [editQtyValue, setEditQtyValue] = useState("");
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -256,7 +258,41 @@ export function ItemsTable({ items, suppliers, prices, onAddItem, onRemoveItem, 
                       </span>
                     )}
                   </td>
-                  <td className="px-2 py-1 text-right">{fmt(item.quantity)}</td>
+                  <td className="px-2 py-1 text-right">
+                    {editingQty === item.id ? (
+                      <Input
+                        type="number"
+                        step="any"
+                        className="h-6 w-20 text-xs text-right ml-auto"
+                        value={editQtyValue}
+                        autoFocus
+                        onFocus={(e) => e.target.select()}
+                        onBlur={() => {
+                          const v = parseFloat(editQtyValue.replace(",", "."));
+                          if (!isNaN(v) && v !== item.quantity) onUpdateItem(item.id, 'quantity', v);
+                          setEditingQty(null);
+                        }}
+                        onChange={(e) => setEditQtyValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") setEditingQty(null);
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const v = parseFloat(editQtyValue.replace(",", "."));
+                            if (!isNaN(v) && v !== item.quantity) onUpdateItem(item.id, 'quantity', v);
+                            setEditingQty(null);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className="cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 text-xs"
+                        onDoubleClick={() => { setEditingQty(item.id); setEditQtyValue(String(item.quantity)); }}
+                        title="Duplo clique para editar"
+                      >
+                        {fmt(item.quantity)}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-2 py-1 text-center">{item.unit}</td>
                   <td className="px-2 py-1 text-right font-medium">{fmt(item.base_price)}</td>
                   <td className="px-2 py-1 text-right font-medium">{fmt(importance)}</td>
