@@ -79,7 +79,7 @@ export function ObraMaterialsTab({ materials, groups, projects, currentProjectId
     const extraGroups = groups
       .map((g) => g.description.toUpperCase())
       .filter((d) => d && !BASE_PURCHASE_GROUPS.includes(d));
-    return [...BASE_PURCHASE_GROUPS, ...extraGroups];
+    return [...BASE_PURCHASE_GROUPS, ...extraGroups].sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [groups]);
 
   const toggleSort = (key: SortKey) => {
