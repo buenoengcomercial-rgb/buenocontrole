@@ -1013,8 +1013,7 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
     return totalCharges / (allProjects.length || 1);
   }, [charges, allProjects]);
 
-  const activeProjectCount = allProjects.length || 1;
-  const dasCost = useMemo(() => dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount, [dasExpenses, activeProjectCount]);
+  const dasCost = useMemo(() => dasExpenses.filter((d: any) => d.projectId === project.id).reduce((s: number, d: any) => s + d.value, 0), [dasExpenses, project.id]);
 
   const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost + totalRentals;
   const profit = project.contractValue - totalCost;
