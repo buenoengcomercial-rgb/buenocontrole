@@ -34,10 +34,12 @@ interface Props {
   onAddFromCadastrado?: (desc: string) => void;
 }
 
-export function ComparisonGroupList({ groups, projects, selectedId, onSelect, onAdd, onRemove, onToggleStatus, cadastrados, onAddFromCadastrado }: Props) {
+export function ComparisonGroupList({ groups, projects, selectedId, onSelect, onAdd, onRemove, onToggleStatus, onUpdateDescription, cadastrados, onAddFromCadastrado }: Props) {
   const [open, setOpen] = useState(false);
   const [desc, setDesc] = useState("");
   const [projectId, setProjectId] = useState<string>("none");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
 
   const handleAdd = () => {
     if (!desc.trim()) return;
