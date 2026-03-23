@@ -134,7 +134,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
   { name: 'Terceirizados', value: totalOutsourced },
   { name: 'Aluguéis', value: totalRentals },
   { name: 'Documentação', value: totalDocsCost },
-  { name: 'DAS Proporcional', value: dasCost }].
+  { name: 'DAS', value: dasCost }].
   filter((d) => d.value > 0);
   const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(25, 95%, 53%)', 'hsl(340, 70%, 50%)', 'hsl(280, 60%, 50%)'];
 
