@@ -105,11 +105,10 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return totalCharges / (allProjects.length || 1);
   }, [charges, allProjects]);
 
-  // DAS proportional
-  const activeProjectCount = allProjects.length || 1;
+  // DAS direct per project
   const dasCost = useMemo(() => {
-    return dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount;
-  }, [dasExpenses, activeProjectCount]);
+    return dasExpenses.filter((d: any) => d.projectId === project.id).reduce((s: number, d: any) => s + d.value, 0);
+  }, [dasExpenses, project.id]);
 
   const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost + totalRentals;
 
@@ -135,7 +134,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
   { name: 'Terceirizados', value: totalOutsourced },
   { name: 'Aluguéis', value: totalRentals },
   { name: 'Documentação', value: totalDocsCost },
-  { name: 'DAS Proporcional', value: dasCost }].
+  { name: 'DAS', value: dasCost }].
   filter((d) => d.value > 0);
   const COLORS = ['hsl(221, 83%, 53%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(25, 95%, 53%)', 'hsl(340, 70%, 50%)', 'hsl(280, 60%, 50%)'];
 
@@ -163,9 +162,8 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     (rentals || []).forEach((r: any) => { const m = r.startDate.slice(0, 7); ensure(m); months[m].alugueis += r.totalValue; });
     // Documentation
     (projectDocs || []).forEach((d: any) => { if (d.value > 0) { const m = d.documentDate.slice(0, 7); ensure(m); months[m].documentacao += d.value; } });
-    // DAS proportional
-    const pCount = allProjects.length || 1;
-    dasExpenses.forEach((d: any) => { ensure(d.month); months[d.month].das += d.value / pCount; });
+    // DAS direct per project
+    dasExpenses.filter((d: any) => d.projectId === project.id).forEach((d: any) => { ensure(d.month); months[d.month].das += d.value; });
 
     return Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, data]) => ({
       monthKey: month,
@@ -1015,8 +1013,7 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
     return totalCharges / (allProjects.length || 1);
   }, [charges, allProjects]);
 
-  const activeProjectCount = allProjects.length || 1;
-  const dasCost = useMemo(() => dasExpenses.reduce((s: number, d: any) => s + d.value, 0) / activeProjectCount, [dasExpenses, activeProjectCount]);
+  const dasCost = useMemo(() => dasExpenses.filter((d: any) => d.projectId === project.id).reduce((s: number, d: any) => s + d.value, 0), [dasExpenses, project.id]);
 
   const totalCost = totalMaterials + totalProjectPurchases + totalOutsourced + laborCost + dasCost + chargesCost + totalDocsCost + totalRentals;
   const profit = project.contractValue - totalCost;
@@ -1029,7 +1026,7 @@ function CostsTab({ project, allocations, employees, purchases, outsourced, char
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Terceirizados</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalOutsourced)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Aluguéis</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalRentals)}</p></div>
         <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">Documentação</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalDocsCost)}</p></div>
-        <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">DAS Proporcional</span><p className="text-xl font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
+        <div className="bg-card rounded-xl p-5 shadow-card"><span className="label-caps text-xs">DAS</span><p className="text-xl font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
         <div className="bg-primary text-primary-foreground rounded-xl p-5 shadow-card"><span className="label-caps text-xs text-primary-foreground/70">Custo Total</span><p className="text-xl font-semibold mt-1">{formatCurrency(totalCost)}</p></div>
       </div>
       {project.contractValue > 0 &&

@@ -54,7 +54,7 @@ function mapMeasurement(r: any): Measurement {
   return { id: r.id, projectId: r.project_id, number: r.number, date: r.date, description: r.description, value: Number(r.value), percentExecuted: Number(r.percent_executed), status: r.status as Measurement['status'], createdAt: r.created_at };
 }
 function mapDAS(r: any): DASExpense {
-  return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, createdAt: r.created_at };
+  return { id: r.id, month: r.month, dueDate: r.due_date, value: Number(r.value), paid: r.paid, projectId: r.project_id || null, createdAt: r.created_at };
 }
 function mapProjectPurchase(r: any): ProjectPurchase {
   return { id: r.id, projectId: r.project_id, supplierId: r.supplier_id, materialId: r.material_id, date: r.date, invoiceNumber: r.invoice_number, totalValue: Number(r.total_value), freightValue: Number(r.freight_value || 0), icmsValue: Number(r.icms_value || 0), description: r.description, notes: r.notes, paymentMethod: r.payment_method || '', installments: r.installments || 1, createdAt: r.created_at };
@@ -171,13 +171,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const addDASExpense = useCallback(async (d: Omit<DASExpense, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('das_expenses').insert({
-      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid,
+      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid, project_id: d.projectId || null,
     }).select().single();
     if (data) setDASExpenses(prev => [...prev, mapDAS(data)]);
   }, []);
   const updateDASExpense = useCallback(async (d: DASExpense) => {
     await supabase.from('das_expenses').update({
-      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid,
+      month: d.month, due_date: d.dueDate, value: d.value, paid: d.paid, project_id: d.projectId || null,
     }).eq('id', d.id);
     setDASExpenses(prev => prev.map(x => x.id === d.id ? d : x));
   }, []);

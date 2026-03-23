@@ -7,43 +7,51 @@ import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 
 export default function DASPage() {
-  const { dasExpenses, addDASExpense, updateDASExpense, deleteDASExpense } = useProjectData();
+  const { dasExpenses, addDASExpense, updateDASExpense, deleteDASExpense, projects } = useProjectData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ month: '', value: 0, paid: false });
+  const [form, setForm] = useState({ month: '', value: 0, paid: false, projectId: '' });
 
   const totalDAS = useMemo(() => dasExpenses.reduce((s, d) => s + d.value, 0), [dasExpenses]);
   const totalPaid = useMemo(() => dasExpenses.filter(d => d.paid).reduce((s, d) => s + d.value, 0), [dasExpenses]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const [y, m] = form.month.split('-').map(Number);
+    if (!form.projectId) {
+      toast.error('Selecione uma obra.');
+      return;
+    }
     const dueDate = `${form.month}-20`;
 
     if (editId) {
       const existing = dasExpenses.find(d => d.id === editId)!;
-      updateDASExpense({ ...existing, month: form.month, dueDate, value: form.value, paid: form.paid });
+      updateDASExpense({ ...existing, month: form.month, dueDate, value: form.value, paid: form.paid, projectId: form.projectId });
       toast.success('DAS atualizado.');
       setEditId(null);
     } else {
-      addDASExpense({ month: form.month, dueDate, value: form.value, paid: form.paid });
+      addDASExpense({ month: form.month, dueDate, value: form.value, paid: form.paid, projectId: form.projectId });
       toast.success('DAS registrado.');
     }
-    setForm({ month: '', value: 0, paid: false });
+    setForm({ month: '', value: 0, paid: false, projectId: '' });
     setShowForm(false);
   };
 
   const handleEdit = (d: DASExpense) => {
     setEditId(d.id);
-    setForm({ month: d.month, value: d.value, paid: d.paid });
+    setForm({ month: d.month, value: d.value, paid: d.paid, projectId: d.projectId || '' });
     setShowForm(true);
+  };
+
+  const getProjectName = (projectId: string | null) => {
+    if (!projectId) return '—';
+    return projects.find(p => p.id === projectId)?.name || '—';
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1>DAS — Simples Nacional</h1>
-        <button onClick={() => { setEditId(null); setForm({ month: '', value: 0, paid: false }); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
+        <button onClick={() => { setEditId(null); setForm({ month: '', value: 0, paid: false, projectId: '' }); setShowForm(!showForm); }} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
           <Plus className="w-4 h-4" /> Registrar DAS
         </button>
       </div>
@@ -64,7 +72,13 @@ export default function DASPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+        <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+          <div><label className="label-caps block mb-1">Obra *</label>
+            <select required value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+              <option value="">Selecione a obra</option>
+              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
           <div><label className="label-caps block mb-1">Mês de Referência *</label><input type="month" required value={form.month} onChange={e => setForm({ ...form, month: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Valor *</label><input type="number" step="0.01" required value={form.value || ''} onChange={e => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <label className="flex items-center gap-2 text-sm pb-2"><input type="checkbox" checked={form.paid} onChange={e => setForm({ ...form, paid: e.target.checked })} /> Pago</label>
@@ -78,6 +92,7 @@ export default function DASPage() {
       <div className="bg-card rounded-xl shadow-card overflow-hidden">
         <table className="w-full text-sm">
           <thead><tr className="bg-muted">
+            <th className="label-caps text-left px-4 py-3">Obra</th>
             <th className="label-caps text-left px-4 py-3">Mês</th>
             <th className="label-caps text-left px-4 py-3">Vencimento</th>
             <th className="label-caps text-right px-4 py-3">Valor</th>
@@ -87,7 +102,8 @@ export default function DASPage() {
           <tbody>
             {dasExpenses.sort((a, b) => b.month.localeCompare(a.month)).map(d => (
               <tr key={d.id} className="border-b border-border">
-                <td className="px-4 py-3 font-medium">{d.month}</td>
+                <td className="px-4 py-3 font-medium">{getProjectName(d.projectId)}</td>
+                <td className="px-4 py-3">{d.month}</td>
                 <td className="px-4 py-3">{formatDate(d.dueDate)}</td>
                 <td className="px-4 py-3 text-right font-medium">{formatCurrency(d.value)}</td>
                 <td className="px-4 py-3 text-center">

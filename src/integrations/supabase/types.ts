@@ -329,6 +329,7 @@ export type Database = {
           id: string
           month: string
           paid: boolean
+          project_id: string | null
           updated_at: string
           value: number
         }
@@ -338,6 +339,7 @@ export type Database = {
           id?: string
           month: string
           paid?: boolean
+          project_id?: string | null
           updated_at?: string
           value?: number
         }
@@ -347,10 +349,19 @@ export type Database = {
           id?: string
           month?: string
           paid?: boolean
+          project_id?: string | null
           updated_at?: string
           value?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "das_expenses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_log: {
         Row: {
