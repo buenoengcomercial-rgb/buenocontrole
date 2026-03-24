@@ -787,6 +787,8 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     <td className="px-4 py-3 hidden md:table-cell">{mat?.category ? <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-xs font-medium">{mat.category}</span> : '—'}</td>
                     <td className="px-4 py-3 hidden md:table-cell">{p.supplierId ? suppliers.find((s: any) => s.id === p.supplierId)?.name || '—' : '—'}</td>
                     <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{p.invoiceNumber || '—'}</td>
+                    <td className="px-4 py-3 text-right hidden md:table-cell">{p.quantity || 1}</td>
+                    <td className="px-4 py-3 text-right hidden lg:table-cell">{p.unitPrice ? formatCurrency(p.unitPrice) : '—'}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">{formatCurrency(p.totalValue)}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.freightValue ? formatCurrency(p.freightValue) : '—'}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.icmsValue ? formatCurrency(p.icmsValue) : '—'}</td>
