@@ -766,6 +766,8 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               <th className="label-caps text-left px-4 py-3 hidden md:table-cell">Categoria</th>
               <th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th>
               <th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th>
+              <th className="label-caps text-right px-4 py-3 hidden md:table-cell">Qtd</th>
+              <th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Val. Unit.</th>
               <th className="label-caps text-right px-4 py-3">Valor NF</th>
               <th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th>
               <th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th>
