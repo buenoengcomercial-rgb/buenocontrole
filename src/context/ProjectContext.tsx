@@ -189,8 +189,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const addProjectPurchase = useCallback(async (p: Omit<ProjectPurchase, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('project_purchases').insert({
       project_id: p.projectId, supplier_id: p.supplierId || null, material_id: p.materialId || null,
-      date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
-      freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
+      date: p.date, invoice_number: p.invoiceNumber, quantity: p.quantity || 1, unit_price: p.unitPrice || 0,
+      total_value: p.totalValue, freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
       description: p.description, notes: p.notes,
       payment_method: p.paymentMethod || '', installments: p.installments || 1,
     }).select().single();
@@ -199,8 +199,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const updateProjectPurchase = useCallback(async (p: ProjectPurchase) => {
     await supabase.from('project_purchases').update({
       supplier_id: p.supplierId || null, material_id: p.materialId || null,
-      date: p.date, invoice_number: p.invoiceNumber, total_value: p.totalValue,
-      freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
+      date: p.date, invoice_number: p.invoiceNumber, quantity: p.quantity || 1, unit_price: p.unitPrice || 0,
+      total_value: p.totalValue, freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
       description: p.description, notes: p.notes,
       payment_method: p.paymentMethod || '', installments: p.installments || 1,
     }).eq('id', p.id);

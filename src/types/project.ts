@@ -122,6 +122,8 @@ export interface ProjectPurchase {
   materialId: string | null;
   date: string;
   invoiceNumber: string;
+  quantity: number;
+  unitPrice: number;
   totalValue: number;
   freightValue: number;
   icmsValue: number;
