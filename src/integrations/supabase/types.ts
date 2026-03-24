@@ -1255,8 +1255,10 @@ export type Database = {
           notes: string
           payment_method: string
           project_id: string
+          quantity: number
           supplier_id: string | null
           total_value: number
+          unit_price: number
           updated_at: string
         }
         Insert: {
@@ -1272,8 +1274,10 @@ export type Database = {
           notes?: string
           payment_method?: string
           project_id: string
+          quantity?: number
           supplier_id?: string | null
           total_value?: number
+          unit_price?: number
           updated_at?: string
         }
         Update: {
@@ -1289,8 +1293,10 @@ export type Database = {
           notes?: string
           payment_method?: string
           project_id?: string
+          quantity?: number
           supplier_id?: string | null
           total_value?: number
+          unit_price?: number
           updated_at?: string
         }
         Relationships: [

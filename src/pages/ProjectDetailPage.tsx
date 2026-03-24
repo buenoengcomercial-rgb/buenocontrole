@@ -585,7 +585,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1 };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1 };
   const [form, setForm] = useState(emptyForm);
 
   // Quick-add supplier
@@ -629,7 +629,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const handleEdit = (p: any) => {
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
-    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1 });
+    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1 });
     setShowForm(true);
   };
 
@@ -727,9 +727,11 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-            <div><label className="label-caps block mb-1">Valor Total NF (R$) *</label><input type="number" required min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Quantidade *</label><input type="number" required min="0" step="any" value={form.quantity || ''} onChange={(e) => { const q = parseFloat(e.target.value) || 0; setForm({ ...form, quantity: q, totalValue: q * (form.unitPrice || 0) }); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Valor Unitário (R$) *</label><input type="number" required min="0" step="0.01" value={form.unitPrice || ''} onChange={(e) => { const u = parseFloat(e.target.value) || 0; setForm({ ...form, unitPrice: u, totalValue: (form.quantity || 0) * u }); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Valor Total NF (R$)</label><input type="number" min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
             <div><label className="label-caps block mb-1">Valor Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -764,6 +766,8 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               <th className="label-caps text-left px-4 py-3 hidden md:table-cell">Categoria</th>
               <th className="label-caps text-left px-4 py-3 hidden md:table-cell">Fornecedor</th>
               <th className="label-caps text-left px-4 py-3 hidden lg:table-cell">Nº NF</th>
+              <th className="label-caps text-right px-4 py-3 hidden md:table-cell">Qtd</th>
+              <th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Val. Unit.</th>
               <th className="label-caps text-right px-4 py-3">Valor NF</th>
               <th className="label-caps text-right px-4 py-3 hidden lg:table-cell">Frete</th>
               <th className="label-caps text-right px-4 py-3 hidden lg:table-cell">ICMS</th>
@@ -783,6 +787,8 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     <td className="px-4 py-3 hidden md:table-cell">{mat?.category ? <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-xs font-medium">{mat.category}</span> : '—'}</td>
                     <td className="px-4 py-3 hidden md:table-cell">{p.supplierId ? suppliers.find((s: any) => s.id === p.supplierId)?.name || '—' : '—'}</td>
                     <td className="px-4 py-3 hidden lg:table-cell text-muted-foreground">{p.invoiceNumber || '—'}</td>
+                    <td className="px-4 py-3 text-right hidden md:table-cell">{p.quantity || 1}</td>
+                    <td className="px-4 py-3 text-right hidden lg:table-cell">{p.unitPrice ? formatCurrency(p.unitPrice) : '—'}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">{formatCurrency(p.totalValue)}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.freightValue ? formatCurrency(p.freightValue) : '—'}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.icmsValue ? formatCurrency(p.icmsValue) : '—'}</td>
@@ -796,7 +802,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                       </div>
                     </td>
                   </tr>
-                  {expandedPurchaseId === p.id && <tr><td colSpan={11} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
+                  {expandedPurchaseId === p.id && <tr><td colSpan={13} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
                 </React.Fragment>);
 
             })}
