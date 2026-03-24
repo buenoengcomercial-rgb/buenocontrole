@@ -802,7 +802,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                       </div>
                     </td>
                   </tr>
-                  {expandedPurchaseId === p.id && <tr><td colSpan={11} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
+                  {expandedPurchaseId === p.id && <tr><td colSpan={13} className="px-4 pb-2"><AttachedDocuments entityType="project_purchase" entityId={p.id} /></td></tr>}
                 </React.Fragment>);
 
             })}
