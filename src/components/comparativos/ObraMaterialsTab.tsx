@@ -47,6 +47,7 @@ interface Props {
 const BASE_PURCHASE_GROUPS = [
   "HIDRÁULICA", "ELÉTRICA", "CONSTRUÇÃO", "GALVANIZADOS", "PINTURA",
   "FERRAGENS", "MADEIRAS", "IMPERMEABILIZAÇÃO", "LOUÇAS E METAIS", "DIVERSOS",
+  "BOMBA - COMANDO",
 ];
 
 function fmt(v: number) {
