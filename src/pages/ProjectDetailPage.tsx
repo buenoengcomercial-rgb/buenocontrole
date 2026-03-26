@@ -631,7 +631,15 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
     setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1 });
-    setShowForm(true);
+  };
+
+  const handlePopoverSave = () => {
+    if (editId) {
+      const existing = (projectPurchases || []).find((p: any) => p.id === editId);
+      if (existing) onUpdate({ ...existing, ...form, supplierId: form.supplierId || null, materialId: form.materialId || null });
+    }
+    setEditId(null);
+    setForm(emptyForm);
   };
 
   const [expandedPurchaseId, setExpandedPurchaseId] = useState<string | null>(null);
