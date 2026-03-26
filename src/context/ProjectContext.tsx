@@ -194,7 +194,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       description: p.description, notes: p.notes,
       payment_method: p.paymentMethod || '', installments: p.installments || 1,
     }).select().single();
-    if (data) setProjectPurchases(prev => [...prev, mapProjectPurchase(data)]);
+    if (data) setProjectPurchases(prev => [mapProjectPurchase(data), ...prev]);
   }, []);
   const updateProjectPurchase = useCallback(async (p: ProjectPurchase) => {
     await supabase.from('project_purchases').update({
