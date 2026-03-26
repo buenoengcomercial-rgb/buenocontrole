@@ -13,6 +13,7 @@ import { MATERIAL_CATEGORIES, UNITS } from '@/types';
 import type { ProjectDocType, MeasurementStatus, Measurement, EquipmentRental, EquipmentType, BillingType } from '@/types/project';
 import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck, Paperclip, Scale } from 'lucide-react';
 import AttachedDocuments from '@/components/AttachedDocuments';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
 type Tab = 'dashboard' | 'allocations' | 'materials' | 'outsourced' | 'rentals' | 'docs' | 'measurements' | 'costs' | 'comparativos';
@@ -630,7 +631,15 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
     setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1 });
-    setShowForm(true);
+  };
+
+  const handlePopoverSave = () => {
+    if (editId) {
+      const existing = (projectPurchases || []).find((p: any) => p.id === editId);
+      if (existing) onUpdate({ ...existing, ...form, supplierId: form.supplierId || null, materialId: form.materialId || null });
+    }
+    setEditId(null);
+    setForm(emptyForm);
   };
 
   const [expandedPurchaseId, setExpandedPurchaseId] = useState<string | null>(null);
@@ -797,7 +806,60 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => setExpandedPurchaseId(expandedPurchaseId === p.id ? null : p.id)} className="p-1.5 rounded hover:bg-accent" title="Anexar documentos"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
-                        <button onClick={() => handleEdit(p)} className="p-1.5 rounded hover:bg-primary/10" title="Editar"><Pencil className="w-4 h-4 text-primary" /></button>
+                        <Popover open={editId === p.id} onOpenChange={(open) => { if (!open) { setEditId(null); setForm(emptyForm); } }}>
+                          <PopoverTrigger asChild>
+                            <button onClick={() => handleEdit(p)} className="p-1.5 rounded hover:bg-primary/10" title="Editar"><Pencil className="w-4 h-4 text-primary" /></button>
+                          </PopoverTrigger>
+                          <PopoverContent side="left" align="start" className="w-[420px] max-h-[80vh] overflow-y-auto p-4">
+                            <h4 className="text-sm font-semibold mb-3">Editar Compra</h4>
+                            <div className="grid gap-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div><label className="label-caps block mb-1 text-xs">Data</label><input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                <div><label className="label-caps block mb-1 text-xs">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                              </div>
+                              <div><label className="label-caps block mb-1 text-xs">Fornecedor</label>
+                                <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm">
+                                  <option value="">— Nenhum —</option>
+                                  {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </select>
+                              </div>
+                              <div><label className="label-caps block mb-1 text-xs">Material</label>
+                                <select value={form.materialId} onChange={(e) => {
+                                    const selectedMat = materials.find((m: any) => m.id === e.target.value);
+                                    setForm({ ...form, materialId: e.target.value, category: selectedMat?.category || form.category });
+                                  }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm">
+                                  <option value="">— Nenhum —</option>
+                                  {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}{m.category ? ` (${m.category})` : ''}</option>)}
+                                </select>
+                              </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <div><label className="label-caps block mb-1 text-xs">Qtd</label><input type="number" min="0" step="any" value={form.quantity || ''} onChange={(e) => { const q = parseFloat(e.target.value) || 0; setForm({ ...form, quantity: q, totalValue: q * (form.unitPrice || 0) }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                <div><label className="label-caps block mb-1 text-xs">Val. Unit.</label><input type="number" min="0" step="0.01" value={form.unitPrice || ''} onChange={(e) => { const u = parseFloat(e.target.value) || 0; setForm({ ...form, unitPrice: u, totalValue: (form.quantity || 0) * u }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                <div><label className="label-caps block mb-1 text-xs">Val. NF</label><input type="number" min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div><label className="label-caps block mb-1 text-xs">Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                <div><label className="label-caps block mb-1 text-xs">ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div><label className="label-caps block mb-1 text-xs">Pagamento</label>
+                                  <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value, installments: (e.target.value === 'credito' || e.target.value === 'boleto') ? form.installments : 1 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm">
+                                    <option value="">Selecione</option>
+                                    {PAYMENT_METHODS.map((pm) => <option key={pm.value} value={pm.value}>{pm.label}</option>)}
+                                  </select>
+                                </div>
+                                {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
+                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                )}
+                              </div>
+                              <div><label className="label-caps block mb-1 text-xs">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                              <div className="flex gap-2 pt-1">
+                                <button onClick={handlePopoverSave} className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar</button>
+                                <button onClick={() => { setEditId(null); setForm(emptyForm); }} className="px-4 py-2 border border-input rounded-lg text-sm">Cancelar</button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                         <button onClick={() => onDelete(p.id)} className="p-1.5 rounded hover:bg-destructive/10" title="Excluir"><Trash2 className="w-4 h-4 text-destructive" /></button>
                       </div>
                     </td>
