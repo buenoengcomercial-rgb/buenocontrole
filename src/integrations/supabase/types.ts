@@ -972,6 +972,41 @@ export type Database = {
           },
         ]
       }
+      outsourced_payments: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          notes: string
+          outsourced_service_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          notes?: string
+          outsourced_service_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string
+          outsourced_service_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outsourced_payments_outsourced_service_id_fkey"
+            columns: ["outsourced_service_id"]
+            isOneToOne: false
+            referencedRelation: "outsourced_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outsourced_services: {
         Row: {
           cnpj: string
