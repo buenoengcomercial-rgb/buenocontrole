@@ -903,7 +903,33 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
 function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ date: '', company: '', cnpj: '', description: '', value: 0, invoiceNumber: '', fileName: '' });
-  const total = services.reduce((s: number, sv: any) => s + sv.value, 0);
+  const [payments, setPayments] = useState<Record<string, { id: string; date: string; value: number; notes: string }[]>>({});
+  const [paymentForms, setPaymentForms] = useState<Record<string, { date: string; value: number; notes: string }>>({});
+  const [showPaymentForm, setShowPaymentForm] = useState<Record<string, boolean>>({});
+  const [expandedService, setExpandedService] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const loadPayments = async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const serviceIds = services.map((s: any) => s.id);
+      if (serviceIds.length === 0) return;
+      const { data } = await supabase.from('outsourced_payments').select('*').in('outsourced_service_id', serviceIds).order('date', { ascending: false });
+      if (data) {
+        const grouped: Record<string, any[]> = {};
+        data.forEach((p: any) => {
+          const sid = p.outsourced_service_id;
+          if (!grouped[sid]) grouped[sid] = [];
+          grouped[sid].push({ id: p.id, date: p.date, value: Number(p.value), notes: p.notes });
+        });
+        setPayments(grouped);
+      }
+    };
+    loadPayments();
+  }, [services]);
+
+  const totalContract = services.reduce((s: number, sv: any) => s + sv.value, 0);
+  const totalPaid = Object.values(payments).flat().reduce((s, p) => s + p.value, 0);
+  const totalRemaining = totalContract - totalPaid;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -912,10 +938,45 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
     setShowForm(false);
   };
 
+  const addPayment = async (serviceId: string) => {
+    const pForm = paymentForms[serviceId];
+    if (!pForm || !pForm.date || !pForm.value) return;
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data } = await (supabase.from('outsourced_payments') as any).insert({
+      outsourced_service_id: serviceId,
+      date: pForm.date,
+      value: pForm.value,
+      notes: pForm.notes || '',
+    }).select().single();
+    if (data) {
+      setPayments(prev => ({
+        ...prev,
+        [serviceId]: [{ id: data.id, date: data.date, value: Number(data.value), notes: data.notes }, ...(prev[serviceId] || [])],
+      }));
+    }
+    setPaymentForms(prev => ({ ...prev, [serviceId]: { date: '', value: 0, notes: '' } }));
+    setShowPaymentForm(prev => ({ ...prev, [serviceId]: false }));
+  };
+
+  const deletePayment = async (serviceId: string, paymentId: string) => {
+    const { supabase } = await import('@/integrations/supabase/client');
+    await (supabase.from('outsourced_payments') as any).delete().eq('id', paymentId);
+    setPayments(prev => ({
+      ...prev,
+      [serviceId]: (prev[serviceId] || []).filter(p => p.id !== paymentId),
+    }));
+  };
+
+  const getServicePaid = (serviceId: string) => (payments[serviceId] || []).reduce((s, p) => s + p.value, 0);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps">Total Terceirizados</span><p className="text-2xl font-semibold mt-1">{formatCurrency(total)}</p></div>
+        <div className="flex gap-4">
+          <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps">Valor Total Contratado</span><p className="text-2xl font-semibold mt-1">{formatCurrency(totalContract)}</p></div>
+          <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-green-600">Total Pago</span><p className="text-2xl font-semibold mt-1 text-green-600">{formatCurrency(totalPaid)}</p></div>
+          <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-orange-600">Saldo Restante</span><p className="text-2xl font-semibold mt-1 text-orange-600">{formatCurrency(totalRemaining)}</p></div>
+        </div>
         <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"><Plus className="w-4 h-4" /> Adicionar</button>
       </div>
       {showForm &&
@@ -923,30 +984,86 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
           <div><label className="label-caps block mb-1">Empresa *</label><input required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">CNPJ</label><input value={form.cnpj} onChange={(e) => setForm({ ...form, cnpj: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Data *</label><input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-          <div><label className="label-caps block mb-1">Valor *</label><input type="number" step="0.01" required value={form.value || ''} onChange={(e) => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+          <div><label className="label-caps block mb-1">Valor Total do Serviço *</label><input type="number" step="0.01" required value={form.value || ''} onChange={(e) => setForm({ ...form, value: +e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div className="md:col-span-2"><label className="label-caps block mb-1">Descrição</label><input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div><label className="label-caps block mb-1">Nº Nota Fiscal</label><input value={form.invoiceNumber} onChange={(e) => setForm({ ...form, invoiceNumber: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           <div className="flex items-end"><button type="submit" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar</button></div>
         </form>
       }
-      <div className="bg-card rounded-xl shadow-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead><tr className="bg-muted"><th className="label-caps text-left px-4 py-3">Data</th><th className="label-caps text-left px-4 py-3">Empresa</th><th className="label-caps text-left px-4 py-3">Descrição</th><th className="label-caps text-right px-4 py-3">Valor</th><th className="px-4 py-3"></th></tr></thead>
-          <tbody>
-            {services.map((s: any) =>
-            <React.Fragment key={s.id}>
-              <tr className="border-b border-border">
-                <td className="px-4 py-3">{formatDate(s.date)}</td>
-                <td className="px-4 py-3">{s.company}</td>
-                <td className="px-4 py-3">{s.description}</td>
-                <td className="px-4 py-3 text-right font-medium">{formatCurrency(s.value)}</td>
-                <td className="px-4 py-3"><button onClick={() => onDelete(s.id)} className="text-destructive"><Trash2 className="w-3.5 h-3.5" /></button></td>
-              </tr>
-              <tr><td colSpan={5} className="px-4 py-2 bg-muted/30"><AttachedDocuments entityType="outsourced" entityId={s.id} /></td></tr>
-              </React.Fragment>
-            )}
-          </tbody>
-        </table>
+      <div className="space-y-3">
+        {services.map((s: any) => {
+          const paid = getServicePaid(s.id);
+          const remaining = s.value - paid;
+          const isExpanded = expandedService === s.id;
+          const servicePayments = payments[s.id] || [];
+          const pForm = paymentForms[s.id] || { date: '', value: 0, notes: '' };
+          const showPForm = showPaymentForm[s.id] || false;
+          const pctPaid = s.value > 0 ? Math.min((paid / s.value) * 100, 100) : 0;
+
+          return (
+            <div key={s.id} className="bg-card rounded-xl shadow-card overflow-hidden">
+              <div className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/50" onClick={() => setExpandedService(isExpanded ? null : s.id)}>
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="min-w-[90px]"><span className="text-xs text-muted-foreground">Data</span><p className="text-sm font-medium">{formatDate(s.date)}</p></div>
+                  <div className="min-w-[140px]"><span className="text-xs text-muted-foreground">Empresa</span><p className="text-sm font-medium">{s.company}</p></div>
+                  <div className="flex-1"><span className="text-xs text-muted-foreground">Descrição</span><p className="text-sm">{s.description || '—'}</p></div>
+                  <div className="text-right min-w-[120px]"><span className="text-xs text-muted-foreground">Valor Total</span><p className="text-sm font-semibold">{formatCurrency(s.value)}</p></div>
+                  <div className="text-right min-w-[100px]"><span className="text-xs text-green-600">Pago</span><p className="text-sm font-medium text-green-600">{formatCurrency(paid)}</p></div>
+                  <div className="text-right min-w-[100px]"><span className={`text-xs ${remaining > 0 ? 'text-orange-600' : 'text-green-600'}`}>Restante</span><p className={`text-sm font-medium ${remaining > 0 ? 'text-orange-600' : 'text-green-600'}`}>{formatCurrency(remaining)}</p></div>
+                </div>
+                <div className="flex items-center gap-2 ml-3">
+                  <button onClick={(e) => { e.stopPropagation(); onDelete(s.id); }} className="text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div className="px-4 pb-1">
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${pctPaid}%` }} />
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className="border-t border-border px-4 py-3 space-y-3">
+                  {/* Attached docs */}
+                  <AttachedDocuments entityType="outsourced" entityId={s.id} />
+
+                  {/* Payments section */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="label-caps text-sm">Pagamentos</h4>
+                      <button onClick={() => setShowPaymentForm(prev => ({ ...prev, [s.id]: !showPForm }))} className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium"><Plus className="w-3 h-3" /> Registrar Pagamento</button>
+                    </div>
+                    {showPForm && (
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 bg-muted/50 rounded-lg p-3">
+                        <div><label className="text-xs text-muted-foreground block mb-1">Data *</label><input type="date" value={pForm.date} onChange={(e) => setPaymentForms(prev => ({ ...prev, [s.id]: { ...pForm, date: e.target.value } }))} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                        <div><label className="text-xs text-muted-foreground block mb-1">Valor *</label><input type="number" step="0.01" value={pForm.value || ''} onChange={(e) => setPaymentForms(prev => ({ ...prev, [s.id]: { ...pForm, value: +e.target.value } }))} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                        <div><label className="text-xs text-muted-foreground block mb-1">Observações</label><input value={pForm.notes} onChange={(e) => setPaymentForms(prev => ({ ...prev, [s.id]: { ...pForm, notes: e.target.value } }))} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                        <div className="flex items-end"><button onClick={() => addPayment(s.id)} className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-medium">Salvar</button></div>
+                      </div>
+                    )}
+                    {servicePayments.length > 0 ? (
+                      <table className="w-full text-sm">
+                        <thead><tr className="bg-muted/50"><th className="text-left px-3 py-2 text-xs text-muted-foreground">Data</th><th className="text-right px-3 py-2 text-xs text-muted-foreground">Valor</th><th className="text-left px-3 py-2 text-xs text-muted-foreground">Observações</th><th className="px-3 py-2"></th></tr></thead>
+                        <tbody>
+                          {servicePayments.map(p => (
+                            <tr key={p.id} className="border-b border-border/50">
+                              <td className="px-3 py-2">{formatDate(p.date)}</td>
+                              <td className="px-3 py-2 text-right font-medium text-green-600">{formatCurrency(p.value)}</td>
+                              <td className="px-3 py-2 text-muted-foreground">{p.notes || '—'}</td>
+                              <td className="px-3 py-2"><button onClick={() => deletePayment(s.id, p.id)} className="text-destructive"><Trash2 className="w-3 h-3" /></button></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-center py-2">Nenhum pagamento registrado.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
         {services.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhum serviço terceirizado.</p>}
       </div>
     </div>);
