@@ -300,6 +300,26 @@ export default function MedicoesEnergisaPage() {
     toast({ title: 'Relatório exportado com sucesso' });
   }, [contractItems, accumulatedByItem, selectedMonth, totalMonthValue, totalMaterialValue, totalLaborValue]);
 
+  const handleEmitBilling = useCallback(async () => {
+    setBillingInProgress(true);
+    // Export the report first
+    await exportExcel();
+    // Mark all unbilled records as billed
+    const unbilledIds = unbilledRecords.map(r => r.id);
+    if (unbilledIds.length > 0) {
+      const { error } = await supabase.from('energisa_service_records').update({ billed: true }).in('id', unbilledIds);
+      if (error) {
+        toast({ title: 'Erro ao marcar como faturado', description: error.message, variant: 'destructive' });
+        setBillingInProgress(false);
+        return;
+      }
+      setServiceRecords(prev => prev.map(r => unbilledIds.includes(r.id) ? { ...r, billed: true } : r));
+    }
+    setBillingInProgress(false);
+    setShowBillingConfirm(false);
+    toast({ title: 'Relatório de cobrança emitido', description: 'Os itens acumulados foram zerados para uma nova medição.' });
+  }, [exportExcel, unbilledRecords]);
+
   const getItemLabel = (itemId: string) => {
     const item = contractItems.find(i => i.id === itemId);
     return item ? `${item.item_code} - ${item.description.slice(0, 50)}` : itemId;
