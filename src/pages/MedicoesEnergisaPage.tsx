@@ -350,7 +350,7 @@ export default function MedicoesEnergisaPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total do Mês</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Acumulado</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold text-foreground tabular-nums">{formatCurrency(totalMonthValue)}</p></CardContent>
         </Card>
         <Card>
