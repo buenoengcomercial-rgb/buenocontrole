@@ -35,6 +35,7 @@ interface ServiceRecord {
   date: string;
   month: string;
   notes: string;
+  billed: boolean;
   created_at: string;
 }
 
