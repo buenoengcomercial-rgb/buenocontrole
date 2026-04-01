@@ -10,7 +10,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText } from 'lucide-react';
+import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText, ClipboardList } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/format';
 
@@ -268,6 +268,42 @@ export default function MedicoesEnergisaPage() {
     setQuickNotes('');
   };
 
+  const exportBudget = useCallback(() => {
+    const lines: string[] = [];
+    lines.push('ORÇAMENTO DE MATERIAIS - ENERGISA');
+    lines.push(`Data: ${new Date().toLocaleDateString('pt-BR')}`);
+    lines.push('');
+    lines.push('Item;Descrição;Unidade;Qtd Contrato;Valor Unit Material;Valor Unit MO;Valor Total Unit;Valor Total');
+
+    const categories = [...new Set(contractItems.map(i => i.category))].sort();
+    let grandTotal = 0;
+
+    for (const cat of categories) {
+      lines.push('');
+      lines.push(`--- ${cat} ---`);
+      const items = contractItems.filter(i => i.category === cat);
+      for (const item of items) {
+        const unitTotal = item.material_unit_value + item.labor_unit_value;
+        const totalItem = item.quantity * unitTotal;
+        grandTotal += totalItem;
+        lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${unitTotal.toFixed(2)};${totalItem.toFixed(2)}`);
+      }
+    }
+
+    lines.push('');
+    lines.push(`;;;;;;;TOTAL GERAL;${grandTotal.toFixed(2)}`);
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orcamento_energisa_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Orçamento exportado com sucesso' });
+  }, [contractItems]);
+
   const exportExcel = useCallback(async () => {
     const lines: string[] = [];
     lines.push('MEDIÇÃO ACUMULADA - ENERGISA');
@@ -340,6 +376,9 @@ export default function MedicoesEnergisaPage() {
           </Button>
           <Button onClick={() => setShowBillingConfirm(true)} variant="default" size="sm" disabled={accumulatedByItem.size === 0} className="bg-green-600 hover:bg-green-700">
             <FileText className="h-4 w-4 mr-1" /> Emitir Cobrança
+          </Button>
+          <Button onClick={exportBudget} variant="outline" size="sm">
+            <ClipboardList className="h-4 w-4 mr-1" /> Orçamento
           </Button>
           <Button onClick={exportExcel} variant="outline" size="sm" disabled={accumulatedByItem.size === 0}>
             <Download className="h-4 w-4 mr-1" /> Exportar
