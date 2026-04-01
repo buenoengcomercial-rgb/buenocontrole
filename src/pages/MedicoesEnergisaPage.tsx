@@ -268,6 +268,42 @@ export default function MedicoesEnergisaPage() {
     setQuickNotes('');
   };
 
+  const exportBudget = useCallback(() => {
+    const lines: string[] = [];
+    lines.push('ORÇAMENTO DE MATERIAIS - ENERGISA');
+    lines.push(`Data: ${new Date().toLocaleDateString('pt-BR')}`);
+    lines.push('');
+    lines.push('Item;Descrição;Unidade;Qtd Contrato;Valor Unit Material;Valor Unit MO;Valor Total Unit;Valor Total');
+
+    const categories = [...new Set(contractItems.map(i => i.category))].sort();
+    let grandTotal = 0;
+
+    for (const cat of categories) {
+      lines.push('');
+      lines.push(`--- ${cat} ---`);
+      const items = contractItems.filter(i => i.category === cat);
+      for (const item of items) {
+        const unitTotal = item.material_unit_value + item.labor_unit_value;
+        const totalItem = item.quantity * unitTotal;
+        grandTotal += totalItem;
+        lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${unitTotal.toFixed(2)};${totalItem.toFixed(2)}`);
+      }
+    }
+
+    lines.push('');
+    lines.push(`;;;;;;;TOTAL GERAL;${grandTotal.toFixed(2)}`);
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orcamento_energisa_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Orçamento exportado com sucesso' });
+  }, [contractItems]);
+
   const exportExcel = useCallback(async () => {
     const lines: string[] = [];
     lines.push('MEDIÇÃO ACUMULADA - ENERGISA');
