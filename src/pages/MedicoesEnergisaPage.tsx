@@ -273,14 +273,15 @@ export default function MedicoesEnergisaPage() {
     lines.push('MEDIÇÃO ACUMULADA - ENERGISA');
     lines.push(`Mês: ${selectedMonth}`);
     lines.push('');
-    lines.push('Item;Descrição;Unidade;Qtd Contrato;Qtd Executada;Valor Unit Material;Valor Unit MO;Valor Total;Unidade Energisa');
+    lines.push('Item;Descrição;Unidade;Qtd Contrato;Qtd Executada;Valor Unit Material;Valor Unit MO;Valor Total;Unidade Energisa;Data');
 
     for (const item of contractItems) {
       const acc = accumulatedByItem.get(item.id);
       if (!acc) continue;
       const unitTotal = item.material_unit_value + item.labor_unit_value;
       const unidades = acc.records.map(r => r.unitLabel).join(' / ');
-      lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${acc.totalQty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${(acc.totalQty * unitTotal).toFixed(2)};${unidades}`);
+      const datas = acc.records.map(r => r.date.split('-').reverse().join('/')).join(' / ');
+      lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${acc.totalQty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${(acc.totalQty * unitTotal).toFixed(2)};${unidades};${datas}`);
     }
 
     lines.push('');
@@ -410,7 +411,8 @@ export default function MedicoesEnergisaPage() {
                     <TableHead className="w-20 text-right">Executado</TableHead>
                     <TableHead className="w-20 text-right">Saldo</TableHead>
                     <TableHead className="w-28 text-right">Valor Exec.</TableHead>
-                    <TableHead className="w-48">Unidades</TableHead>
+                     <TableHead className="w-28">Data</TableHead>
+                     <TableHead className="w-48">Unidades</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -423,7 +425,7 @@ export default function MedicoesEnergisaPage() {
                     return (
                       <TableRow key={item.id} className={executedQty > 0 ? 'bg-primary/5' : ''}>
                         <TableCell className="font-mono text-xs">{item.item_code}</TableCell>
-                        <TableCell className="text-xs max-w-xs truncate" title={item.description}>{item.description}</TableCell>
+                        <TableCell className="text-xs max-w-[250px] whitespace-normal break-words">{item.description}</TableCell>
                         <TableCell className="text-xs">{item.unit}</TableCell>
                         <TableCell className="text-right text-xs tabular-nums">{item.quantity}</TableCell>
                         <TableCell className="text-right text-xs tabular-nums font-semibold">
@@ -434,6 +436,13 @@ export default function MedicoesEnergisaPage() {
                         </TableCell>
                         <TableCell className="text-right text-xs tabular-nums">
                           {executedQty > 0 ? formatCurrency(executedValue) : '-'}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {acc?.records.map((r) => (
+                            <div key={r.id} className="py-0.5 text-muted-foreground">
+                              {r.date.split('-').reverse().join('/')}
+                            </div>
+                          ))}
                         </TableCell>
                         <TableCell className="text-xs">
                           {acc?.records.map((r) => (
