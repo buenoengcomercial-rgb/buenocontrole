@@ -89,7 +89,7 @@ export default function MedicoesEnergisaPage() {
       })));
       setServiceRecords((records.data || []).map((r: any) => ({
         id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
-        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, created_at: r.created_at,
+        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, billed: r.billed || false, created_at: r.created_at,
       })));
       setLoading(false);
     });
