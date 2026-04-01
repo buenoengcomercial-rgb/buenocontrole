@@ -10,8 +10,9 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { AlertDialog as BillingDialog, AlertDialogContent as BillingDialogContent, AlertDialogHeader as BillingDialogHeader, AlertDialogTitle as BillingDialogTitle, AlertDialogDescription as BillingDialogDescription, AlertDialogFooter as BillingDialogFooter, AlertDialogCancel as BillingDialogCancel, AlertDialogAction as BillingDialogAction } from '@/components/ui/alert-dialog';
 import { formatCurrency } from '@/lib/format';
 
 interface ContractItem {
