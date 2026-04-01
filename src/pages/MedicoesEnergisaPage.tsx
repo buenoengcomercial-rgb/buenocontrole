@@ -63,6 +63,13 @@ export default function MedicoesEnergisaPage() {
   const [showBillingConfirm, setShowBillingConfirm] = useState(false);
   const [billingInProgress, setBillingInProgress] = useState(false);
 
+  // Budget dialog state
+  const [showBudgetDialog, setShowBudgetDialog] = useState(false);
+  const [budgetItems, setBudgetItems] = useState<{ contract_item_id: string; quantity: string }[]>([]);
+  const [budgetSearch, setBudgetSearch] = useState('');
+  const [budgetCategoryFilter, setBudgetCategoryFilter] = useState('all');
+  const [billingInProgress, setBillingInProgress] = useState(false);
+
   // Form state
   const [formUnitName, setFormUnitName] = useState('');
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
