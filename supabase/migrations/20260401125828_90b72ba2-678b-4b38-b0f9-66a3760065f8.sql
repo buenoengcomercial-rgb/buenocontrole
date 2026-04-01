@@ -1,0 +1,1 @@
+ALTER TABLE public.energisa_service_records ADD COLUMN billed boolean NOT NULL DEFAULT false;

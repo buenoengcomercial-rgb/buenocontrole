@@ -621,6 +621,7 @@ export type Database = {
       }
       energisa_service_records: {
         Row: {
+          billed: boolean
           contract_item_id: string
           created_at: string
           date: string
@@ -633,6 +634,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          billed?: boolean
           contract_item_id: string
           created_at?: string
           date: string
@@ -645,6 +647,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          billed?: boolean
           contract_item_id?: string
           created_at?: string
           date?: string
