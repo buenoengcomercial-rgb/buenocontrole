@@ -424,7 +424,7 @@ export default function MedicoesEnergisaPage() {
                     return (
                       <TableRow key={item.id} className={executedQty > 0 ? 'bg-primary/5' : ''}>
                         <TableCell className="font-mono text-xs">{item.item_code}</TableCell>
-                        <TableCell className="text-xs max-w-xs truncate" title={item.description}>{item.description}</TableCell>
+                        <TableCell className="text-xs max-w-[250px] whitespace-normal break-words">{item.description}</TableCell>
                         <TableCell className="text-xs">{item.unit}</TableCell>
                         <TableCell className="text-right text-xs tabular-nums">{item.quantity}</TableCell>
                         <TableCell className="text-right text-xs tabular-nums font-semibold">
