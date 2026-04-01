@@ -10,7 +10,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/format';
 
@@ -34,6 +34,7 @@ interface ServiceRecord {
   date: string;
   month: string;
   notes: string;
+  billed: boolean;
   created_at: string;
 }
 
@@ -59,6 +60,8 @@ export default function MedicoesEnergisaPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [showBillingConfirm, setShowBillingConfirm] = useState(false);
+  const [billingInProgress, setBillingInProgress] = useState(false);
 
   // Form state
   const [formUnitName, setFormUnitName] = useState('');
@@ -85,7 +88,7 @@ export default function MedicoesEnergisaPage() {
       })));
       setServiceRecords((records.data || []).map((r: any) => ({
         id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
-        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, created_at: r.created_at,
+        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, billed: r.billed || false, created_at: r.created_at,
       })));
       setLoading(false);
     });
@@ -94,6 +97,11 @@ export default function MedicoesEnergisaPage() {
   const categories = useMemo(() =>
     [...new Set(contractItems.map(i => i.category))].sort(),
     [contractItems]
+  );
+
+  const unbilledRecords = useMemo(() =>
+    serviceRecords.filter(r => !r.billed),
+    [serviceRecords]
   );
 
   const monthRecords = useMemo(() =>
@@ -111,14 +119,14 @@ export default function MedicoesEnergisaPage() {
 
   const accumulatedByItem = useMemo(() => {
     const map = new Map<string, { totalQty: number; records: (ServiceRecord & { unitLabel: string })[] }>();
-    for (const r of monthRecords) {
+    for (const r of unbilledRecords) {
       const existing = map.get(r.contract_item_id) || { totalQty: 0, records: [] };
       existing.totalQty += r.quantity;
       existing.records.push({ ...r, unitLabel: r.unit_name });
       map.set(r.contract_item_id, existing);
     }
     return map;
-  }, [monthRecords]);
+  }, [unbilledRecords]);
 
   const totalMonthValue = useMemo(() => {
     let total = 0;
@@ -233,7 +241,7 @@ export default function MedicoesEnergisaPage() {
     if (data) {
       setServiceRecords(prev => [...prev, ...data.map((r: any) => ({
         id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
-        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, created_at: r.created_at,
+        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, billed: false, created_at: r.created_at,
       }))]);
     }
     toast({ title: `${pendingItems.length} serviço(s) registrado(s) com sucesso` });
@@ -291,6 +299,26 @@ export default function MedicoesEnergisaPage() {
     toast({ title: 'Relatório exportado com sucesso' });
   }, [contractItems, accumulatedByItem, selectedMonth, totalMonthValue, totalMaterialValue, totalLaborValue]);
 
+  const handleEmitBilling = useCallback(async () => {
+    setBillingInProgress(true);
+    // Export the report first
+    await exportExcel();
+    // Mark all unbilled records as billed
+    const unbilledIds = unbilledRecords.map(r => r.id);
+    if (unbilledIds.length > 0) {
+      const { error } = await supabase.from('energisa_service_records').update({ billed: true }).in('id', unbilledIds);
+      if (error) {
+        toast({ title: 'Erro ao marcar como faturado', description: error.message, variant: 'destructive' });
+        setBillingInProgress(false);
+        return;
+      }
+      setServiceRecords(prev => prev.map(r => unbilledIds.includes(r.id) ? { ...r, billed: true } : r));
+    }
+    setBillingInProgress(false);
+    setShowBillingConfirm(false);
+    toast({ title: 'Relatório de cobrança emitido', description: 'Os itens acumulados foram zerados para uma nova medição.' });
+  }, [exportExcel, unbilledRecords]);
+
   const getItemLabel = (itemId: string) => {
     const item = contractItems.find(i => i.id === itemId);
     return item ? `${item.item_code} - ${item.description.slice(0, 50)}` : itemId;
@@ -309,6 +337,9 @@ export default function MedicoesEnergisaPage() {
           <Button onClick={() => { resetForm(); setShowAddDialog(true); }} size="sm">
             <Plus className="h-4 w-4 mr-1" /> Registrar Serviço
           </Button>
+          <Button onClick={() => setShowBillingConfirm(true)} variant="default" size="sm" disabled={accumulatedByItem.size === 0} className="bg-green-600 hover:bg-green-700">
+            <FileText className="h-4 w-4 mr-1" /> Emitir Cobrança
+          </Button>
           <Button onClick={exportExcel} variant="outline" size="sm" disabled={accumulatedByItem.size === 0}>
             <Download className="h-4 w-4 mr-1" /> Exportar
           </Button>
@@ -318,7 +349,7 @@ export default function MedicoesEnergisaPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total do Mês</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Acumulado</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold text-foreground tabular-nums">{formatCurrency(totalMonthValue)}</p></CardContent>
         </Card>
         <Card>
@@ -592,6 +623,26 @@ export default function MedicoesEnergisaPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Billing Confirmation */}
+      <AlertDialog open={showBillingConfirm} onOpenChange={setShowBillingConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Emitir Relatório de Cobrança?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O relatório será exportado com todos os itens acumulados ({unbilledRecords.length} registros, total de {formatCurrency(totalMonthValue)}).
+              Após a emissão, os itens acumulados serão zerados para iniciar uma nova medição.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={billingInProgress}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleEmitBilling} disabled={billingInProgress}>
+              {billingInProgress ? 'Emitindo...' : 'Emitir e Zerar'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
