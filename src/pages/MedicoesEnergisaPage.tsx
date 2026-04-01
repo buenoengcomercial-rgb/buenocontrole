@@ -274,30 +274,81 @@ export default function MedicoesEnergisaPage() {
     setQuickNotes('');
   };
 
-  const exportBudget = useCallback(() => {
+  const budgetFilteredItems = useMemo(() => {
+    return contractItems.filter(i => {
+      if (budgetCategoryFilter !== 'all' && i.category !== budgetCategoryFilter) return false;
+      if (budgetSearch) {
+        const s = budgetSearch.toLowerCase();
+        return i.item_code.toLowerCase().includes(s) || i.description.toLowerCase().includes(s);
+      }
+      return true;
+    });
+  }, [contractItems, budgetCategoryFilter, budgetSearch]);
+
+  const budgetTotal = useMemo(() => {
+    return budgetItems.reduce((sum, bi) => {
+      const item = contractItems.find(i => i.id === bi.contract_item_id);
+      if (!item) return sum;
+      const qty = parseFloat(bi.quantity || '0');
+      return sum + qty * (item.material_unit_value + item.labor_unit_value);
+    }, 0);
+  }, [budgetItems, contractItems]);
+
+  const budgetMaterialTotal = useMemo(() => {
+    return budgetItems.reduce((sum, bi) => {
+      const item = contractItems.find(i => i.id === bi.contract_item_id);
+      if (!item) return sum;
+      return sum + parseFloat(bi.quantity || '0') * item.material_unit_value;
+    }, 0);
+  }, [budgetItems, contractItems]);
+
+  const budgetLaborTotal = useMemo(() => {
+    return budgetItems.reduce((sum, bi) => {
+      const item = contractItems.find(i => i.id === bi.contract_item_id);
+      if (!item) return sum;
+      return sum + parseFloat(bi.quantity || '0') * item.labor_unit_value;
+    }, 0);
+  }, [budgetItems, contractItems]);
+
+  const toggleBudgetItem = (itemId: string) => {
+    setBudgetItems(prev => {
+      const exists = prev.find(p => p.contract_item_id === itemId);
+      if (exists) return prev.filter(p => p.contract_item_id !== itemId);
+      return [...prev, { contract_item_id: itemId, quantity: '1' }];
+    });
+  };
+
+  const updateBudgetQty = (itemId: string, qty: string) => {
+    setBudgetItems(prev => prev.map(p => p.contract_item_id === itemId ? { ...p, quantity: qty } : p));
+  };
+
+  const openBudgetDialog = () => {
+    setBudgetItems([]);
+    setBudgetSearch('');
+    setBudgetCategoryFilter('all');
+    setShowBudgetDialog(true);
+  };
+
+  const exportBudgetCSV = useCallback(() => {
+    if (budgetItems.length === 0) return;
     const lines: string[] = [];
-    lines.push('ORÇAMENTO DE MATERIAIS - ENERGISA');
+    lines.push('ORÇAMENTO - ENERGISA');
     lines.push(`Data: ${new Date().toLocaleDateString('pt-BR')}`);
     lines.push('');
-    lines.push('Item;Descrição;Unidade;Qtd Contrato;Valor Unit Material;Valor Unit MO;Valor Total Unit;Valor Total');
+    lines.push('Item;Descrição;Unidade;Quantidade;Valor Unit Material;Valor Unit MO;Valor Total Unit;Valor Total');
 
-    const categories = [...new Set(contractItems.map(i => i.category))].sort();
-    let grandTotal = 0;
-
-    for (const cat of categories) {
-      lines.push('');
-      lines.push(`--- ${cat} ---`);
-      const items = contractItems.filter(i => i.category === cat);
-      for (const item of items) {
-        const unitTotal = item.material_unit_value + item.labor_unit_value;
-        const totalItem = item.quantity * unitTotal;
-        grandTotal += totalItem;
-        lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${unitTotal.toFixed(2)};${totalItem.toFixed(2)}`);
-      }
+    for (const bi of budgetItems) {
+      const item = contractItems.find(i => i.id === bi.contract_item_id);
+      if (!item) continue;
+      const qty = parseFloat(bi.quantity || '0');
+      const unitTotal = item.material_unit_value + item.labor_unit_value;
+      lines.push(`${item.item_code};${item.description};${item.unit};${qty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${unitTotal.toFixed(2)};${(qty * unitTotal).toFixed(2)}`);
     }
 
     lines.push('');
-    lines.push(`;;;;;;;TOTAL GERAL;${grandTotal.toFixed(2)}`);
+    lines.push(`;;;;;;TOTAL MATERIAL;${budgetMaterialTotal.toFixed(2)}`);
+    lines.push(`;;;;;;TOTAL MÃO DE OBRA;${budgetLaborTotal.toFixed(2)}`);
+    lines.push(`;;;;;;TOTAL GERAL;${budgetTotal.toFixed(2)}`);
 
     const bom = '\uFEFF';
     const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -308,7 +359,7 @@ export default function MedicoesEnergisaPage() {
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: 'Orçamento exportado com sucesso' });
-  }, [contractItems]);
+  }, [budgetItems, contractItems, budgetTotal, budgetMaterialTotal, budgetLaborTotal]);
 
   const exportExcel = useCallback(async () => {
     const lines: string[] = [];
