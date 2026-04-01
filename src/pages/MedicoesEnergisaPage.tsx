@@ -100,6 +100,11 @@ export default function MedicoesEnergisaPage() {
     [contractItems]
   );
 
+  const unbilledRecords = useMemo(() =>
+    serviceRecords.filter(r => !r.billed),
+    [serviceRecords]
+  );
+
   const monthRecords = useMemo(() =>
     serviceRecords.filter(r => r.month === selectedMonth),
     [serviceRecords, selectedMonth]
