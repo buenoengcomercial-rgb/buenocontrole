@@ -10,7 +10,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText } from 'lucide-react';
+import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText, ClipboardList } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/format';
 
