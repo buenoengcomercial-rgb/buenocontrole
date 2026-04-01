@@ -411,7 +411,8 @@ export default function MedicoesEnergisaPage() {
                     <TableHead className="w-20 text-right">Executado</TableHead>
                     <TableHead className="w-20 text-right">Saldo</TableHead>
                     <TableHead className="w-28 text-right">Valor Exec.</TableHead>
-                    <TableHead className="w-48">Unidades</TableHead>
+                     <TableHead className="w-28">Data</TableHead>
+                     <TableHead className="w-48">Unidades</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
