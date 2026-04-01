@@ -439,6 +439,13 @@ export default function MedicoesEnergisaPage() {
                         </TableCell>
                         <TableCell className="text-xs">
                           {acc?.records.map((r) => (
+                            <div key={r.id} className="py-0.5 text-muted-foreground">
+                              {r.date.split('-').reverse().join('/')}
+                            </div>
+                          ))}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {acc?.records.map((r) => (
                             <div key={r.id} className="flex items-center gap-1 py-0.5">
                               <span className="truncate max-w-[140px]" title={r.unitLabel}>{r.unitLabel}</span>
                               <span className="text-muted-foreground">({r.quantity})</span>
