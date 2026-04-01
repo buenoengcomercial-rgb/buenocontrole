@@ -338,6 +338,9 @@ export default function MedicoesEnergisaPage() {
           <Button onClick={() => { resetForm(); setShowAddDialog(true); }} size="sm">
             <Plus className="h-4 w-4 mr-1" /> Registrar Serviço
           </Button>
+          <Button onClick={() => setShowBillingConfirm(true)} variant="default" size="sm" disabled={accumulatedByItem.size === 0} className="bg-green-600 hover:bg-green-700">
+            <FileText className="h-4 w-4 mr-1" /> Emitir Cobrança
+          </Button>
           <Button onClick={exportExcel} variant="outline" size="sm" disabled={accumulatedByItem.size === 0}>
             <Download className="h-4 w-4 mr-1" /> Exportar
           </Button>
