@@ -751,6 +751,123 @@ export default function MedicoesEnergisaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Budget Dialog */}
+      <Dialog open={showBudgetDialog} onOpenChange={setShowBudgetDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Montar Orçamento</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-4">
+            {/* Summary cards */}
+            <div className="grid grid-cols-3 gap-3">
+              <Card>
+                <CardContent className="pt-3 pb-3">
+                  <p className="text-xs text-muted-foreground">Material</p>
+                  <p className="text-lg font-bold tabular-nums text-foreground">{formatCurrency(budgetMaterialTotal)}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-3 pb-3">
+                  <p className="text-xs text-muted-foreground">Mão de Obra</p>
+                  <p className="text-lg font-bold tabular-nums text-foreground">{formatCurrency(budgetLaborTotal)}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-3 pb-3">
+                  <p className="text-xs text-muted-foreground">Total Geral</p>
+                  <p className="text-lg font-bold tabular-nums text-foreground">{formatCurrency(budgetTotal)}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Filters */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Buscar item..." value={budgetSearch} onChange={e => setBudgetSearch(e.target.value)} className="pl-8 h-9" />
+              </div>
+              <Select value={budgetCategoryFilter} onValueChange={setBudgetCategoryFilter}>
+                <SelectTrigger className="w-[180px] h-9">
+                  <Filter className="h-3.5 w-3.5 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas categorias</SelectItem>
+                  {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Items table */}
+            <div className="border rounded-md overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10"></TableHead>
+                    <TableHead className="text-xs">Item</TableHead>
+                    <TableHead className="text-xs">Descrição</TableHead>
+                    <TableHead className="text-xs text-center">Un</TableHead>
+                    <TableHead className="text-xs text-right">Val. Mat.</TableHead>
+                    <TableHead className="text-xs text-right">Val. MO</TableHead>
+                    <TableHead className="text-xs text-center w-20">Qtd</TableHead>
+                    <TableHead className="text-xs text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {budgetFilteredItems.map(item => {
+                    const selected = budgetItems.find(b => b.contract_item_id === item.id);
+                    const qty = selected ? parseFloat(selected.quantity || '0') : 0;
+                    const unitTotal = item.material_unit_value + item.labor_unit_value;
+                    return (
+                      <TableRow key={item.id} className={selected ? 'bg-primary/5' : ''}>
+                        <TableCell className="text-center">
+                          <input
+                            type="checkbox"
+                            checked={!!selected}
+                            onChange={() => toggleBudgetItem(item.id)}
+                            className="h-4 w-4 rounded border-border"
+                          />
+                        </TableCell>
+                        <TableCell className="text-xs font-mono">{item.item_code}</TableCell>
+                        <TableCell className="text-xs max-w-[200px] whitespace-normal break-words">{item.description}</TableCell>
+                        <TableCell className="text-xs text-center">{item.unit}</TableCell>
+                        <TableCell className="text-xs text-right tabular-nums">{formatCurrency(item.material_unit_value)}</TableCell>
+                        <TableCell className="text-xs text-right tabular-nums">{formatCurrency(item.labor_unit_value)}</TableCell>
+                        <TableCell className="text-center">
+                          {selected ? (
+                            <Input
+                              type="number"
+                              min="1"
+                              value={selected.quantity}
+                              onChange={e => updateBudgetQty(item.id, e.target.value)}
+                              className="h-7 w-16 text-xs text-center mx-auto"
+                            />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-right tabular-nums font-medium">
+                          {selected ? formatCurrency(qty * unitTotal) : '-'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between items-center pt-3 border-t">
+            <p className="text-sm text-muted-foreground">{budgetItems.length} item(s) selecionado(s)</p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowBudgetDialog(false)}>Cancelar</Button>
+              <Button onClick={exportBudgetCSV} disabled={budgetItems.length === 0}>
+                <Download className="h-4 w-4 mr-1" /> Exportar Orçamento
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
