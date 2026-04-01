@@ -627,6 +627,26 @@ export default function MedicoesEnergisaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Billing Confirmation */}
+      <BillingDialog open={showBillingConfirm} onOpenChange={setShowBillingConfirm}>
+        <BillingDialogContent>
+          <BillingDialogHeader>
+            <BillingDialogTitle>Emitir Relatório de Cobrança?</BillingDialogTitle>
+            <BillingDialogDescription>
+              O relatório será exportado com todos os itens acumulados ({unbilledRecords.length} registros, total de {formatCurrency(totalMonthValue)}).
+              Após a emissão, os itens acumulados serão zerados para iniciar uma nova medição.
+              Esta ação não pode ser desfeita.
+            </BillingDialogDescription>
+          </BillingDialogHeader>
+          <BillingDialogFooter>
+            <BillingDialogCancel disabled={billingInProgress}>Cancelar</BillingDialogCancel>
+            <BillingDialogAction onClick={handleEmitBilling} disabled={billingInProgress}>
+              {billingInProgress ? 'Emitindo...' : 'Emitir e Zerar'}
+            </BillingDialogAction>
+          </BillingDialogFooter>
+        </BillingDialogContent>
+      </BillingDialog>
     </div>
   );
 }
