@@ -237,7 +237,7 @@ export default function MedicoesEnergisaPage() {
     if (data) {
       setServiceRecords(prev => [...prev, ...data.map((r: any) => ({
         id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
-        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, created_at: r.created_at,
+        quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, billed: false, created_at: r.created_at,
       }))]);
     }
     toast({ title: `${pendingItems.length} serviço(s) registrado(s) com sucesso` });
