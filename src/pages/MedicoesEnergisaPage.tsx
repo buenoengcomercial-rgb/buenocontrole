@@ -61,6 +61,8 @@ export default function MedicoesEnergisaPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [showBillingConfirm, setShowBillingConfirm] = useState(false);
+  const [billingInProgress, setBillingInProgress] = useState(false);
 
   // Form state
   const [formUnitName, setFormUnitName] = useState('');
