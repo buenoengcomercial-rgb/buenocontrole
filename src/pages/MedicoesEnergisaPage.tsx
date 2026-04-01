@@ -273,14 +273,15 @@ export default function MedicoesEnergisaPage() {
     lines.push('MEDIÇÃO ACUMULADA - ENERGISA');
     lines.push(`Mês: ${selectedMonth}`);
     lines.push('');
-    lines.push('Item;Descrição;Unidade;Qtd Contrato;Qtd Executada;Valor Unit Material;Valor Unit MO;Valor Total;Unidade Energisa');
+    lines.push('Item;Descrição;Unidade;Qtd Contrato;Qtd Executada;Valor Unit Material;Valor Unit MO;Valor Total;Unidade Energisa;Data');
 
     for (const item of contractItems) {
       const acc = accumulatedByItem.get(item.id);
       if (!acc) continue;
       const unitTotal = item.material_unit_value + item.labor_unit_value;
       const unidades = acc.records.map(r => r.unitLabel).join(' / ');
-      lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${acc.totalQty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${(acc.totalQty * unitTotal).toFixed(2)};${unidades}`);
+      const datas = acc.records.map(r => r.date.split('-').reverse().join('/')).join(' / ');
+      lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${acc.totalQty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${(acc.totalQty * unitTotal).toFixed(2)};${unidades};${datas}`);
     }
 
     lines.push('');
