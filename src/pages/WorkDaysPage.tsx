@@ -172,11 +172,14 @@ export default function WorkDaysPage() {
     Object.entries(batchEntries).forEach(([empId, entry]) => {
       const exists = workDays.find(w => w.employeeId === empId && w.date === batchDate);
       const vacation = isOnVacation(empId, batchDate);
-      if (!exists && !vacation && entry.worked) {
+      if (!exists && !vacation && (batchHoliday || entry.worked)) {
         addWorkDay({
           employeeId: empId, projectId: batchProjectId || null, date: batchDate,
-          worked: entry.worked, interior: entry.interior,
-          absenceType: '', absenceReason: '', absenceNotes: '',
+          worked: batchHoliday ? false : entry.worked,
+          interior: batchHoliday ? false : entry.interior,
+          absenceType: batchHoliday ? 'feriado' : '',
+          absenceReason: batchHoliday ? 'Feriado' : '',
+          absenceNotes: '',
         });
         count++;
       }
