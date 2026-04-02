@@ -505,6 +505,15 @@ export default function WorkDaysPage() {
                     <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>{workedCount} dias</span>
                   </div>
+                  {(() => {
+                    const laudoCount = days.filter(d => d.worked && d.interior).length;
+                    return laudoCount > 0 ? (
+                      <div className="flex items-center gap-1.5 bg-accent rounded-lg px-3 py-1.5 text-accent-foreground">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>{laudoCount} laudo(s)</span>
+                      </div>
+                    ) : null;
+                  })()}
                   {empAbsences > 0 && (
                     <div className="flex items-center gap-1.5 bg-warning/10 text-warning rounded-lg px-3 py-1.5">
                       <UserX className="w-3.5 h-3.5" />
