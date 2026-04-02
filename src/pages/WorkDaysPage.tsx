@@ -41,7 +41,7 @@ export default function WorkDaysPage() {
   const [filterProject, setFilterProject] = useState('all');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    employeeId: '', date: '', worked: true, interior: false, projectId: '',
+    employeeId: '', date: '', dateEnd: '', worked: true, interior: false, projectId: '',
     absenceType: '', absenceReason: '', absenceNotes: '',
   });
 
