@@ -250,14 +250,16 @@ export default function WorkDaysPage() {
 
                 <div>
                   <label className="label-caps mb-1 block">Tipo de Registro</label>
-                  <Select value={form.absenceType || 'presenca'} onValueChange={v => setForm(f => ({
+                  <Select value={form.absenceType || (form.interior ? 'laudo_interior' : 'presenca')} onValueChange={v => setForm(f => ({
                     ...f,
-                    absenceType: v === 'presenca' ? '' : v,
-                    worked: v === 'presenca',
+                    absenceType: v === 'presenca' || v === 'laudo_interior' ? '' : v,
+                    worked: v === 'presenca' || v === 'laudo_interior',
+                    interior: v === 'laudo_interior' ? true : (v === 'presenca' ? false : f.interior),
                   }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="presenca">Presença Normal</SelectItem>
+                      <SelectItem value="laudo_interior">Laudo - Interior (sem VA)</SelectItem>
                       {ABSENCE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -278,16 +280,15 @@ export default function WorkDaysPage() {
                       Ausência registrada — sem vale alimentação.
                     </div>
                   </>
+                ) : form.interior ? (
+                  <div className="bg-muted rounded-lg p-3 text-sm flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    Laudo - Interior: dia trabalhado <strong>sem vale alimentação</strong>.
+                  </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-6">
-                      <label className="flex items-center gap-2 text-sm">
-                        <Checkbox checked={form.interior} onCheckedChange={c => setForm(f => ({ ...f, interior: !!c }))} />
-                        Interior (sem VA)
-                      </label>
-                    </div>
                     <div className="bg-muted rounded-lg p-3 text-sm">
-                      Vale alimentação: <strong>{formatCurrency(calculateMealVoucher(true, form.interior))}</strong>
+                      Vale alimentação: <strong>{formatCurrency(calculateMealVoucher(true, false))}</strong>
                     </div>
                   </>
                 )}
@@ -406,14 +407,16 @@ export default function WorkDaysPage() {
               </div>
               <div>
                 <label className="label-caps mb-1 block">Tipo de Registro</label>
-                <Select value={editForm.absenceType || 'presenca'} onValueChange={v => setEditForm(f => f ? ({
+                <Select value={editForm.absenceType || (editForm.interior ? 'laudo_interior' : 'presenca')} onValueChange={v => setEditForm(f => f ? ({
                   ...f,
-                  absenceType: v === 'presenca' ? '' : v,
-                  worked: v === 'presenca',
+                  absenceType: v === 'presenca' || v === 'laudo_interior' ? '' : v,
+                  worked: v === 'presenca' || v === 'laudo_interior',
+                  interior: v === 'laudo_interior' ? true : (v === 'presenca' ? false : f.interior),
                 }) : f)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="presenca">Presença Normal</SelectItem>
+                    <SelectItem value="laudo_interior">Laudo - Interior (sem VA)</SelectItem>
                     {ABSENCE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -429,14 +432,12 @@ export default function WorkDaysPage() {
                     <Textarea value={editForm.absenceNotes} onChange={e => setEditForm(f => f ? { ...f, absenceNotes: e.target.value } : f)} rows={2} />
                   </div>
                 </>
-              ) : (
-                <div className="flex items-center gap-6">
-                  <label className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={editForm.interior} onCheckedChange={c => setEditForm(f => f ? { ...f, interior: !!c } : f)} />
-                    Interior (sem VA)
-                  </label>
+              ) : editForm.interior ? (
+                <div className="bg-muted rounded-lg p-3 text-sm flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Laudo - Interior: dia trabalhado <strong>sem vale alimentação</strong>.
                 </div>
-              )}
+              ) : null}
             </div>
           )}
           <div className="flex justify-end gap-2">
