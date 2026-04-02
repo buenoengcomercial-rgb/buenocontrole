@@ -594,7 +594,9 @@ export default function WorkDaysPage() {
                             ) : <span className="text-muted-foreground text-xs">—</span>}
                           </td>
                           <td className="px-6 py-3 text-sm text-center">
-                            {isAbsence ? (
+                            {w.absenceType === 'meio_periodo' ? (
+                              <span className="text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full font-medium">Meio Período</span>
+                            ) : isAbsence ? (
                               <span className="inline-flex items-center gap-1 text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full font-medium">
                                 <AlertCircle className="w-3 h-3" />{absenceLabel}
                               </span>
