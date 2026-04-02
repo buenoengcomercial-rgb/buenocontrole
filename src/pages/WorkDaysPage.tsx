@@ -103,7 +103,7 @@ export default function WorkDaysPage() {
   const handleSubmit = () => {
     if (!form.employeeId || !form.date) { toast.error('Selecione colaborador e data.'); return; }
 
-    if (form.absenceType && form.absenceType !== '' && !form.absenceReason) {
+    if (form.absenceType && form.absenceType !== 'meio_periodo' && form.absenceType !== 'feriado' && !form.absenceReason) {
       toast.error('Informe o motivo da ausência.'); return;
     }
 
