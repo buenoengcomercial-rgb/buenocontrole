@@ -576,6 +576,10 @@ export default function WorkDaysPage() {
                               <span className="inline-flex items-center gap-1 text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full font-medium">
                                 <AlertCircle className="w-3 h-3" />{absenceLabel}
                               </span>
+                            ) : w.interior ? (
+                              <span className="inline-flex items-center gap-1 text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full font-medium">
+                                <Building2 className="w-3 h-3" />Laudo - Interior
+                              </span>
                             ) : (
                               <span className="text-xs bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-medium">Presente</span>
                             )}
