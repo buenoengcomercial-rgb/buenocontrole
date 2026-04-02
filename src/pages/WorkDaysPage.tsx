@@ -355,7 +355,15 @@ export default function WorkDaysPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2">
+              <Checkbox checked={batchHoliday} onCheckedChange={c => setBatchHoliday(!!c)} />
+              <label className="text-sm font-medium">Feriado</label>
+              {batchHoliday && (
+                <span className="text-xs text-muted-foreground ml-2">— todos serão registrados como feriado (sem VA)</span>
+              )}
+            </div>
             <div className="space-y-2">
+              {!batchHoliday && <p className="text-xs text-muted-foreground">Marque quem trabalhou:</p>}
               {activeEmployees.map(emp => {
                 const entry = batchEntries[emp.id] || { worked: true, interior: false };
                 const vacation = batchDate ? isOnVacation(emp.id, batchDate) : null;
