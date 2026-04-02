@@ -455,21 +455,22 @@ export default function WorkDaysPage() {
               </div>
               <div>
                 <label className="label-caps mb-1 block">Tipo de Registro</label>
-                <Select value={editForm.absenceType || (editForm.interior ? 'laudo_interior' : 'presenca')} onValueChange={v => setEditForm(f => f ? ({
+                <Select value={editForm.absenceType === 'meio_periodo' ? 'meio_periodo' : (editForm.absenceType || (editForm.interior ? 'laudo_interior' : 'presenca'))} onValueChange={v => setEditForm(f => f ? ({
                   ...f,
                   absenceType: v === 'presenca' || v === 'laudo_interior' ? '' : v,
-                  worked: v === 'presenca' || v === 'laudo_interior',
-                  interior: v === 'laudo_interior' ? true : (v === 'presenca' ? false : f.interior),
+                  worked: v === 'presenca' || v === 'laudo_interior' || v === 'meio_periodo',
+                  interior: v === 'laudo_interior' ? true : (v === 'presenca' || v === 'meio_periodo' ? false : f.interior),
                 }) : f)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="presenca">Presença Normal</SelectItem>
+                    <SelectItem value="meio_periodo">Meio Período (VA R$ 10)</SelectItem>
                     <SelectItem value="laudo_interior">Laudo - Interior (sem VA)</SelectItem>
                     {ABSENCE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              {editForm.absenceType ? (
+              {editForm.absenceType && editForm.absenceType !== 'meio_periodo' ? (
                 <>
                   <div>
                     <label className="label-caps mb-1 block">Motivo</label>
@@ -480,6 +481,10 @@ export default function WorkDaysPage() {
                     <Textarea value={editForm.absenceNotes} onChange={e => setEditForm(f => f ? { ...f, absenceNotes: e.target.value } : f)} rows={2} />
                   </div>
                 </>
+              ) : editForm.absenceType === 'meio_periodo' ? (
+                <div className="bg-muted rounded-lg p-3 text-sm">
+                  Meio período: vale alimentação <strong>{formatCurrency(10)}</strong>
+                </div>
               ) : editForm.interior ? (
                 <div className="bg-muted rounded-lg p-3 text-sm flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
