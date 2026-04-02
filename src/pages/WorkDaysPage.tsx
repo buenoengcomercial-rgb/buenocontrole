@@ -18,6 +18,7 @@ const ABSENCE_TYPES = [
   { value: 'falta', label: 'Falta' },
   { value: 'atestado', label: 'Atestado' },
   { value: 'folga', label: 'Folga' },
+  { value: 'feriado', label: 'Feriado' },
   { value: 'falta_justificada', label: 'Falta Justificada' },
   { value: 'outro', label: 'Outro' },
 ];
@@ -152,6 +153,7 @@ export default function WorkDaysPage() {
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchDate, setBatchDate] = useState('');
   const [batchProjectId, setBatchProjectId] = useState('');
+  const [batchHoliday, setBatchHoliday] = useState(false);
   const [batchEntries, setBatchEntries] = useState<Record<string, { worked: boolean; interior: boolean }>>({});
 
   const initBatch = () => {
@@ -160,6 +162,7 @@ export default function WorkDaysPage() {
     setBatchEntries(entries);
     setBatchDate(new Date().toISOString().slice(0, 10));
     setBatchProjectId('');
+    setBatchHoliday(false);
     setBatchOpen(true);
   };
 
@@ -169,11 +172,14 @@ export default function WorkDaysPage() {
     Object.entries(batchEntries).forEach(([empId, entry]) => {
       const exists = workDays.find(w => w.employeeId === empId && w.date === batchDate);
       const vacation = isOnVacation(empId, batchDate);
-      if (!exists && !vacation && entry.worked) {
+      if (!exists && !vacation && (batchHoliday || entry.worked)) {
         addWorkDay({
           employeeId: empId, projectId: batchProjectId || null, date: batchDate,
-          worked: entry.worked, interior: entry.interior,
-          absenceType: '', absenceReason: '', absenceNotes: '',
+          worked: batchHoliday ? false : entry.worked,
+          interior: batchHoliday ? false : entry.interior,
+          absenceType: batchHoliday ? 'feriado' : '',
+          absenceReason: batchHoliday ? 'Feriado' : '',
+          absenceNotes: '',
         });
         count++;
       }
@@ -349,7 +355,15 @@ export default function WorkDaysPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2">
+              <Checkbox checked={batchHoliday} onCheckedChange={c => setBatchHoliday(!!c)} />
+              <label className="text-sm font-medium">Feriado</label>
+              {batchHoliday && (
+                <span className="text-xs text-muted-foreground ml-2">— todos serão registrados como feriado (sem VA)</span>
+              )}
+            </div>
             <div className="space-y-2">
+              {!batchHoliday && <p className="text-xs text-muted-foreground">Marque quem trabalhou:</p>}
               {activeEmployees.map(emp => {
                 const entry = batchEntries[emp.id] || { worked: true, interior: false };
                 const vacation = batchDate ? isOnVacation(emp.id, batchDate) : null;
@@ -363,7 +377,7 @@ export default function WorkDaysPage() {
                         </span>
                       )}
                     </div>
-                    {!vacation && (
+                    {!vacation && !batchHoliday && (
                       <div className="flex items-center gap-4">
                         <label className="flex items-center gap-1.5 text-xs">
                           <Checkbox checked={entry.worked} onCheckedChange={c => setBatchEntries(prev => ({ ...prev, [emp.id]: { ...entry, worked: !!c } }))} />
