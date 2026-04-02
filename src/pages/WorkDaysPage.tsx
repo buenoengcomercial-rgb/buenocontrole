@@ -153,6 +153,7 @@ export default function WorkDaysPage() {
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchDate, setBatchDate] = useState('');
   const [batchProjectId, setBatchProjectId] = useState('');
+  const [batchHoliday, setBatchHoliday] = useState(false);
   const [batchEntries, setBatchEntries] = useState<Record<string, { worked: boolean; interior: boolean }>>({});
 
   const initBatch = () => {
