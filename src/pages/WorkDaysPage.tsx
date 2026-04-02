@@ -101,29 +101,51 @@ export default function WorkDaysPage() {
 
   const handleSubmit = () => {
     if (!form.employeeId || !form.date) { toast.error('Selecione colaborador e data.'); return; }
-    const exists = workDays.find(w => w.employeeId === form.employeeId && w.date === form.date);
-    if (exists) { toast.error('Já existe registro para este colaborador nesta data.'); return; }
-
-    const vacation = isOnVacation(form.employeeId, form.date);
-    if (vacation) { toast.error('Colaborador está em férias nesta data.'); return; }
 
     if (form.absenceType && form.absenceType !== '' && !form.absenceReason) {
       toast.error('Informe o motivo da ausência.'); return;
     }
 
-    addWorkDay({
-      employeeId: form.employeeId,
-      projectId: form.projectId || null,
-      date: form.date,
-      worked: !form.absenceType,
-      interior: form.interior,
-      absenceType: form.absenceType,
-      absenceReason: form.absenceReason,
-      absenceNotes: form.absenceNotes,
+    // Build list of dates from range
+    const startDate = new Date(form.date + 'T00:00:00');
+    const endDate = form.dateEnd ? new Date(form.dateEnd + 'T00:00:00') : startDate;
+    if (endDate < startDate) { toast.error('Data final deve ser igual ou posterior à data inicial.'); return; }
+
+    const dates: string[] = [];
+    const cur = new Date(startDate);
+    while (cur <= endDate) {
+      dates.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    if (dates.length > 60) { toast.error('Intervalo máximo de 60 dias.'); return; }
+
+    let count = 0;
+    let skipped = 0;
+    dates.forEach(dateStr => {
+      const exists = workDays.find(w => w.employeeId === form.employeeId && w.date === dateStr);
+      const vacation = isOnVacation(form.employeeId, dateStr);
+      if (exists || vacation) { skipped++; return; }
+      addWorkDay({
+        employeeId: form.employeeId,
+        projectId: form.projectId || null,
+        date: dateStr,
+        worked: !form.absenceType,
+        interior: form.interior,
+        absenceType: form.absenceType,
+        absenceReason: form.absenceReason,
+        absenceNotes: form.absenceNotes,
+      });
+      count++;
     });
-    toast.success(form.absenceType ? 'Ausência registrada.' : 'Dia registrado.');
+
+    if (count > 0) {
+      toast.success(`${count} dia(s) registrado(s).${skipped > 0 ? ` ${skipped} ignorado(s) (já existentes ou férias).` : ''}`);
+    } else {
+      toast.error('Nenhum dia registrado — todos já existem ou estão em férias.');
+    }
     setOpen(false);
-    setForm({ employeeId: '', date: '', worked: true, interior: false, projectId: '', absenceType: '', absenceReason: '', absenceNotes: '' });
+    setForm({ employeeId: '', date: '', dateEnd: '', worked: true, interior: false, projectId: '', absenceType: '', absenceReason: '', absenceNotes: '' });
   };
 
   // Batch add
