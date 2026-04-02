@@ -303,7 +303,7 @@ export default function WorkDaysPage() {
                   </Select>
                 </div>
 
-                {form.absenceType ? (
+                {form.absenceType && form.absenceType !== 'meio_periodo' ? (
                   <>
                     <div>
                       <label className="label-caps mb-1 block">Motivo *</label>
@@ -318,17 +318,19 @@ export default function WorkDaysPage() {
                       Ausência registrada — sem vale alimentação.
                     </div>
                   </>
+                ) : form.absenceType === 'meio_periodo' ? (
+                  <div className="bg-muted rounded-lg p-3 text-sm">
+                    Meio período: vale alimentação <strong>{formatCurrency(10)}</strong>
+                  </div>
                 ) : form.interior ? (
                   <div className="bg-muted rounded-lg p-3 text-sm flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
                     Laudo - Interior: dia trabalhado <strong>sem vale alimentação</strong>.
                   </div>
                 ) : (
-                  <>
-                    <div className="bg-muted rounded-lg p-3 text-sm">
-                      Vale alimentação: <strong>{formatCurrency(calculateMealVoucher(true, false))}</strong>
-                    </div>
-                  </>
+                  <div className="bg-muted rounded-lg p-3 text-sm">
+                    Vale alimentação: <strong>{formatCurrency(calculateMealVoucher(true, false))}</strong>
+                  </div>
                 )}
               </div>
               <div className="flex justify-end gap-2">
