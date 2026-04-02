@@ -18,6 +18,7 @@ const ABSENCE_TYPES = [
   { value: 'falta', label: 'Falta' },
   { value: 'atestado', label: 'Atestado' },
   { value: 'folga', label: 'Folga' },
+  { value: 'feriado', label: 'Feriado' },
   { value: 'falta_justificada', label: 'Falta Justificada' },
   { value: 'outro', label: 'Outro' },
 ];
