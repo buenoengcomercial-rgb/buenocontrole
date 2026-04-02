@@ -377,7 +377,7 @@ export default function WorkDaysPage() {
                         </span>
                       )}
                     </div>
-                    {!vacation && (
+                    {!vacation && !batchHoliday && (
                       <div className="flex items-center gap-4">
                         <label className="flex items-center gap-1.5 text-xs">
                           <Checkbox checked={entry.worked} onCheckedChange={c => setBatchEntries(prev => ({ ...prev, [emp.id]: { ...entry, worked: !!c } }))} />
