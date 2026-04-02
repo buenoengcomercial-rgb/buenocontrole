@@ -162,6 +162,7 @@ export default function WorkDaysPage() {
     setBatchEntries(entries);
     setBatchDate(new Date().toISOString().slice(0, 10));
     setBatchProjectId('');
+    setBatchHoliday(false);
     setBatchOpen(true);
   };
 
