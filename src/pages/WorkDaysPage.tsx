@@ -103,7 +103,7 @@ export default function WorkDaysPage() {
   const handleSubmit = () => {
     if (!form.employeeId || !form.date) { toast.error('Selecione colaborador e data.'); return; }
 
-    if (form.absenceType && form.absenceType !== '' && !form.absenceReason) {
+    if (form.absenceType && form.absenceType !== 'meio_periodo' && form.absenceType !== 'feriado' && !form.absenceReason) {
       toast.error('Informe o motivo da ausência.'); return;
     }
 
@@ -287,22 +287,23 @@ export default function WorkDaysPage() {
 
                 <div>
                   <label className="label-caps mb-1 block">Tipo de Registro</label>
-                  <Select value={form.absenceType || (form.interior ? 'laudo_interior' : 'presenca')} onValueChange={v => setForm(f => ({
+                  <Select value={form.absenceType === 'meio_periodo' ? 'meio_periodo' : (form.absenceType || (form.interior ? 'laudo_interior' : 'presenca'))} onValueChange={v => setForm(f => ({
                     ...f,
                     absenceType: v === 'presenca' || v === 'laudo_interior' ? '' : v,
-                    worked: v === 'presenca' || v === 'laudo_interior',
-                    interior: v === 'laudo_interior' ? true : (v === 'presenca' ? false : f.interior),
+                    worked: v === 'presenca' || v === 'laudo_interior' || v === 'meio_periodo',
+                    interior: v === 'laudo_interior' ? true : (v === 'presenca' || v === 'meio_periodo' ? false : f.interior),
                   }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="presenca">Presença Normal</SelectItem>
+                      <SelectItem value="meio_periodo">Meio Período (VA R$ 10)</SelectItem>
                       <SelectItem value="laudo_interior">Laudo - Interior (sem VA)</SelectItem>
                       {ABSENCE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {form.absenceType ? (
+                {form.absenceType && form.absenceType !== 'meio_periodo' ? (
                   <>
                     <div>
                       <label className="label-caps mb-1 block">Motivo *</label>
@@ -317,17 +318,19 @@ export default function WorkDaysPage() {
                       Ausência registrada — sem vale alimentação.
                     </div>
                   </>
+                ) : form.absenceType === 'meio_periodo' ? (
+                  <div className="bg-muted rounded-lg p-3 text-sm">
+                    Meio período: vale alimentação <strong>{formatCurrency(10)}</strong>
+                  </div>
                 ) : form.interior ? (
                   <div className="bg-muted rounded-lg p-3 text-sm flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
                     Laudo - Interior: dia trabalhado <strong>sem vale alimentação</strong>.
                   </div>
                 ) : (
-                  <>
-                    <div className="bg-muted rounded-lg p-3 text-sm">
-                      Vale alimentação: <strong>{formatCurrency(calculateMealVoucher(true, false))}</strong>
-                    </div>
-                  </>
+                  <div className="bg-muted rounded-lg p-3 text-sm">
+                    Vale alimentação: <strong>{formatCurrency(calculateMealVoucher(true, false))}</strong>
+                  </div>
                 )}
               </div>
               <div className="flex justify-end gap-2">
@@ -452,21 +455,22 @@ export default function WorkDaysPage() {
               </div>
               <div>
                 <label className="label-caps mb-1 block">Tipo de Registro</label>
-                <Select value={editForm.absenceType || (editForm.interior ? 'laudo_interior' : 'presenca')} onValueChange={v => setEditForm(f => f ? ({
+                <Select value={editForm.absenceType === 'meio_periodo' ? 'meio_periodo' : (editForm.absenceType || (editForm.interior ? 'laudo_interior' : 'presenca'))} onValueChange={v => setEditForm(f => f ? ({
                   ...f,
                   absenceType: v === 'presenca' || v === 'laudo_interior' ? '' : v,
-                  worked: v === 'presenca' || v === 'laudo_interior',
-                  interior: v === 'laudo_interior' ? true : (v === 'presenca' ? false : f.interior),
+                  worked: v === 'presenca' || v === 'laudo_interior' || v === 'meio_periodo',
+                  interior: v === 'laudo_interior' ? true : (v === 'presenca' || v === 'meio_periodo' ? false : f.interior),
                 }) : f)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="presenca">Presença Normal</SelectItem>
+                    <SelectItem value="meio_periodo">Meio Período (VA R$ 10)</SelectItem>
                     <SelectItem value="laudo_interior">Laudo - Interior (sem VA)</SelectItem>
                     {ABSENCE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              {editForm.absenceType ? (
+              {editForm.absenceType && editForm.absenceType !== 'meio_periodo' ? (
                 <>
                   <div>
                     <label className="label-caps mb-1 block">Motivo</label>
@@ -477,6 +481,10 @@ export default function WorkDaysPage() {
                     <Textarea value={editForm.absenceNotes} onChange={e => setEditForm(f => f ? { ...f, absenceNotes: e.target.value } : f)} rows={2} />
                   </div>
                 </>
+              ) : editForm.absenceType === 'meio_periodo' ? (
+                <div className="bg-muted rounded-lg p-3 text-sm">
+                  Meio período: vale alimentação <strong>{formatCurrency(10)}</strong>
+                </div>
               ) : editForm.interior ? (
                 <div className="bg-muted rounded-lg p-3 text-sm flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
@@ -586,7 +594,9 @@ export default function WorkDaysPage() {
                             ) : <span className="text-muted-foreground text-xs">—</span>}
                           </td>
                           <td className="px-6 py-3 text-sm text-center">
-                            {isAbsence ? (
+                            {w.absenceType === 'meio_periodo' ? (
+                              <span className="text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full font-medium">Meio Período</span>
+                            ) : isAbsence ? (
                               <span className="inline-flex items-center gap-1 text-xs bg-warning/10 text-warning px-2 py-0.5 rounded-full font-medium">
                                 <AlertCircle className="w-3 h-3" />{absenceLabel}
                               </span>
