@@ -250,9 +250,18 @@ export default function WorkDaysPage() {
                     <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div><label className="label-caps mb-1 block">Data</label><Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="label-caps mb-1 block">Data Início</label><Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+                  <div><label className="label-caps mb-1 block">Data Fim <span className="text-muted-foreground font-normal">(opcional)</span></label><Input type="date" value={form.dateEnd} onChange={e => setForm(f => ({ ...f, dateEnd: e.target.value }))} min={form.date} /></div>
+                </div>
 
-                {form.employeeId && form.date && isOnVacation(form.employeeId, form.date) && (
+                {form.dateEnd && form.date && form.dateEnd >= form.date && (
+                  <div className="bg-muted rounded-lg p-2 text-xs text-muted-foreground">
+                    Período: {Math.floor((new Date(form.dateEnd + 'T00:00:00').getTime() - new Date(form.date + 'T00:00:00').getTime()) / 86400000) + 1} dia(s) — registros duplicados ou em férias serão ignorados.
+                  </div>
+                )}
+
+                {form.employeeId && form.date && !form.dateEnd && isOnVacation(form.employeeId, form.date) && (
                   <div className="bg-primary/10 rounded-lg p-3 text-sm flex items-center gap-2 text-primary">
                     <Umbrella className="w-4 h-4" />
                     Colaborador está em férias nesta data.
