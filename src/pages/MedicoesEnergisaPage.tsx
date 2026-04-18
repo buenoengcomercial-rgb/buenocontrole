@@ -56,6 +56,7 @@ export default function MedicoesEnergisaPage() {
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth());
   const [search, setSearch] = useState('');
+  const [unitSearch, setUnitSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -125,14 +126,16 @@ export default function MedicoesEnergisaPage() {
 
   const accumulatedByItem = useMemo(() => {
     const map = new Map<string, { totalQty: number; records: (ServiceRecord & { unitLabel: string })[] }>();
+    const us = unitSearch.trim().toLowerCase();
     for (const r of unbilledRecords) {
+      if (us && !(r.unit_name || '').toLowerCase().includes(us)) continue;
       const existing = map.get(r.contract_item_id) || { totalQty: 0, records: [] };
       existing.totalQty += r.quantity;
       existing.records.push({ ...r, unitLabel: r.unit_name });
       map.set(r.contract_item_id, existing);
     }
     return map;
-  }, [unbilledRecords]);
+  }, [unbilledRecords, unitSearch]);
 
   const totalMonthValue = useMemo(() => {
     let total = 0;
@@ -166,11 +169,12 @@ export default function MedicoesEnergisaPage() {
       if (categoryFilter !== 'all' && i.category !== categoryFilter) return false;
       if (search) {
         const s = search.toLowerCase();
-        return i.item_code.toLowerCase().includes(s) || i.description.toLowerCase().includes(s);
+        if (!(i.item_code.toLowerCase().includes(s) || i.description.toLowerCase().includes(s))) return false;
       }
+      if (unitSearch.trim() && !accumulatedByItem.has(i.id)) return false;
       return true;
     });
-  }, [contractItems, categoryFilter, search]);
+  }, [contractItems, categoryFilter, search, unitSearch, accumulatedByItem]);
 
   const groupedItems = useMemo(() => {
     const map = new Map<string, typeof filteredItems>();
@@ -468,6 +472,10 @@ export default function MedicoesEnergisaPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar item..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por unidade..." value={unitSearch} onChange={e => setUnitSearch(e.target.value)} className="pl-9" />
+        </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-48">
             <Filter className="h-4 w-4 mr-1" />
@@ -495,7 +503,7 @@ export default function MedicoesEnergisaPage() {
               {expandedCategories.has(category) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </div>
           </button>
-          {expandedCategories.has(category) && (
+          {(expandedCategories.has(category) || unitSearch.trim()) && (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
