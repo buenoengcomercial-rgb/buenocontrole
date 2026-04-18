@@ -126,14 +126,16 @@ export default function MedicoesEnergisaPage() {
 
   const accumulatedByItem = useMemo(() => {
     const map = new Map<string, { totalQty: number; records: (ServiceRecord & { unitLabel: string })[] }>();
+    const us = unitSearch.trim().toLowerCase();
     for (const r of unbilledRecords) {
+      if (us && !(r.unit_name || '').toLowerCase().includes(us)) continue;
       const existing = map.get(r.contract_item_id) || { totalQty: 0, records: [] };
       existing.totalQty += r.quantity;
       existing.records.push({ ...r, unitLabel: r.unit_name });
       map.set(r.contract_item_id, existing);
     }
     return map;
-  }, [unbilledRecords]);
+  }, [unbilledRecords, unitSearch]);
 
   const totalMonthValue = useMemo(() => {
     let total = 0;
