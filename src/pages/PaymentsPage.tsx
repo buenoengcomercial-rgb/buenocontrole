@@ -263,7 +263,7 @@ export default function PaymentsPage() {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-end">
                         <span className="text-[10px] text-muted-foreground uppercase">Total</span>
-                        <span className="text-sm font-semibold">{formatCurrency(p.advanceDiscount + p.otherAdditions - p.otherDiscounts)}</span>
+                        <span className="text-sm font-semibold">{formatCurrency(p.advanceDiscount + ((p.grossSalary + p.otherAdditions) - (p.advanceDiscount + p.otherDiscounts)))}</span>
                       </div>
                       <span className="text-xs text-muted-foreground">{formatDate(p.paymentDate)}</span>
                       {p.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />}
