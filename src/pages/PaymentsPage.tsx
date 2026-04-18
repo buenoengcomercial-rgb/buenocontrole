@@ -274,7 +274,10 @@ export default function PaymentsPage() {
                       {p.paymentMethod && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{p.paymentMethod}</span>}
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-semibold">{formatCurrency(p.netSalary)}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm font-semibold">{formatCurrency(p.netSalary)}</span>
+                        <span className="text-[10px] text-muted-foreground">Total acum.: <span className="font-medium text-foreground">{formatCurrency(totalPaidByEmployee.get(p.employeeId)?.total || 0)}</span> ({totalPaidByEmployee.get(p.employeeId)?.count || 0}x)</span>
+                      </div>
                       <span className="text-xs text-muted-foreground">{formatDate(p.paymentDate)}</span>
                       {p.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />}
                       <button onClick={(e) => { e.stopPropagation(); openEdit(p); }} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><Edit2 className="w-4 h-4" /></button>
