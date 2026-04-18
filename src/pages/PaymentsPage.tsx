@@ -121,6 +121,20 @@ export default function PaymentsPage() {
   const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredPayments = useMemo(() => payments.filter(p => p.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, filterMonth]);
 
+  // Total pago por colaborador (soma de todos os pagamentos históricos de salário)
+  const totalPaidByEmployee = useMemo(() => {
+    const map = new Map<string, { total: number; count: number }>();
+    for (const p of payments) {
+      const cur = map.get(p.employeeId) || { total: 0, count: 0 };
+      cur.total += p.netSalary;
+      cur.count += 1;
+      map.set(p.employeeId, cur);
+    }
+    return map;
+  }, [payments]);
+
+  const filteredPaymentsTotal = useMemo(() => filteredPayments.reduce((s, p) => s + p.netSalary, 0), [filteredPayments]);
+
   // Expand advance details (now grouped by employee)
   const [expandedAdvance, setExpandedAdvance] = useState<string | null>(null);
   const [expandedPayment, setExpandedPayment] = useState<string | null>(null);
