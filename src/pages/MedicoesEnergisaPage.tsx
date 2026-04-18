@@ -169,11 +169,12 @@ export default function MedicoesEnergisaPage() {
       if (categoryFilter !== 'all' && i.category !== categoryFilter) return false;
       if (search) {
         const s = search.toLowerCase();
-        return i.item_code.toLowerCase().includes(s) || i.description.toLowerCase().includes(s);
+        if (!(i.item_code.toLowerCase().includes(s) || i.description.toLowerCase().includes(s))) return false;
       }
+      if (unitSearch.trim() && !accumulatedByItem.has(i.id)) return false;
       return true;
     });
-  }, [contractItems, categoryFilter, search]);
+  }, [contractItems, categoryFilter, search, unitSearch, accumulatedByItem]);
 
   const groupedItems = useMemo(() => {
     const map = new Map<string, typeof filteredItems>();
