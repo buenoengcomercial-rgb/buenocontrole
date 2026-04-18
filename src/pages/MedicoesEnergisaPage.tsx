@@ -503,7 +503,7 @@ export default function MedicoesEnergisaPage() {
               {expandedCategories.has(category) ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </div>
           </button>
-          {expandedCategories.has(category) && (
+          {(expandedCategories.has(category) || unitSearch.trim()) && (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
