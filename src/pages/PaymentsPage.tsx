@@ -260,25 +260,6 @@ export default function PaymentsPage() {
 
           <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
 
-          {filteredPayments.length > 0 && (
-            <div className="bg-card rounded-xl shadow-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="label-caps">Total pago no mês</span>
-                <span className="text-base font-semibold">{formatCurrency(filteredPaymentsTotal)}</span>
-              </div>
-              <div className="border-t border-border pt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {filteredPayments.map(p => {
-                  const emp = employees.find(e => e.id === p.employeeId);
-                  return (
-                    <div key={`sum-${p.id}`} className="flex items-center justify-between text-xs px-2 py-1 rounded hover:bg-row-hover">
-                      <span className="truncate">{emp?.name || '—'}</span>
-                      <span className="font-semibold">{formatCurrency(p.netSalary)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Payments list as expandable cards */}
           <div className="space-y-3">
