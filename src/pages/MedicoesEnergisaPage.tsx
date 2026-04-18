@@ -56,6 +56,7 @@ export default function MedicoesEnergisaPage() {
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth());
   const [search, setSearch] = useState('');
+  const [unitSearch, setUnitSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
