@@ -17,19 +17,20 @@ export default function DASPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.projectId) {
-      toast.error('Selecione uma obra.');
+    if (!form.month) {
+      toast.error('Informe o mês de referência.');
       return;
     }
     const dueDate = `${form.month}-20`;
+    const projectId = form.projectId === '__geral__' ? null : form.projectId || null;
 
     if (editId) {
       const existing = dasExpenses.find(d => d.id === editId)!;
-      updateDASExpense({ ...existing, month: form.month, dueDate, value: form.value, paid: form.paid, projectId: form.projectId });
+      updateDASExpense({ ...existing, month: form.month, dueDate, value: form.value, paid: form.paid, projectId });
       toast.success('DAS atualizado.');
       setEditId(null);
     } else {
-      addDASExpense({ month: form.month, dueDate, value: form.value, paid: form.paid, projectId: form.projectId });
+      addDASExpense({ month: form.month, dueDate, value: form.value, paid: form.paid, projectId });
       toast.success('DAS registrado.');
     }
     setForm({ month: '', value: 0, paid: false, projectId: '' });
