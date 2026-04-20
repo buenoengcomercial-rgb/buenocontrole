@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, UserCheck, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +28,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
+  const [confirmToggle, setConfirmToggle] = useState<UserRow | null>(null);
 
   const [form, setForm] = useState({ username: '', full_name: '', password: '', role: 'admin' as string });
 
@@ -134,12 +136,14 @@ export default function UsersPage() {
                   <TableCell className="font-medium">{u.username}</TableCell>
                   <TableCell>{u.full_name}</TableCell>
                   <TableCell><Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{roleLabel(u.role)}</Badge></TableCell>
-                  <TableCell><Badge variant={u.active ? 'default' : 'destructive'}>{u.active ? 'Ativo' : 'Inativo'}</Badge></TableCell>
+                  <TableCell><Badge variant={u.active ? 'default' : 'destructive'}>{u.active ? 'Ativo' : 'Desativado'}</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => toggleActive(u)}>
-                        {u.active ? <UserX className="h-4 w-4 text-destructive" /> : <UserCheck className="h-4 w-4 text-green-600" />}
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(u)} disabled={!u.active} title={!u.active ? 'Reative o usuário para editar' : 'Editar'}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => setConfirmToggle(u)} title={u.active ? 'Desativar usuário' : 'Reativar usuário'}>
+                        {u.active ? <UserX className="h-4 w-4 text-destructive" /> : <UserCheck className="h-4 w-4 text-primary" />}
                       </Button>
                     </div>
                   </TableCell>
@@ -184,6 +188,37 @@ export default function UsersPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!confirmToggle} onOpenChange={(o) => !o && setConfirmToggle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmToggle?.active ? 'Desativar usuário?' : 'Reativar usuário?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmToggle?.active ? (
+                <>O usuário <strong>{confirmToggle?.username}</strong> será desativado. Ele não conseguirá mais fazer login nem acessar nenhuma área do sistema, e qualquer sessão ativa será encerrada automaticamente.</>
+              ) : (
+                <>O usuário <strong>{confirmToggle?.username}</strong> será reativado e poderá voltar a acessar o sistema com seu nível de permissão original.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (confirmToggle) {
+                  await toggleActive(confirmToggle);
+                  setConfirmToggle(null);
+                }
+              }}
+              className={confirmToggle?.active ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+            >
+              {confirmToggle?.active ? 'Desativar' : 'Reativar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
