@@ -44,7 +44,7 @@ export default function DASPage() {
   };
 
   const getProjectName = (projectId: string | null) => {
-    if (!projectId) return '—';
+    if (!projectId) return 'Geral';
     return projects.find(p => p.id === projectId)?.name || '—';
   };
 
