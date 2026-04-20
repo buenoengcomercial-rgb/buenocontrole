@@ -136,12 +136,14 @@ export default function UsersPage() {
                   <TableCell className="font-medium">{u.username}</TableCell>
                   <TableCell>{u.full_name}</TableCell>
                   <TableCell><Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{roleLabel(u.role)}</Badge></TableCell>
-                  <TableCell><Badge variant={u.active ? 'default' : 'destructive'}>{u.active ? 'Ativo' : 'Inativo'}</Badge></TableCell>
+                  <TableCell><Badge variant={u.active ? 'default' : 'destructive'}>{u.active ? 'Ativo' : 'Desativado'}</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => openEdit(u)}><Pencil className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" onClick={() => toggleActive(u)}>
-                        {u.active ? <UserX className="h-4 w-4 text-destructive" /> : <UserCheck className="h-4 w-4 text-green-600" />}
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(u)} disabled={!u.active} title={!u.active ? 'Reative o usuário para editar' : 'Editar'}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => setConfirmToggle(u)} title={u.active ? 'Desativar usuário' : 'Reativar usuário'}>
+                        {u.active ? <UserX className="h-4 w-4 text-destructive" /> : <UserCheck className="h-4 w-4 text-primary" />}
                       </Button>
                     </div>
                   </TableCell>
