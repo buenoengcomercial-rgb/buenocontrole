@@ -188,6 +188,37 @@ export default function UsersPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!confirmToggle} onOpenChange={(o) => !o && setConfirmToggle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmToggle?.active ? 'Desativar usuário?' : 'Reativar usuário?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmToggle?.active ? (
+                <>O usuário <strong>{confirmToggle?.username}</strong> será desativado. Ele não conseguirá mais fazer login nem acessar nenhuma área do sistema, e qualquer sessão ativa será encerrada automaticamente.</>
+              ) : (
+                <>O usuário <strong>{confirmToggle?.username}</strong> será reativado e poderá voltar a acessar o sistema com seu nível de permissão original.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (confirmToggle) {
+                  await toggleActive(confirmToggle);
+                  setConfirmToggle(null);
+                }
+              }}
+              className={confirmToggle?.active ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+            >
+              {confirmToggle?.active ? 'Desativar' : 'Reativar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
