@@ -76,7 +76,8 @@ export default function DASPage() {
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
           <div><label className="label-caps block mb-1">Obra *</label>
             <select required value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              <option value="">Selecione a obra</option>
+              <option value="">Selecione...</option>
+              <option value="__geral__">Geral (sem obra específica)</option>
               {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
