@@ -17,19 +17,20 @@ export default function DASPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.projectId) {
-      toast.error('Selecione uma obra.');
+    if (!form.month) {
+      toast.error('Informe o mês de referência.');
       return;
     }
     const dueDate = `${form.month}-20`;
+    const projectId = form.projectId === '__geral__' ? null : form.projectId || null;
 
     if (editId) {
       const existing = dasExpenses.find(d => d.id === editId)!;
-      updateDASExpense({ ...existing, month: form.month, dueDate, value: form.value, paid: form.paid, projectId: form.projectId });
+      updateDASExpense({ ...existing, month: form.month, dueDate, value: form.value, paid: form.paid, projectId });
       toast.success('DAS atualizado.');
       setEditId(null);
     } else {
-      addDASExpense({ month: form.month, dueDate, value: form.value, paid: form.paid, projectId: form.projectId });
+      addDASExpense({ month: form.month, dueDate, value: form.value, paid: form.paid, projectId });
       toast.success('DAS registrado.');
     }
     setForm({ month: '', value: 0, paid: false, projectId: '' });
@@ -38,12 +39,12 @@ export default function DASPage() {
 
   const handleEdit = (d: DASExpense) => {
     setEditId(d.id);
-    setForm({ month: d.month, value: d.value, paid: d.paid, projectId: d.projectId || '' });
+    setForm({ month: d.month, value: d.value, paid: d.paid, projectId: d.projectId || '__geral__' });
     setShowForm(true);
   };
 
   const getProjectName = (projectId: string | null) => {
-    if (!projectId) return '—';
+    if (!projectId) return 'Geral';
     return projects.find(p => p.id === projectId)?.name || '—';
   };
 
@@ -75,7 +76,8 @@ export default function DASPage() {
         <form onSubmit={handleSubmit} className="bg-card rounded-xl p-4 shadow-card grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
           <div><label className="label-caps block mb-1">Obra *</label>
             <select required value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
-              <option value="">Selecione a obra</option>
+              <option value="">Selecione...</option>
+              <option value="__geral__">Geral (sem obra específica)</option>
               {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
