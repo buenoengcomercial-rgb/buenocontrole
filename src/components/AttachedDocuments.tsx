@@ -116,6 +116,11 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
             <div key={f.id} className="flex items-center gap-3 py-2 px-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors text-sm group">
               <FileIcon type={f.fileType} />
               <span className="flex-1 truncate font-medium">{f.fileName}</span>
+              {f.createdAt && (
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {new Date(f.createdAt).toLocaleDateString('pt-BR')}
+                </span>
+              )}
               <span className="text-xs text-muted-foreground">{formatSize(f.fileSize)}</span>
               <button onClick={() => handleDownload(f)} className="p-1 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity" title="Baixar">
                 <Download className="w-3.5 h-3.5" />
