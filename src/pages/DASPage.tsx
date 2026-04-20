@@ -39,7 +39,7 @@ export default function DASPage() {
 
   const handleEdit = (d: DASExpense) => {
     setEditId(d.id);
-    setForm({ month: d.month, value: d.value, paid: d.paid, projectId: d.projectId || '' });
+    setForm({ month: d.month, value: d.value, paid: d.paid, projectId: d.projectId || '__geral__' });
     setShowForm(true);
   };
 
