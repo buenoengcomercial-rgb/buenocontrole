@@ -28,6 +28,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
+  const [confirmToggle, setConfirmToggle] = useState<UserRow | null>(null);
 
   const [form, setForm] = useState({ username: '', full_name: '', password: '', role: 'admin' as string });
 
