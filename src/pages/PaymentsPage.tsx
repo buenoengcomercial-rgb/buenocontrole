@@ -407,7 +407,8 @@ export default function PaymentsPage() {
                           <div key={a.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors border-b border-border last:border-b-0">
                             <div className="flex items-center gap-4">
                               <span className="text-sm">{formatCurrency(a.value)}</span>
-                              <span className="text-xs text-muted-foreground">{formatDate(a.paymentDate)}</span>
+                              <span className="text-xs text-muted-foreground">Pagamento: {formatDate(a.paymentDate)}</span>
+                              <span className="text-xs text-muted-foreground">Cadastro: {new Date(a.createdAt).toLocaleDateString('pt-BR')}</span>
                               {a.notes && (
                                 <span className="text-xs text-muted-foreground italic border-l border-border pl-3 max-w-[400px] truncate" title={a.notes}>
                                   {a.notes}
