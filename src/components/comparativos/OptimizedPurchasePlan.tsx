@@ -342,8 +342,8 @@ export function OptimizedPurchasePlan({ items, suppliers, prices, groupCode, obr
             {sortedItems.map((item) => (
               <tr key={item.code} className="border-b border-border hover:bg-muted/30">
                 <td className="px-2 py-1 font-medium">{item.code}</td>
-                <td className="px-2 py-1">
-                  <span className="line-clamp-1">{item.description}</span>
+                <td className="px-2 py-1 max-w-[320px]">
+                  <span className="block whitespace-normal break-words leading-snug">{item.description}</span>
                 </td>
                 <td className="px-2 py-1 text-right">{fmt(item.quantity)}</td>
                 <td className="px-2 py-1 text-center">{item.unit}</td>
