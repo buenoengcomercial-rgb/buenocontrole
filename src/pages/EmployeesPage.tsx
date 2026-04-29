@@ -119,6 +119,7 @@ export default function EmployeesPage() {
                 <th className="label-caps text-left px-6 py-3">CPF</th>
                 <th className="label-caps text-left px-6 py-3">Cargo</th>
                 <th className="label-caps text-right px-6 py-3">Salário Bruto</th>
+                <th className="label-caps text-left px-6 py-3">Chave PIX</th>
                 <th className="label-caps text-left px-6 py-3">Status</th>
                 <th className="label-caps text-right px-6 py-3">Ações</th>
               </tr>
@@ -131,6 +132,16 @@ export default function EmployeesPage() {
                   <td className="px-6 py-4 text-sm">{e.cpf}</td>
                   <td className="px-6 py-4 text-sm">{e.role}</td>
                   <td className="px-6 py-4 text-sm text-right">{formatCurrency(e.grossSalary)}</td>
+                  <td className="px-6 py-4 text-sm">
+                    {e.pixKey ? (
+                      <div className="flex flex-col">
+                        <span className="font-mono">{e.pixKey}</span>
+                        {e.pixKeyType && <span className="text-xs text-muted-foreground">{e.pixKeyType}</span>}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${e.status === 'ativo' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
                       {e.status}
@@ -145,11 +156,11 @@ export default function EmployeesPage() {
                   </td>
                 </tr>
                 {expandedId === e.id && (
-                  <tr><td colSpan={6} className="px-6 py-4 bg-muted/30"><AttachedDocuments entityType="employee" entityId={e.id} /></td></tr>
+                  <tr><td colSpan={7} className="px-6 py-4 bg-muted/30"><AttachedDocuments entityType="employee" entityId={e.id} /></td></tr>
                 )}
                 </React.Fragment>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-meta">Nenhum colaborador encontrado.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-meta">Nenhum colaborador encontrado.</td></tr>}
             </tbody>
           </table>
         </div>
