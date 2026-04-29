@@ -124,8 +124,8 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return measurements.filter((m: any) => m.status === 'paga').reduce((s: number, m: any) => s + m.value, 0);
   }, [measurements]);
 
-  const profit = totalReceived - totalCost;
-  const margin = totalReceived > 0 ? profit / totalReceived * 100 : 0;
+  const profit = project.contractValue - totalCost;
+  const margin = project.contractValue > 0 ? profit / project.contractValue * 100 : 0;
   const executionPercent = project.contractValue > 0 ? totalCost / project.contractValue * 100 : 0;
 
   // Pie chart data
