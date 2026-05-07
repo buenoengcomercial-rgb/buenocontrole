@@ -490,7 +490,11 @@ export default function PaymentsPage() {
             const emp = employees.find(e => e.id === editAdvance.employeeId);
             return (
               <div className="grid gap-4 py-4">
-                <div className="text-sm font-medium">{emp?.name} — {editAdvance.month}</div>
+                <div className="text-sm font-medium">{emp?.name}</div>
+                <div>
+                  <label className="label-caps mb-1 block">Mês de Referência</label>
+                  <Input type="month" value={editAdvance.month} onChange={e => setEditAdvance(a => a ? { ...a, month: e.target.value } : a)} className="max-w-[200px]" />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="label-caps mb-1 block">Valor</label>
