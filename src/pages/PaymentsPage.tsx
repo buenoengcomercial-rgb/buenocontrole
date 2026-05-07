@@ -214,8 +214,8 @@ export default function PaymentsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="label-caps mb-1 block">Valor Pago</label>
-                      <Input type="number" min={0} step={0.01} value={payForm.paidValue} onChange={e => setPayForm(f => ({ ...f, paidValue: e.target.value ? Number(e.target.value) : '' }))} placeholder={payPreview ? formatCurrency(payPreview.netSalary) : '0,00'} />
+                      <label className="label-caps mb-1 block">Valor Pago (já com adiantamento descontado)</label>
+                      <Input type="number" min={0} step={0.01} value={payForm.paidValue !== '' ? payForm.paidValue : (payPreview ? payPreview.netSalary.toFixed(2) : '')} onChange={e => setPayForm(f => ({ ...f, paidValue: e.target.value ? Number(e.target.value) : '' }))} placeholder={payPreview ? formatCurrency(payPreview.netSalary) : '0,00'} />
                     </div>
                     <div>
                       <label className="label-caps mb-1 block">Data do Pagamento</label>
