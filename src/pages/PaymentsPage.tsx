@@ -439,7 +439,11 @@ export default function PaymentsPage() {
             const emp = employees.find(e => e.id === editPayment.employeeId);
             return (
               <div className="grid gap-4 py-4">
-                <div className="text-sm font-medium">{emp?.name} — {editPayment.month}</div>
+                <div className="text-sm font-medium">{emp?.name}</div>
+                <div>
+                  <label className="label-caps mb-1 block">Mês de Referência</label>
+                  <Input type="month" value={editPayment.month} onChange={e => setEditPayment(p => p ? { ...p, month: e.target.value } : p)} className="max-w-[200px]" />
+                </div>
                 {emp?.pixKey && (
                   <div className="bg-accent/30 rounded-lg p-3 flex items-start gap-3 text-sm">
                     <KeyRound className="w-4 h-4 mt-0.5 text-primary" />
