@@ -989,6 +989,106 @@ export default function MedicoesEnergisaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Billing History Dialog */}
+      <Dialog open={showBillingHistory} onOpenChange={setShowBillingHistory}>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Histórico de Cobranças</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            {billings.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhuma cobrança emitida ainda.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-32">Cobrança</TableHead>
+                    <TableHead className="w-28">Data</TableHead>
+                    <TableHead className="w-20 text-right">Itens</TableHead>
+                    <TableHead className="text-right">Material</TableHead>
+                    <TableHead className="text-right">Mão de Obra</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="w-28 text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {billings.map(b => (
+                    <TableRow key={b.id}>
+                      <TableCell className="font-semibold text-sm">{b.billing_number}ª Cobrança</TableCell>
+                      <TableCell className="text-xs">{b.billing_date.split('-').reverse().join('/')}</TableCell>
+                      <TableCell className="text-xs text-right tabular-nums">{b.records_count}</TableCell>
+                      <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.material_value)}</TableCell>
+                      <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.labor_value)}</TableCell>
+                      <TableCell className="text-xs text-right tabular-nums font-semibold">{formatCurrency(b.total_value)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => setViewingBilling(b)} title="Ver detalhes">
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => reExportBilling(b)} title="Re-exportar CSV">
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Billing Detail Dialog */}
+      <Dialog open={!!viewingBilling} onOpenChange={open => !open && setViewingBilling(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              {viewingBilling?.billing_number}ª Cobrança - {viewingBilling?.billing_date.split('-').reverse().join('/')}
+            </DialogTitle>
+          </DialogHeader>
+          {viewingBilling && (
+            <>
+              <div className="grid grid-cols-3 gap-3">
+                <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Material</p><p className="text-base font-bold tabular-nums">{formatCurrency(viewingBilling.material_value)}</p></CardContent></Card>
+                <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Mão de Obra</p><p className="text-base font-bold tabular-nums">{formatCurrency(viewingBilling.labor_value)}</p></CardContent></Card>
+                <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Total</p><p className="text-base font-bold tabular-nums">{formatCurrency(viewingBilling.total_value)}</p></CardContent></Card>
+              </div>
+              <div className="flex-1 overflow-y-auto border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs w-16">Item</TableHead>
+                      <TableHead className="text-xs">Descrição</TableHead>
+                      <TableHead className="text-xs text-right w-16">Qtd</TableHead>
+                      <TableHead className="text-xs">Unidades</TableHead>
+                      <TableHead className="text-xs text-right w-28">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(viewingBilling.snapshot || []).map((s, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-xs font-mono">{s.item_code}</TableCell>
+                        <TableCell className="text-xs max-w-[280px] whitespace-normal break-words">{s.description}</TableCell>
+                        <TableCell className="text-xs text-right tabular-nums">{s.quantity}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{s.unit_names}</TableCell>
+                        <TableCell className="text-xs text-right tabular-nums font-medium">{formatCurrency(s.total)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => reExportBilling(viewingBilling)}>
+                  <Download className="h-4 w-4 mr-1" /> Re-exportar CSV
+                </Button>
+                <Button onClick={() => setViewingBilling(null)}>Fechar</Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
