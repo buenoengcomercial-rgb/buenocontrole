@@ -10,7 +10,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText, ClipboardList } from 'lucide-react';
+import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText, ClipboardList, History, Eye } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/format';
 
@@ -38,6 +38,31 @@ interface ServiceRecord {
   created_at: string;
 }
 
+interface BillingSnapshotItem {
+  item_code: string;
+  description: string;
+  unit: string;
+  quantity: number;
+  material_unit_value: number;
+  labor_unit_value: number;
+  total: number;
+  unit_names: string;
+  dates: string;
+}
+
+interface Billing {
+  id: string;
+  billing_number: number;
+  billing_date: string;
+  total_value: number;
+  material_value: number;
+  labor_value: number;
+  records_count: number;
+  snapshot: BillingSnapshotItem[] | null;
+  notes: string | null;
+  created_at: string;
+}
+
 interface PendingItem {
   contract_item_id: string;
   quantity: string;
@@ -52,6 +77,7 @@ const currentMonth = () => {
 export default function MedicoesEnergisaPage() {
   const [contractItems, setContractItems] = useState<ContractItem[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
+  const [billings, setBillings] = useState<Billing[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth());
@@ -63,6 +89,8 @@ export default function MedicoesEnergisaPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showBillingConfirm, setShowBillingConfirm] = useState(false);
   const [billingInProgress, setBillingInProgress] = useState(false);
+  const [showBillingHistory, setShowBillingHistory] = useState(false);
+  const [viewingBilling, setViewingBilling] = useState<Billing | null>(null);
 
   // Budget dialog state
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
@@ -87,7 +115,8 @@ export default function MedicoesEnergisaPage() {
     Promise.all([
       supabase.from('energisa_contract_items').select('*').order('item_code'),
       supabase.from('energisa_service_records').select('*'),
-    ]).then(([items, records]) => {
+      supabase.from('energisa_billings').select('*').order('billing_number', { ascending: false }),
+    ]).then(([items, records, bills]) => {
       setContractItems((items.data || []).map((r: any) => ({
         id: r.id, item_code: r.item_code, category: r.category, description: r.description,
         quantity: Number(r.quantity), unit: r.unit, material_unit_value: Number(r.material_unit_value),
@@ -96,6 +125,11 @@ export default function MedicoesEnergisaPage() {
       setServiceRecords((records.data || []).map((r: any) => ({
         id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
         quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, billed: r.billed || false, created_at: r.created_at,
+      })));
+      setBillings((bills.data || []).map((b: any) => ({
+        id: b.id, billing_number: b.billing_number, billing_date: b.billing_date,
+        total_value: Number(b.total_value), material_value: Number(b.material_value), labor_value: Number(b.labor_value),
+        records_count: b.records_count, snapshot: b.snapshot, notes: b.notes, created_at: b.created_at,
       })));
       setLoading(false);
     });
@@ -399,23 +433,99 @@ export default function MedicoesEnergisaPage() {
 
   const handleEmitBilling = useCallback(async () => {
     setBillingInProgress(true);
-    // Export the report first
-    await exportExcel();
-    // Mark all unbilled records as billed
     const unbilledIds = unbilledRecords.map(r => r.id);
-    if (unbilledIds.length > 0) {
-      const { error } = await supabase.from('energisa_service_records').update({ billed: true }).in('id', unbilledIds);
-      if (error) {
-        toast({ title: 'Erro ao marcar como faturado', description: error.message, variant: 'destructive' });
-        setBillingInProgress(false);
-        return;
-      }
-      setServiceRecords(prev => prev.map(r => unbilledIds.includes(r.id) ? { ...r, billed: true } : r));
+    if (unbilledIds.length === 0) {
+      setBillingInProgress(false);
+      setShowBillingConfirm(false);
+      return;
     }
+
+    // Build snapshot
+    const snapshot: BillingSnapshotItem[] = [];
+    for (const [itemId, data] of accumulatedByItem) {
+      const item = contractItems.find(i => i.id === itemId);
+      if (!item) continue;
+      const unitTotal = item.material_unit_value + item.labor_unit_value;
+      snapshot.push({
+        item_code: item.item_code,
+        description: item.description,
+        unit: item.unit,
+        quantity: data.totalQty,
+        material_unit_value: item.material_unit_value,
+        labor_unit_value: item.labor_unit_value,
+        total: data.totalQty * unitTotal,
+        unit_names: data.records.map(r => r.unitLabel).join(' / '),
+        dates: data.records.map(r => r.date.split('-').reverse().join('/')).join(' / '),
+      });
+    }
+
+    const nextNumber = (billings[0]?.billing_number || 0) + 1;
+
+    const { data: billingRow, error: billingErr } = await supabase.from('energisa_billings').insert({
+      billing_number: nextNumber,
+      billing_date: new Date().toISOString().slice(0, 10),
+      total_value: totalMonthValue,
+      material_value: totalMaterialValue,
+      labor_value: totalLaborValue,
+      records_count: unbilledIds.length,
+      snapshot: snapshot as any,
+    }).select().single();
+
+    if (billingErr || !billingRow) {
+      toast({ title: 'Erro ao registrar cobrança', description: billingErr?.message, variant: 'destructive' });
+      setBillingInProgress(false);
+      return;
+    }
+
+    // Export the report
+    await exportExcel();
+
+    // Mark records as billed and link them
+    const { error } = await supabase.from('energisa_service_records').update({ billed: true, billing_id: billingRow.id }).in('id', unbilledIds);
+    if (error) {
+      toast({ title: 'Erro ao marcar como faturado', description: error.message, variant: 'destructive' });
+      setBillingInProgress(false);
+      return;
+    }
+    setServiceRecords(prev => prev.map(r => unbilledIds.includes(r.id) ? { ...r, billed: true } : r));
+    setBillings(prev => [{
+      id: billingRow.id, billing_number: billingRow.billing_number, billing_date: billingRow.billing_date,
+      total_value: Number(billingRow.total_value), material_value: Number(billingRow.material_value),
+      labor_value: Number(billingRow.labor_value), records_count: billingRow.records_count,
+      snapshot: billingRow.snapshot as any, notes: billingRow.notes, created_at: billingRow.created_at,
+    }, ...prev]);
+
     setBillingInProgress(false);
     setShowBillingConfirm(false);
-    toast({ title: 'Relatório de cobrança emitido', description: 'Os itens acumulados foram zerados para uma nova medição.' });
-  }, [exportExcel, unbilledRecords]);
+    toast({ title: `${nextNumber}ª Cobrança emitida`, description: 'Os itens acumulados foram zerados para uma nova medição.' });
+  }, [exportExcel, unbilledRecords, accumulatedByItem, contractItems, billings, totalMonthValue, totalMaterialValue, totalLaborValue]);
+
+  const reExportBilling = useCallback((b: Billing) => {
+    if (!b.snapshot || b.snapshot.length === 0) {
+      toast({ title: 'Sem dados para exportar', variant: 'destructive' });
+      return;
+    }
+    const lines: string[] = [];
+    lines.push(`${b.billing_number}ª COBRANÇA - ENERGISA`);
+    lines.push(`Data: ${b.billing_date.split('-').reverse().join('/')}`);
+    lines.push('');
+    lines.push('Item;Descrição;Unidade;Qtd;Valor Unit Material;Valor Unit MO;Valor Total;Unidades Energisa;Datas');
+    for (const s of b.snapshot) {
+      lines.push(`${s.item_code};${s.description};${s.unit};${s.quantity};${s.material_unit_value.toFixed(2)};${s.labor_unit_value.toFixed(2)};${s.total.toFixed(2)};${s.unit_names};${s.dates}`);
+    }
+    lines.push('');
+    lines.push(`;;;;;;TOTAL MATERIAL;${b.material_value.toFixed(2)};`);
+    lines.push(`;;;;;;TOTAL MÃO DE OBRA;${b.labor_value.toFixed(2)};`);
+    lines.push(`;;;;;;TOTAL GERAL;${b.total_value.toFixed(2)};`);
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cobranca_${b.billing_number}_energisa_${b.billing_date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   const getItemLabel = (itemId: string) => {
     const item = contractItems.find(i => i.id === itemId);
@@ -437,6 +547,9 @@ export default function MedicoesEnergisaPage() {
           </Button>
           <Button onClick={() => setShowBillingConfirm(true)} variant="default" size="sm" disabled={accumulatedByItem.size === 0} className="bg-green-600 hover:bg-green-700">
             <FileText className="h-4 w-4 mr-1" /> Emitir Cobrança
+          </Button>
+          <Button onClick={() => setShowBillingHistory(true)} variant="outline" size="sm">
+            <History className="h-4 w-4 mr-1" /> Cobranças {billings.length > 0 && <Badge variant="secondary" className="ml-1 text-[10px]">{billings.length}</Badge>}
           </Button>
           <Button onClick={openBudgetDialog} variant="outline" size="sm">
             <ClipboardList className="h-4 w-4 mr-1" /> Orçamento
@@ -874,6 +987,106 @@ export default function MedicoesEnergisaPage() {
               </Button>
             </div>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Billing History Dialog */}
+      <Dialog open={showBillingHistory} onOpenChange={setShowBillingHistory}>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Histórico de Cobranças</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            {billings.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhuma cobrança emitida ainda.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-32">Cobrança</TableHead>
+                    <TableHead className="w-28">Data</TableHead>
+                    <TableHead className="w-20 text-right">Itens</TableHead>
+                    <TableHead className="text-right">Material</TableHead>
+                    <TableHead className="text-right">Mão de Obra</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="w-28 text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {billings.map(b => (
+                    <TableRow key={b.id}>
+                      <TableCell className="font-semibold text-sm">{b.billing_number}ª Cobrança</TableCell>
+                      <TableCell className="text-xs">{b.billing_date.split('-').reverse().join('/')}</TableCell>
+                      <TableCell className="text-xs text-right tabular-nums">{b.records_count}</TableCell>
+                      <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.material_value)}</TableCell>
+                      <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.labor_value)}</TableCell>
+                      <TableCell className="text-xs text-right tabular-nums font-semibold">{formatCurrency(b.total_value)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => setViewingBilling(b)} title="Ver detalhes">
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => reExportBilling(b)} title="Re-exportar CSV">
+                            <Download className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Billing Detail Dialog */}
+      <Dialog open={!!viewingBilling} onOpenChange={open => !open && setViewingBilling(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              {viewingBilling?.billing_number}ª Cobrança - {viewingBilling?.billing_date.split('-').reverse().join('/')}
+            </DialogTitle>
+          </DialogHeader>
+          {viewingBilling && (
+            <>
+              <div className="grid grid-cols-3 gap-3">
+                <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Material</p><p className="text-base font-bold tabular-nums">{formatCurrency(viewingBilling.material_value)}</p></CardContent></Card>
+                <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Mão de Obra</p><p className="text-base font-bold tabular-nums">{formatCurrency(viewingBilling.labor_value)}</p></CardContent></Card>
+                <Card><CardContent className="pt-3 pb-3"><p className="text-xs text-muted-foreground">Total</p><p className="text-base font-bold tabular-nums">{formatCurrency(viewingBilling.total_value)}</p></CardContent></Card>
+              </div>
+              <div className="flex-1 overflow-y-auto border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs w-16">Item</TableHead>
+                      <TableHead className="text-xs">Descrição</TableHead>
+                      <TableHead className="text-xs text-right w-16">Qtd</TableHead>
+                      <TableHead className="text-xs">Unidades</TableHead>
+                      <TableHead className="text-xs text-right w-28">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(viewingBilling.snapshot || []).map((s, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-xs font-mono">{s.item_code}</TableCell>
+                        <TableCell className="text-xs max-w-[280px] whitespace-normal break-words">{s.description}</TableCell>
+                        <TableCell className="text-xs text-right tabular-nums">{s.quantity}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{s.unit_names}</TableCell>
+                        <TableCell className="text-xs text-right tabular-nums font-medium">{formatCurrency(s.total)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => reExportBilling(viewingBilling)}>
+                  <Download className="h-4 w-4 mr-1" /> Re-exportar CSV
+                </Button>
+                <Button onClick={() => setViewingBilling(null)}>Fechar</Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
