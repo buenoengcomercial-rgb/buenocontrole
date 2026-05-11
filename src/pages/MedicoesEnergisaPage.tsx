@@ -77,6 +77,7 @@ const currentMonth = () => {
 export default function MedicoesEnergisaPage() {
   const [contractItems, setContractItems] = useState<ContractItem[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
+  const [billings, setBillings] = useState<Billing[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonth());
@@ -88,6 +89,8 @@ export default function MedicoesEnergisaPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showBillingConfirm, setShowBillingConfirm] = useState(false);
   const [billingInProgress, setBillingInProgress] = useState(false);
+  const [showBillingHistory, setShowBillingHistory] = useState(false);
+  const [viewingBilling, setViewingBilling] = useState<Billing | null>(null);
 
   // Budget dialog state
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
