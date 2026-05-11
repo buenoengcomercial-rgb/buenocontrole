@@ -115,7 +115,8 @@ export default function MedicoesEnergisaPage() {
     Promise.all([
       supabase.from('energisa_contract_items').select('*').order('item_code'),
       supabase.from('energisa_service_records').select('*'),
-    ]).then(([items, records]) => {
+      supabase.from('energisa_billings').select('*').order('billing_number', { ascending: false }),
+    ]).then(([items, records, bills]) => {
       setContractItems((items.data || []).map((r: any) => ({
         id: r.id, item_code: r.item_code, category: r.category, description: r.description,
         quantity: Number(r.quantity), unit: r.unit, material_unit_value: Number(r.material_unit_value),
@@ -124,6 +125,11 @@ export default function MedicoesEnergisaPage() {
       setServiceRecords((records.data || []).map((r: any) => ({
         id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
         quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, billed: r.billed || false, created_at: r.created_at,
+      })));
+      setBillings((bills.data || []).map((b: any) => ({
+        id: b.id, billing_number: b.billing_number, billing_date: b.billing_date,
+        total_value: Number(b.total_value), material_value: Number(b.material_value), labor_value: Number(b.labor_value),
+        records_count: b.records_count, snapshot: b.snapshot, notes: b.notes, created_at: b.created_at,
       })));
       setLoading(false);
     });
