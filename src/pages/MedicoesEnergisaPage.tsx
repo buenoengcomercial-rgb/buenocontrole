@@ -433,23 +433,99 @@ export default function MedicoesEnergisaPage() {
 
   const handleEmitBilling = useCallback(async () => {
     setBillingInProgress(true);
-    // Export the report first
-    await exportExcel();
-    // Mark all unbilled records as billed
     const unbilledIds = unbilledRecords.map(r => r.id);
-    if (unbilledIds.length > 0) {
-      const { error } = await supabase.from('energisa_service_records').update({ billed: true }).in('id', unbilledIds);
-      if (error) {
-        toast({ title: 'Erro ao marcar como faturado', description: error.message, variant: 'destructive' });
-        setBillingInProgress(false);
-        return;
-      }
-      setServiceRecords(prev => prev.map(r => unbilledIds.includes(r.id) ? { ...r, billed: true } : r));
+    if (unbilledIds.length === 0) {
+      setBillingInProgress(false);
+      setShowBillingConfirm(false);
+      return;
     }
+
+    // Build snapshot
+    const snapshot: BillingSnapshotItem[] = [];
+    for (const [itemId, data] of accumulatedByItem) {
+      const item = contractItems.find(i => i.id === itemId);
+      if (!item) continue;
+      const unitTotal = item.material_unit_value + item.labor_unit_value;
+      snapshot.push({
+        item_code: item.item_code,
+        description: item.description,
+        unit: item.unit,
+        quantity: data.totalQty,
+        material_unit_value: item.material_unit_value,
+        labor_unit_value: item.labor_unit_value,
+        total: data.totalQty * unitTotal,
+        unit_names: data.records.map(r => r.unitLabel).join(' / '),
+        dates: data.records.map(r => r.date.split('-').reverse().join('/')).join(' / '),
+      });
+    }
+
+    const nextNumber = (billings[0]?.billing_number || 0) + 1;
+
+    const { data: billingRow, error: billingErr } = await supabase.from('energisa_billings').insert({
+      billing_number: nextNumber,
+      billing_date: new Date().toISOString().slice(0, 10),
+      total_value: totalMonthValue,
+      material_value: totalMaterialValue,
+      labor_value: totalLaborValue,
+      records_count: unbilledIds.length,
+      snapshot: snapshot as any,
+    }).select().single();
+
+    if (billingErr || !billingRow) {
+      toast({ title: 'Erro ao registrar cobrança', description: billingErr?.message, variant: 'destructive' });
+      setBillingInProgress(false);
+      return;
+    }
+
+    // Export the report
+    await exportExcel();
+
+    // Mark records as billed and link them
+    const { error } = await supabase.from('energisa_service_records').update({ billed: true, billing_id: billingRow.id }).in('id', unbilledIds);
+    if (error) {
+      toast({ title: 'Erro ao marcar como faturado', description: error.message, variant: 'destructive' });
+      setBillingInProgress(false);
+      return;
+    }
+    setServiceRecords(prev => prev.map(r => unbilledIds.includes(r.id) ? { ...r, billed: true } : r));
+    setBillings(prev => [{
+      id: billingRow.id, billing_number: billingRow.billing_number, billing_date: billingRow.billing_date,
+      total_value: Number(billingRow.total_value), material_value: Number(billingRow.material_value),
+      labor_value: Number(billingRow.labor_value), records_count: billingRow.records_count,
+      snapshot: billingRow.snapshot as any, notes: billingRow.notes, created_at: billingRow.created_at,
+    }, ...prev]);
+
     setBillingInProgress(false);
     setShowBillingConfirm(false);
-    toast({ title: 'Relatório de cobrança emitido', description: 'Os itens acumulados foram zerados para uma nova medição.' });
-  }, [exportExcel, unbilledRecords]);
+    toast({ title: `${nextNumber}ª Cobrança emitida`, description: 'Os itens acumulados foram zerados para uma nova medição.' });
+  }, [exportExcel, unbilledRecords, accumulatedByItem, contractItems, billings, totalMonthValue, totalMaterialValue, totalLaborValue]);
+
+  const reExportBilling = useCallback((b: Billing) => {
+    if (!b.snapshot || b.snapshot.length === 0) {
+      toast({ title: 'Sem dados para exportar', variant: 'destructive' });
+      return;
+    }
+    const lines: string[] = [];
+    lines.push(`${b.billing_number}ª COBRANÇA - ENERGISA`);
+    lines.push(`Data: ${b.billing_date.split('-').reverse().join('/')}`);
+    lines.push('');
+    lines.push('Item;Descrição;Unidade;Qtd;Valor Unit Material;Valor Unit MO;Valor Total;Unidades Energisa;Datas');
+    for (const s of b.snapshot) {
+      lines.push(`${s.item_code};${s.description};${s.unit};${s.quantity};${s.material_unit_value.toFixed(2)};${s.labor_unit_value.toFixed(2)};${s.total.toFixed(2)};${s.unit_names};${s.dates}`);
+    }
+    lines.push('');
+    lines.push(`;;;;;;TOTAL MATERIAL;${b.material_value.toFixed(2)};`);
+    lines.push(`;;;;;;TOTAL MÃO DE OBRA;${b.labor_value.toFixed(2)};`);
+    lines.push(`;;;;;;TOTAL GERAL;${b.total_value.toFixed(2)};`);
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cobranca_${b.billing_number}_energisa_${b.billing_date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
 
   const getItemLabel = (itemId: string) => {
     const item = contractItems.find(i => i.id === itemId);
