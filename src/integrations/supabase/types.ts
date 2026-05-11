@@ -580,6 +580,45 @@ export type Database = {
         }
         Relationships: []
       }
+      energisa_billings: {
+        Row: {
+          billing_date: string
+          billing_number: number
+          created_at: string
+          id: string
+          labor_value: number
+          material_value: number
+          notes: string | null
+          records_count: number
+          snapshot: Json | null
+          total_value: number
+        }
+        Insert: {
+          billing_date?: string
+          billing_number: number
+          created_at?: string
+          id?: string
+          labor_value?: number
+          material_value?: number
+          notes?: string | null
+          records_count?: number
+          snapshot?: Json | null
+          total_value?: number
+        }
+        Update: {
+          billing_date?: string
+          billing_number?: number
+          created_at?: string
+          id?: string
+          labor_value?: number
+          material_value?: number
+          notes?: string | null
+          records_count?: number
+          snapshot?: Json | null
+          total_value?: number
+        }
+        Relationships: []
+      }
       energisa_contract_items: {
         Row: {
           category: string
@@ -622,6 +661,7 @@ export type Database = {
       energisa_service_records: {
         Row: {
           billed: boolean
+          billing_id: string | null
           contract_item_id: string
           created_at: string
           date: string
@@ -635,6 +675,7 @@ export type Database = {
         }
         Insert: {
           billed?: boolean
+          billing_id?: string | null
           contract_item_id: string
           created_at?: string
           date: string
@@ -648,6 +689,7 @@ export type Database = {
         }
         Update: {
           billed?: boolean
+          billing_id?: string | null
           contract_item_id?: string
           created_at?: string
           date?: string
@@ -660,6 +702,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "energisa_service_records_billing_id_fkey"
+            columns: ["billing_id"]
+            isOneToOne: false
+            referencedRelation: "energisa_billings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "energisa_service_records_contract_item_id_fkey"
             columns: ["contract_item_id"]
