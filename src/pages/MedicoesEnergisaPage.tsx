@@ -38,6 +38,31 @@ interface ServiceRecord {
   created_at: string;
 }
 
+interface BillingSnapshotItem {
+  item_code: string;
+  description: string;
+  unit: string;
+  quantity: number;
+  material_unit_value: number;
+  labor_unit_value: number;
+  total: number;
+  unit_names: string;
+  dates: string;
+}
+
+interface Billing {
+  id: string;
+  billing_number: number;
+  billing_date: string;
+  total_value: number;
+  material_value: number;
+  labor_value: number;
+  records_count: number;
+  snapshot: BillingSnapshotItem[] | null;
+  notes: string | null;
+  created_at: string;
+}
+
 interface PendingItem {
   contract_item_id: string;
   quantity: string;
