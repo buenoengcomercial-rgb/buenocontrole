@@ -548,8 +548,8 @@ export default function MedicoesEnergisaPage() {
           <Button onClick={() => setShowBillingConfirm(true)} variant="default" size="sm" disabled={accumulatedByItem.size === 0} className="bg-green-600 hover:bg-green-700">
             <FileText className="h-4 w-4 mr-1" /> Emitir Cobrança
           </Button>
-          <Button onClick={openBudgetDialog} variant="outline" size="sm">
-            <ClipboardList className="h-4 w-4 mr-1" /> Orçamento
+          <Button onClick={() => setShowBillingHistory(true)} variant="outline" size="sm">
+            <History className="h-4 w-4 mr-1" /> Cobranças {billings.length > 0 && <Badge variant="secondary" className="ml-1 text-[10px]">{billings.length}</Badge>}
           </Button>
           <Button onClick={exportExcel} variant="outline" size="sm" disabled={accumulatedByItem.size === 0}>
             <Download className="h-4 w-4 mr-1" /> Exportar
