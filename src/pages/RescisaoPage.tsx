@@ -51,7 +51,11 @@ export default function RescisaoPage() {
 
   useEffect(() => { fetchTerminations(); }, []);
 
-  const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo' || terminations.some(t => t.employee_id === e.id)), [employees, terminations]);
+  const selectableEmployees = useMemo(() => {
+    return employees
+      .filter(e => editing?.employee_id === e.id || !terminations.some(t => t.employee_id === e.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [employees, terminations, editing]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return terminations;
@@ -233,7 +237,7 @@ export default function RescisaoPage() {
               <Select value={form.employee_id} onValueChange={v => setForm(f => ({ ...f, employee_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {activeEmployees.map(e => (
+                  {selectableEmployees.map(e => (
                     <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
                   ))}
                 </SelectContent>
