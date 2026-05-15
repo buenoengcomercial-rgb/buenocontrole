@@ -40,18 +40,20 @@ export interface Purchase {
 export const UNITS = ['Metro', 'Peça', 'Caixa', 'Kg', 'Litro', 'Unidade', 'Pacote', 'Rolo', 'M²', 'M³', 'Par', 'Conjunto'] as const;
 
 export const MATERIAL_CATEGORIES = [
-  'Hidrante',
+  'HIDRANTE',
   'SPDA',
-  'Alarme de emergência',
-  'Sinalização',
-  'Luminária de emergência',
-  'Civil',
-  'Bomba - Comando',
-  'Elétrica',
-  'Hidráulica',
-  'Ferramentas',
-  'Serralheria',
-  'Outros',
+  'ALARME',
+  'SINALIZAÇÃO',
+  'LUMINÁRIA',
+  'EXTINTOR',
+  'BOMBA-COMANDO',
+  'CIVIL',
+  'ELÉTRICA',
+  'HIDRÁULICA',
+  'FERRAMENTAS',
+  'SERRALHERIA',
+  'PORTAS',
+  'REPAROS',
 ] as const;
 
 export const CATEGORIES = ['Elétrico', 'Hidráulico', 'Construção', 'Escritório', 'Limpeza', 'EPI', 'Ferramentas', 'Outros'] as const;
