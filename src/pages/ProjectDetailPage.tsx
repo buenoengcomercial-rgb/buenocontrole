@@ -607,7 +607,7 @@ function AllocationsTab({ projectId, allocations, employees, onAdd, onDelete }: 
 
 /* ── Materials Tab ── */
 function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurchases, onAdd, onUpdate, onDelete }: any) {
-  const { addSupplier, addMaterial } = useAppData();
+  const { addSupplier, addMaterial, updateMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', freightPaymentDate: '', icmsPaymentDate: '' };
@@ -661,6 +661,10 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
     if (editId) {
       const existing = (projectPurchases || []).find((p: any) => p.id === editId);
       if (existing) onUpdate({ ...existing, ...form, supplierId: form.supplierId || null, materialId: form.materialId || null });
+      if (form.materialId && form.category) {
+        const mat = materials.find((m: any) => m.id === form.materialId);
+        if (mat && mat.category !== form.category) updateMaterial({ ...mat, category: form.category });
+      }
     }
     setEditId(null);
     setForm(emptyForm);
@@ -885,6 +889,12 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                   }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm">
                                   <option value="">— Nenhum —</option>
                                   {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}{m.category ? ` (${m.category})` : ''}</option>)}
+                                </select>
+                              </div>
+                              <div><label className="label-caps block mb-1 text-xs">Categoria</label>
+                                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm">
+                                  <option value="">Selecione</option>
+                                  {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                                 </select>
                               </div>
                               <div className="grid grid-cols-3 gap-3">
