@@ -956,14 +956,30 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                   </select>
                                 </div>
                                 {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                                 )}
                               </div>
                               {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
                                 <p className="text-xs text-muted-foreground -mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
                               )}
                               {form.paymentMethod === 'boleto' && (
-                                <div><label className="label-caps block mb-1 text-xs">1ª Parcela em</label><input type="date" value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                <div><label className="label-caps block mb-1 text-xs">1ª Parcela em</label><input type="date" value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value, installmentDates: regenInstallmentDates(e.target.value, form.installments) })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                              )}
+                              {form.paymentMethod === 'boleto' && form.installments > 1 && form.firstInstallmentDate && (
+                                <div><label className="label-caps block mb-1 text-xs">Datas das Parcelas</label>
+                                  <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                                    {buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates).map((d, i) => (
+                                      <div key={i} className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground w-6">{i + 1}ª</span>
+                                        <input type="date" value={d} onChange={(e) => {
+                                          const arr = buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates);
+                                          arr[i] = e.target.value;
+                                          setForm({ ...form, installmentDates: arr, firstInstallmentDate: i === 0 ? e.target.value : form.firstInstallmentDate });
+                                        }} className="flex-1 px-1.5 py-1 rounded border border-input bg-background text-xs" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               )}
                               <div><label className="label-caps block mb-1 text-xs">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                               <div className="flex gap-2 pt-1">
