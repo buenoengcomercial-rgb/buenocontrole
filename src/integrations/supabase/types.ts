@@ -1334,7 +1334,9 @@ export type Database = {
           date: string
           description: string
           first_installment_date: string | null
+          freight_payment_date: string | null
           freight_value: number
+          icms_payment_date: string | null
           icms_value: number
           id: string
           installments: number
@@ -1354,7 +1356,9 @@ export type Database = {
           date: string
           description?: string
           first_installment_date?: string | null
+          freight_payment_date?: string | null
           freight_value?: number
+          icms_payment_date?: string | null
           icms_value?: number
           id?: string
           installments?: number
@@ -1374,7 +1378,9 @@ export type Database = {
           date?: string
           description?: string
           first_installment_date?: string | null
+          freight_payment_date?: string | null
           freight_value?: number
+          icms_payment_date?: string | null
           icms_value?: number
           id?: string
           installments?: number

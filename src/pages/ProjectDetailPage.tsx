@@ -147,13 +147,15 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
 
     // Old purchases (by city)
     purchases.forEach((p: any) => { const m = p.date.slice(0, 7); ensure(m); months[m].materiais += p.finalPrice; });
-    // Project purchases (split into installments when parceled)
+    // Project purchases — material total split into installments when parceled; freight/ICMS use their own payment dates
     (projectPurchases || []).forEach((p: any) => {
-      const total = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
+      const materialTotal = p.totalValue || 0;
+      const freight = p.freightValue || 0;
+      const icms = p.icmsValue || 0;
       const isParceled = (p.paymentMethod === 'boleto' || p.paymentMethod === 'credito') && (p.installments || 1) > 1;
       if (isParceled) {
         const n = p.installments;
-        const per = total / n;
+        const per = materialTotal / n;
         const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
         const start = new Date(startStr + 'T00:00:00');
         for (let i = 0; i < n; i++) {
@@ -162,7 +164,13 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
           ensure(m); months[m].materiais += per;
         }
       } else {
-        const m = p.date.slice(0, 7); ensure(m); months[m].materiais += total;
+        const m = p.date.slice(0, 7); ensure(m); months[m].materiais += materialTotal;
+      }
+      if (freight > 0) {
+        const m = (p.freightPaymentDate || p.date).slice(0, 7); ensure(m); months[m].materiais += freight;
+      }
+      if (icms > 0) {
+        const m = (p.icmsPaymentDate || p.date).slice(0, 7); ensure(m); months[m].materiais += icms;
       }
     });
     // Labor
@@ -602,7 +610,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '' };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', freightPaymentDate: '', icmsPaymentDate: '' };
   const [form, setForm] = useState(emptyForm);
 
   // Quick-add supplier
@@ -646,7 +654,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const handleEdit = (p: any) => {
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
-    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1, firstInstallmentDate: p.firstInstallmentDate || '' });
+    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1, firstInstallmentDate: p.firstInstallmentDate || '', freightPaymentDate: p.freightPaymentDate || '', icmsPaymentDate: p.icmsPaymentDate || '' });
   };
 
   const handlePopoverSave = () => {
@@ -757,10 +765,18 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
             <div><label className="label-caps block mb-1">Quantidade *</label><input type="number" required min="0" step="any" value={form.quantity || ''} onChange={(e) => { const q = parseFloat(e.target.value) || 0; setForm({ ...form, quantity: q, totalValue: q * (form.unitPrice || 0) }); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
             <div><label className="label-caps block mb-1">Valor Unitário (R$) *</label><input type="number" required min="0" step="0.01" value={form.unitPrice || ''} onChange={(e) => { const u = parseFloat(e.target.value) || 0; setForm({ ...form, unitPrice: u, totalValue: (form.quantity || 0) * u }); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
             <div><label className="label-caps block mb-1">Valor Total NF (R$)</label><input type="number" min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
-            <div><label className="label-caps block mb-1">Valor Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Valor Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+              {(form.freightValue || 0) > 0 && (
+                <input type="date" value={form.freightPaymentDate} onChange={(e) => setForm({ ...form, freightPaymentDate: e.target.value })} placeholder="Data pgto frete" className="w-full px-3 py-2 mt-1 rounded-lg border border-input bg-background text-xs" title="Data de pagamento do frete" />
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+              {(form.icmsValue || 0) > 0 && (
+                <input type="date" value={form.icmsPaymentDate} onChange={(e) => setForm({ ...form, icmsPaymentDate: e.target.value })} placeholder="Data pgto ICMS" className="w-full px-3 py-2 mt-1 rounded-lg border border-input bg-background text-xs" title="Data de pagamento do ICMS" />
+              )}
+            </div>
             <div><label className="label-caps block mb-1">Forma de Pagamento</label>
               <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value, installments: (e.target.value === 'credito' || e.target.value === 'boleto') ? form.installments : 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
                 <option value="">Selecione</option>
@@ -877,8 +893,12 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                 <div><label className="label-caps block mb-1 text-xs">Val. NF</label><input type="number" min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
-                                <div><label className="label-caps block mb-1 text-xs">Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
-                                <div><label className="label-caps block mb-1 text-xs">ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                <div><label className="label-caps block mb-1 text-xs">Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" />
+                                  {(form.freightValue || 0) > 0 && (<input type="date" value={form.freightPaymentDate} onChange={(e) => setForm({ ...form, freightPaymentDate: e.target.value })} title="Data pgto frete" className="w-full px-2 py-1 mt-1 rounded-lg border border-input bg-background text-xs" />)}
+                                </div>
+                                <div><label className="label-caps block mb-1 text-xs">ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" />
+                                  {(form.icmsValue || 0) > 0 && (<input type="date" value={form.icmsPaymentDate} onChange={(e) => setForm({ ...form, icmsPaymentDate: e.target.value })} title="Data pgto ICMS" className="w-full px-2 py-1 mt-1 rounded-lg border border-input bg-background text-xs" />)}
+                                </div>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                 <div><label className="label-caps block mb-1 text-xs">Pagamento</label>
