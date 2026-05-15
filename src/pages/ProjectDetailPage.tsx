@@ -885,8 +885,12 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                 <div><label className="label-caps block mb-1 text-xs">Val. NF</label><input type="number" min="0" step="0.01" value={form.totalValue || ''} onChange={(e) => setForm({ ...form, totalValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
-                                <div><label className="label-caps block mb-1 text-xs">Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
-                                <div><label className="label-caps block mb-1 text-xs">ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                <div><label className="label-caps block mb-1 text-xs">Frete (R$)</label><input type="number" min="0" step="0.01" value={form.freightValue || ''} onChange={(e) => setForm({ ...form, freightValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" />
+                                  {(form.freightValue || 0) > 0 && (<input type="date" value={form.freightPaymentDate} onChange={(e) => setForm({ ...form, freightPaymentDate: e.target.value })} title="Data pgto frete" className="w-full px-2 py-1 mt-1 rounded-lg border border-input bg-background text-xs" />)}
+                                </div>
+                                <div><label className="label-caps block mb-1 text-xs">ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" />
+                                  {(form.icmsValue || 0) > 0 && (<input type="date" value={form.icmsPaymentDate} onChange={(e) => setForm({ ...form, icmsPaymentDate: e.target.value })} title="Data pgto ICMS" className="w-full px-2 py-1 mt-1 rounded-lg border border-input bg-background text-xs" />)}
+                                </div>
                               </div>
                               <div className="grid grid-cols-2 gap-3">
                                 <div><label className="label-caps block mb-1 text-xs">Pagamento</label>
