@@ -610,8 +610,23 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial, updateMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', freightPaymentDate: '', icmsPaymentDate: '' };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', installmentDates: [] as string[], freightPaymentDate: '', icmsPaymentDate: '' };
   const [form, setForm] = useState(emptyForm);
+
+  // Compute default installment dates: first date + 30 days each. Preserves user-edited entries when length matches.
+  const buildInstallmentDates = (firstDate: string, count: number, existing: string[] = []): string[] => {
+    if (!firstDate || count <= 1) return [];
+    const arr: string[] = [];
+    for (let i = 0; i < count; i++) {
+      if (existing[i]) { arr.push(existing[i]); continue; }
+      const d = new Date(firstDate + 'T00:00:00');
+      d.setDate(d.getDate() + 30 * i);
+      arr.push(d.toISOString().slice(0, 10));
+    }
+    return arr;
+  };
+
+  const regenInstallmentDates = (firstDate: string, count: number) => buildInstallmentDates(firstDate, count, []);
 
   // Quick-add supplier
   const [showQuickSupplier, setShowQuickSupplier] = useState(false);
