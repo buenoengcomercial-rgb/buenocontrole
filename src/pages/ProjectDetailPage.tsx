@@ -630,7 +630,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const handleEdit = (p: any) => {
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
-    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1 });
+    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1, firstInstallmentDate: p.firstInstallmentDate || '' });
   };
 
   const handlePopoverSave = () => {
