@@ -156,12 +156,19 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
       if (isParceled) {
         const n = p.installments;
         const per = materialTotal / n;
-        const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
-        const start = new Date(startStr + 'T00:00:00');
-        for (let i = 0; i < n; i++) {
-          const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
-          const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          ensure(m); months[m].materiais += per;
+        if (p.paymentMethod === 'boleto' && Array.isArray(p.installmentDates) && p.installmentDates.length === n) {
+          // Use the actual editable installment dates
+          p.installmentDates.forEach((ds: string) => {
+            const m = (ds || p.date).slice(0, 7); ensure(m); months[m].materiais += per;
+          });
+        } else {
+          const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
+          const start = new Date(startStr + 'T00:00:00');
+          for (let i = 0; i < n; i++) {
+            const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+            const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            ensure(m); months[m].materiais += per;
+          }
         }
       } else {
         const m = p.date.slice(0, 7); ensure(m); months[m].materiais += materialTotal;
