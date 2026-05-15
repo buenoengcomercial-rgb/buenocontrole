@@ -586,7 +586,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1 };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '' };
   const [form, setForm] = useState(emptyForm);
 
   // Quick-add supplier
@@ -630,7 +630,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const handleEdit = (p: any) => {
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
-    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1 });
+    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1, firstInstallmentDate: p.firstInstallmentDate || '' });
   };
 
   const handlePopoverSave = () => {
@@ -752,7 +752,14 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               </select>
             </div>
             {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                {form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
+                )}
+              </div>
+            )}
+            {form.paymentMethod === 'boleto' && (
+              <div><label className="label-caps block mb-1">1ª Parcela em *</label><input type="date" required value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
             )}
             <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           </div>
@@ -802,7 +809,23 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.freightValue ? formatCurrency(p.freightValue) : '—'}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.icmsValue ? formatCurrency(p.icmsValue) : '—'}</td>
                     <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{formatCurrency(itemTotal)}</td>
-                    <td className="px-4 py-3 hidden md:table-cell whitespace-nowrap">{(() => { const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod); const label = pm?.label || '—'; return (p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1 ? `${label} ${p.installments}x` : label; })()}</td>
+                    <td className="px-4 py-3 hidden md:table-cell whitespace-nowrap">{(() => {
+                      const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod);
+                      const label = pm?.label || '—';
+                      if ((p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1) {
+                        const itemTotalPm = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
+                        const perParcel = itemTotalPm / p.installments;
+                        return (
+                          <div className="leading-tight">
+                            <div>{label} {p.installments}x de {formatCurrency(perParcel)}</div>
+                            {p.paymentMethod === 'boleto' && p.firstInstallmentDate && (
+                              <div className="text-xs text-muted-foreground">1ª: {formatDate(p.firstInstallmentDate)}</div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return label;
+                    })()}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => setExpandedPurchaseId(expandedPurchaseId === p.id ? null : p.id)} className="p-1.5 rounded hover:bg-accent" title="Anexar documentos"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
@@ -852,6 +875,12 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                   <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                                 )}
                               </div>
+                              {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
+                                <p className="text-xs text-muted-foreground -mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
+                              )}
+                              {form.paymentMethod === 'boleto' && (
+                                <div><label className="label-caps block mb-1 text-xs">1ª Parcela em</label><input type="date" value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                              )}
                               <div><label className="label-caps block mb-1 text-xs">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                               <div className="flex gap-2 pt-1">
                                 <button onClick={handlePopoverSave} className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Salvar</button>

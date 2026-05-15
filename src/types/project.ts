@@ -131,6 +131,7 @@ export interface ProjectPurchase {
   notes: string;
   paymentMethod: PaymentMethod;
   installments: number;
+  firstInstallmentDate: string | null;
   createdAt: string;
 }
 
