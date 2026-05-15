@@ -147,13 +147,15 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
 
     // Old purchases (by city)
     purchases.forEach((p: any) => { const m = p.date.slice(0, 7); ensure(m); months[m].materiais += p.finalPrice; });
-    // Project purchases (split into installments when parceled)
+    // Project purchases — material total split into installments when parceled; freight/ICMS use their own payment dates
     (projectPurchases || []).forEach((p: any) => {
-      const total = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
+      const materialTotal = p.totalValue || 0;
+      const freight = p.freightValue || 0;
+      const icms = p.icmsValue || 0;
       const isParceled = (p.paymentMethod === 'boleto' || p.paymentMethod === 'credito') && (p.installments || 1) > 1;
       if (isParceled) {
         const n = p.installments;
-        const per = total / n;
+        const per = materialTotal / n;
         const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
         const start = new Date(startStr + 'T00:00:00');
         for (let i = 0; i < n; i++) {
@@ -162,7 +164,13 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
           ensure(m); months[m].materiais += per;
         }
       } else {
-        const m = p.date.slice(0, 7); ensure(m); months[m].materiais += total;
+        const m = p.date.slice(0, 7); ensure(m); months[m].materiais += materialTotal;
+      }
+      if (freight > 0) {
+        const m = (p.freightPaymentDate || p.date).slice(0, 7); ensure(m); months[m].materiais += freight;
+      }
+      if (icms > 0) {
+        const m = (p.icmsPaymentDate || p.date).slice(0, 7); ensure(m); months[m].materiais += icms;
       }
     });
     // Labor
