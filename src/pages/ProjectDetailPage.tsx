@@ -147,8 +147,24 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
 
     // Old purchases (by city)
     purchases.forEach((p: any) => { const m = p.date.slice(0, 7); ensure(m); months[m].materiais += p.finalPrice; });
-    // Project purchases
-    (projectPurchases || []).forEach((p: any) => { const m = p.date.slice(0, 7); ensure(m); months[m].materiais += p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0); });
+    // Project purchases (split into installments when parceled)
+    (projectPurchases || []).forEach((p: any) => {
+      const total = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
+      const isParceled = (p.paymentMethod === 'boleto' || p.paymentMethod === 'credito') && (p.installments || 1) > 1;
+      if (isParceled) {
+        const n = p.installments;
+        const per = total / n;
+        const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
+        const start = new Date(startStr + 'T00:00:00');
+        for (let i = 0; i < n; i++) {
+          const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+          const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          ensure(m); months[m].materiais += per;
+        }
+      } else {
+        const m = p.date.slice(0, 7); ensure(m); months[m].materiais += total;
+      }
+    });
     // Labor
     allocations.forEach((a: any) => {
       if (!a.worked) return;
