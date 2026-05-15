@@ -810,7 +810,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               </select>
             </div>
             {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates }); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                 {form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
                 )}
