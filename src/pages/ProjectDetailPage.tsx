@@ -655,12 +655,16 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalDates = form.paymentMethod === 'boleto' && form.installments > 1
+      ? buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates)
+      : null;
+    const payload = { ...form, installmentDates: finalDates as any };
     if (editId) {
       const existing = (projectPurchases || []).find((p: any) => p.id === editId);
-      if (existing) onUpdate({ ...existing, ...form, supplierId: form.supplierId || null, materialId: form.materialId || null });
+      if (existing) onUpdate({ ...existing, ...payload, supplierId: form.supplierId || null, materialId: form.materialId || null });
       setEditId(null);
     } else {
-      onAdd({ ...form, projectId, supplierId: form.supplierId || null, materialId: form.materialId || null });
+      onAdd({ ...payload, projectId, supplierId: form.supplierId || null, materialId: form.materialId || null });
     }
     setForm(emptyForm);
     setShowForm(false);
