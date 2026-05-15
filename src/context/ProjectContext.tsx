@@ -202,7 +202,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       date: p.date, invoice_number: p.invoiceNumber, quantity: p.quantity || 1, unit_price: p.unitPrice || 0,
       total_value: p.totalValue, freight_value: p.freightValue || 0, icms_value: p.icmsValue || 0,
       description: p.description, notes: p.notes,
-      payment_method: p.paymentMethod || '', installments: p.installments || 1, first_installment_date: p.firstInstallmentDate || null,
+      payment_method: p.paymentMethod || '', installments: p.installments || 1, first_installment_date: p.firstInstallmentDate || null, freight_payment_date: p.freightPaymentDate || null, icms_payment_date: p.icmsPaymentDate || null,
     }).eq('id', p.id);
     setProjectPurchases(prev => prev.map(x => x.id === p.id ? p : x));
   }, []);
