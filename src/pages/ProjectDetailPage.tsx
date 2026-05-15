@@ -809,7 +809,23 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.freightValue ? formatCurrency(p.freightValue) : '—'}</td>
                     <td className="px-4 py-3 text-right hidden lg:table-cell text-muted-foreground">{p.icmsValue ? formatCurrency(p.icmsValue) : '—'}</td>
                     <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{formatCurrency(itemTotal)}</td>
-                    <td className="px-4 py-3 hidden md:table-cell whitespace-nowrap">{(() => { const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod); const label = pm?.label || '—'; return (p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1 ? `${label} ${p.installments}x` : label; })()}</td>
+                    <td className="px-4 py-3 hidden md:table-cell whitespace-nowrap">{(() => {
+                      const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod);
+                      const label = pm?.label || '—';
+                      if ((p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1) {
+                        const itemTotalPm = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
+                        const perParcel = itemTotalPm / p.installments;
+                        return (
+                          <div className="leading-tight">
+                            <div>{label} {p.installments}x de {formatCurrency(perParcel)}</div>
+                            {p.paymentMethod === 'boleto' && p.firstInstallmentDate && (
+                              <div className="text-xs text-muted-foreground">1ª: {formatDate(p.firstInstallmentDate)}</div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return label;
+                    })()}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1">
                         <button onClick={() => setExpandedPurchaseId(expandedPurchaseId === p.id ? null : p.id)} className="p-1.5 rounded hover:bg-accent" title="Anexar documentos"><Paperclip className="w-4 h-4 text-muted-foreground" /></button>
