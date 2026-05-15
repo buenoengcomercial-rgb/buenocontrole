@@ -156,12 +156,19 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
       if (isParceled) {
         const n = p.installments;
         const per = materialTotal / n;
-        const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
-        const start = new Date(startStr + 'T00:00:00');
-        for (let i = 0; i < n; i++) {
-          const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
-          const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          ensure(m); months[m].materiais += per;
+        if (p.paymentMethod === 'boleto' && Array.isArray(p.installmentDates) && p.installmentDates.length === n) {
+          // Use the actual editable installment dates
+          p.installmentDates.forEach((ds: string) => {
+            const m = (ds || p.date).slice(0, 7); ensure(m); months[m].materiais += per;
+          });
+        } else {
+          const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
+          const start = new Date(startStr + 'T00:00:00');
+          for (let i = 0; i < n; i++) {
+            const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+            const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            ensure(m); months[m].materiais += per;
+          }
         }
       } else {
         const m = p.date.slice(0, 7); ensure(m); months[m].materiais += materialTotal;
@@ -610,8 +617,23 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial, updateMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', freightPaymentDate: '', icmsPaymentDate: '' };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', installmentDates: [] as string[], freightPaymentDate: '', icmsPaymentDate: '' };
   const [form, setForm] = useState(emptyForm);
+
+  // Compute default installment dates: first date + 30 days each. Preserves user-edited entries when length matches.
+  const buildInstallmentDates = (firstDate: string, count: number, existing: string[] = []): string[] => {
+    if (!firstDate || count <= 1) return [];
+    const arr: string[] = [];
+    for (let i = 0; i < count; i++) {
+      if (existing[i]) { arr.push(existing[i]); continue; }
+      const d = new Date(firstDate + 'T00:00:00');
+      d.setDate(d.getDate() + 30 * i);
+      arr.push(d.toISOString().slice(0, 10));
+    }
+    return arr;
+  };
+
+  const regenInstallmentDates = (firstDate: string, count: number) => buildInstallmentDates(firstDate, count, []);
 
   // Quick-add supplier
   const [showQuickSupplier, setShowQuickSupplier] = useState(false);
@@ -640,12 +662,16 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalDates = form.paymentMethod === 'boleto' && form.installments > 1
+      ? buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates)
+      : null;
+    const payload = { ...form, installmentDates: finalDates as any };
     if (editId) {
       const existing = (projectPurchases || []).find((p: any) => p.id === editId);
-      if (existing) onUpdate({ ...existing, ...form, supplierId: form.supplierId || null, materialId: form.materialId || null });
+      if (existing) onUpdate({ ...existing, ...payload, supplierId: form.supplierId || null, materialId: form.materialId || null });
       setEditId(null);
     } else {
-      onAdd({ ...form, projectId, supplierId: form.supplierId || null, materialId: form.materialId || null });
+      onAdd({ ...payload, projectId, supplierId: form.supplierId || null, materialId: form.materialId || null });
     }
     setForm(emptyForm);
     setShowForm(false);
@@ -654,13 +680,16 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const handleEdit = (p: any) => {
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
-    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1, firstInstallmentDate: p.firstInstallmentDate || '', freightPaymentDate: p.freightPaymentDate || '', icmsPaymentDate: p.icmsPaymentDate || '' });
+    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1, firstInstallmentDate: p.firstInstallmentDate || '', installmentDates: Array.isArray(p.installmentDates) ? p.installmentDates : [], freightPaymentDate: p.freightPaymentDate || '', icmsPaymentDate: p.icmsPaymentDate || '' });
   };
 
   const handlePopoverSave = () => {
     if (editId) {
       const existing = (projectPurchases || []).find((p: any) => p.id === editId);
-      if (existing) onUpdate({ ...existing, ...form, supplierId: form.supplierId || null, materialId: form.materialId || null });
+      const finalDates = form.paymentMethod === 'boleto' && form.installments > 1
+        ? buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates)
+        : null;
+      if (existing) onUpdate({ ...existing, ...form, installmentDates: finalDates as any, supplierId: form.supplierId || null, materialId: form.materialId || null });
       if (form.materialId && form.category) {
         const mat = materials.find((m: any) => m.id === form.materialId);
         if (mat && mat.category !== form.category) updateMaterial({ ...mat, category: form.category });
@@ -788,14 +817,30 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               </select>
             </div>
             {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates }); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
                 {form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
                 )}
               </div>
             )}
             {form.paymentMethod === 'boleto' && (
-              <div><label className="label-caps block mb-1">1ª Parcela em *</label><input type="date" required value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+              <div><label className="label-caps block mb-1">1ª Parcela em *</label><input type="date" required value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value, installmentDates: regenInstallmentDates(e.target.value, form.installments) })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            )}
+            {form.paymentMethod === 'boleto' && form.installments > 1 && form.firstInstallmentDate && (
+              <div className="md:col-span-3"><label className="label-caps block mb-1">Datas das Parcelas (editáveis)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates).map((d, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground w-8">{i + 1}ª</span>
+                      <input type="date" value={d} onChange={(e) => {
+                        const arr = buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates);
+                        arr[i] = e.target.value;
+                        setForm({ ...form, installmentDates: arr, firstInstallmentDate: i === 0 ? e.target.value : form.firstInstallmentDate });
+                      }} className="flex-1 px-2 py-1 rounded-lg border border-input bg-background text-xs" />
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
             <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
           </div>
@@ -918,14 +963,30 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                   </select>
                                 </div>
                                 {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => setForm({ ...form, installments: parseInt(e.target.value) || 1 })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                                 )}
                               </div>
                               {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
                                 <p className="text-xs text-muted-foreground -mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
                               )}
                               {form.paymentMethod === 'boleto' && (
-                                <div><label className="label-caps block mb-1 text-xs">1ª Parcela em</label><input type="date" value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                <div><label className="label-caps block mb-1 text-xs">1ª Parcela em</label><input type="date" value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value, installmentDates: regenInstallmentDates(e.target.value, form.installments) })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                              )}
+                              {form.paymentMethod === 'boleto' && form.installments > 1 && form.firstInstallmentDate && (
+                                <div><label className="label-caps block mb-1 text-xs">Datas das Parcelas</label>
+                                  <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                                    {buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates).map((d, i) => (
+                                      <div key={i} className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground w-6">{i + 1}ª</span>
+                                        <input type="date" value={d} onChange={(e) => {
+                                          const arr = buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates);
+                                          arr[i] = e.target.value;
+                                          setForm({ ...form, installmentDates: arr, firstInstallmentDate: i === 0 ? e.target.value : form.firstInstallmentDate });
+                                        }} className="flex-1 px-1.5 py-1 rounded border border-input bg-background text-xs" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               )}
                               <div><label className="label-caps block mb-1 text-xs">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                               <div className="flex gap-2 pt-1">

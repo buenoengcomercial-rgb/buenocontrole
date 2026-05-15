@@ -1,0 +1,1 @@
+ALTER TABLE public.project_purchases ADD COLUMN IF NOT EXISTS installment_dates jsonb;
