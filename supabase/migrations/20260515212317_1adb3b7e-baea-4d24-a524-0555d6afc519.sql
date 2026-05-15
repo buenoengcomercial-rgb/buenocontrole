@@ -1,0 +1,1 @@
+ALTER TABLE public.project_purchases ADD COLUMN IF NOT EXISTS first_installment_date date;

@@ -1333,6 +1333,7 @@ export type Database = {
           created_at: string
           date: string
           description: string
+          first_installment_date: string | null
           freight_value: number
           icms_value: number
           id: string
@@ -1352,6 +1353,7 @@ export type Database = {
           created_at?: string
           date: string
           description?: string
+          first_installment_date?: string | null
           freight_value?: number
           icms_value?: number
           id?: string
@@ -1371,6 +1373,7 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string
+          first_installment_date?: string | null
           freight_value?: number
           icms_value?: number
           id?: string
