@@ -607,7 +607,7 @@ function AllocationsTab({ projectId, allocations, employees, onAdd, onDelete }: 
 
 /* ── Materials Tab ── */
 function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurchases, onAdd, onUpdate, onDelete }: any) {
-  const { addSupplier, addMaterial } = useAppData();
+  const { addSupplier, addMaterial, updateMaterial, materials: allMaterials } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', freightPaymentDate: '', icmsPaymentDate: '' };
