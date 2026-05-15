@@ -887,6 +887,12 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                   {materials.map((m: any) => <option key={m.id} value={m.id}>{m.name}{m.category ? ` (${m.category})` : ''}</option>)}
                                 </select>
                               </div>
+                              <div><label className="label-caps block mb-1 text-xs">Categoria</label>
+                                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm">
+                                  <option value="">Selecione</option>
+                                  {MATERIAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                              </div>
                               <div className="grid grid-cols-3 gap-3">
                                 <div><label className="label-caps block mb-1 text-xs">Qtd</label><input type="number" min="0" step="any" value={form.quantity || ''} onChange={(e) => { const q = parseFloat(e.target.value) || 0; setForm({ ...form, quantity: q, totalValue: q * (form.unitPrice || 0) }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                                 <div><label className="label-caps block mb-1 text-xs">Val. Unit.</label><input type="number" min="0" step="0.01" value={form.unitPrice || ''} onChange={(e) => { const u = parseFloat(e.target.value) || 0; setForm({ ...form, unitPrice: u, totalValue: (form.quantity || 0) * u }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
