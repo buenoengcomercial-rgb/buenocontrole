@@ -764,7 +764,11 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
+            <div><label className="label-caps block mb-1">Valor ICMS (R$)</label><input type="number" min="0" step="0.01" value={form.icmsValue || ''} onChange={(e) => setForm({ ...form, icmsValue: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+              {(form.icmsValue || 0) > 0 && (
+                <input type="date" value={form.icmsPaymentDate} onChange={(e) => setForm({ ...form, icmsPaymentDate: e.target.value })} placeholder="Data pgto ICMS" className="w-full px-3 py-2 mt-1 rounded-lg border border-input bg-background text-xs" title="Data de pagamento do ICMS" />
+              )}
+            </div>
             <div><label className="label-caps block mb-1">Forma de Pagamento</label>
               <select value={form.paymentMethod} onChange={(e) => setForm({ ...form, paymentMethod: e.target.value, installments: (e.target.value === 'credito' || e.target.value === 'boleto') ? form.installments : 1 })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
                 <option value="">Selecione</option>
