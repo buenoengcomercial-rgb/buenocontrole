@@ -671,10 +671,14 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const isParceled = (form.paymentMethod === 'boleto' || form.paymentMethod === 'credito') && form.installments > 1;
     const finalDates = form.paymentMethod === 'boleto' && form.installments > 1
       ? buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates)
       : null;
-    const payload = { ...form, installmentDates: finalDates as any };
+    const finalValues = isParceled
+      ? buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues)
+      : null;
+    const payload = { ...form, installmentDates: finalDates as any, installmentValues: finalValues as any };
     if (editId) {
       const existing = (projectPurchases || []).find((p: any) => p.id === editId);
       if (existing) onUpdate({ ...existing, ...payload, supplierId: form.supplierId || null, materialId: form.materialId || null });
