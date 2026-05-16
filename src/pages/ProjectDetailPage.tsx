@@ -155,11 +155,12 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
       const isParceled = (p.paymentMethod === 'boleto' || p.paymentMethod === 'credito') && (p.installments || 1) > 1;
       if (isParceled) {
         const n = p.installments;
-        const per = materialTotal / n;
+        const hasValues = Array.isArray(p.installmentValues) && p.installmentValues.length === n;
+        const perDefault = materialTotal / n;
+        const valueAt = (i: number) => hasValues ? Number(p.installmentValues[i] || 0) : perDefault;
         if (p.paymentMethod === 'boleto' && Array.isArray(p.installmentDates) && p.installmentDates.length === n) {
-          // Use the actual editable installment dates
-          p.installmentDates.forEach((ds: string) => {
-            const m = (ds || p.date).slice(0, 7); ensure(m); months[m].materiais += per;
+          p.installmentDates.forEach((ds: string, i: number) => {
+            const m = (ds || p.date).slice(0, 7); ensure(m); months[m].materiais += valueAt(i);
           });
         } else {
           const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
@@ -167,7 +168,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
           for (let i = 0; i < n; i++) {
             const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
             const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            ensure(m); months[m].materiais += per;
+            ensure(m); months[m].materiais += valueAt(i);
           }
         }
       } else {
