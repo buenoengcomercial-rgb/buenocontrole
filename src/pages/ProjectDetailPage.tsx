@@ -155,11 +155,12 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
       const isParceled = (p.paymentMethod === 'boleto' || p.paymentMethod === 'credito') && (p.installments || 1) > 1;
       if (isParceled) {
         const n = p.installments;
-        const per = materialTotal / n;
+        const hasValues = Array.isArray(p.installmentValues) && p.installmentValues.length === n;
+        const perDefault = materialTotal / n;
+        const valueAt = (i: number) => hasValues ? Number(p.installmentValues[i] || 0) : perDefault;
         if (p.paymentMethod === 'boleto' && Array.isArray(p.installmentDates) && p.installmentDates.length === n) {
-          // Use the actual editable installment dates
-          p.installmentDates.forEach((ds: string) => {
-            const m = (ds || p.date).slice(0, 7); ensure(m); months[m].materiais += per;
+          p.installmentDates.forEach((ds: string, i: number) => {
+            const m = (ds || p.date).slice(0, 7); ensure(m); months[m].materiais += valueAt(i);
           });
         } else {
           const startStr = (p.paymentMethod === 'boleto' && p.firstInstallmentDate) ? p.firstInstallmentDate : p.date;
@@ -167,7 +168,7 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
           for (let i = 0; i < n; i++) {
             const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
             const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            ensure(m); months[m].materiais += per;
+            ensure(m); months[m].materiais += valueAt(i);
           }
         }
       } else {
@@ -617,7 +618,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial, updateMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', installmentDates: [] as string[], freightPaymentDate: '', icmsPaymentDate: '' };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', installmentDates: [] as string[], installmentValues: [] as number[], freightPaymentDate: '', icmsPaymentDate: '' };
   const [form, setForm] = useState(emptyForm);
 
   // Compute default installment dates: first date + 30 days each. Preserves user-edited entries when length matches.
@@ -634,6 +635,14 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   };
 
   const regenInstallmentDates = (firstDate: string, count: number) => buildInstallmentDates(firstDate, count, []);
+
+  // Editable per-installment values. Preserves user edits when count matches; otherwise distributes evenly.
+  const buildInstallmentValues = (total: number, count: number, existing: number[] = []): number[] => {
+    if (count <= 1) return [];
+    const per = Math.round((total / count) * 100) / 100;
+    if (existing.length === count && existing.every((v) => typeof v === 'number' && !isNaN(v))) return existing;
+    return Array.from({ length: count }, () => per);
+  };
 
   // Quick-add supplier
   const [showQuickSupplier, setShowQuickSupplier] = useState(false);
@@ -662,10 +671,14 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const isParceled = (form.paymentMethod === 'boleto' || form.paymentMethod === 'credito') && form.installments > 1;
     const finalDates = form.paymentMethod === 'boleto' && form.installments > 1
       ? buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates)
       : null;
-    const payload = { ...form, installmentDates: finalDates as any };
+    const finalValues = isParceled
+      ? buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues)
+      : null;
+    const payload = { ...form, installmentDates: finalDates as any, installmentValues: finalValues as any };
     if (editId) {
       const existing = (projectPurchases || []).find((p: any) => p.id === editId);
       if (existing) onUpdate({ ...existing, ...payload, supplierId: form.supplierId || null, materialId: form.materialId || null });
@@ -680,16 +693,20 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const handleEdit = (p: any) => {
     setEditId(p.id);
     const mat = p.materialId ? materials.find((m: any) => m.id === p.materialId) : null;
-    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1, firstInstallmentDate: p.firstInstallmentDate || '', installmentDates: Array.isArray(p.installmentDates) ? p.installmentDates : [], freightPaymentDate: p.freightPaymentDate || '', icmsPaymentDate: p.icmsPaymentDate || '' });
+    setForm({ date: p.date, supplierId: p.supplierId || '', materialId: p.materialId || '', category: mat?.category || '', invoiceNumber: p.invoiceNumber, quantity: p.quantity || 1, unitPrice: p.unitPrice || 0, totalValue: p.totalValue, freightValue: p.freightValue || 0, icmsValue: p.icmsValue || 0, description: p.description, notes: p.notes, paymentMethod: p.paymentMethod || '', installments: p.installments || 1, firstInstallmentDate: p.firstInstallmentDate || '', installmentDates: Array.isArray(p.installmentDates) ? p.installmentDates : [], installmentValues: Array.isArray(p.installmentValues) ? p.installmentValues : [], freightPaymentDate: p.freightPaymentDate || '', icmsPaymentDate: p.icmsPaymentDate || '' });
   };
 
   const handlePopoverSave = () => {
     if (editId) {
       const existing = (projectPurchases || []).find((p: any) => p.id === editId);
+      const isParceled = (form.paymentMethod === 'boleto' || form.paymentMethod === 'credito') && form.installments > 1;
       const finalDates = form.paymentMethod === 'boleto' && form.installments > 1
         ? buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates)
         : null;
-      if (existing) onUpdate({ ...existing, ...form, installmentDates: finalDates as any, supplierId: form.supplierId || null, materialId: form.materialId || null });
+      const finalValues = isParceled
+        ? buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues)
+        : null;
+      if (existing) onUpdate({ ...existing, ...form, installmentDates: finalDates as any, installmentValues: finalValues as any, supplierId: form.supplierId || null, materialId: form.materialId || null });
       if (form.materialId && form.category) {
         const mat = materials.find((m: any) => m.id === form.materialId);
         if (mat && mat.category !== form.category) updateMaterial({ ...mat, category: form.category });
@@ -817,9 +834,9 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
               </select>
             </div>
             {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates }); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
-                {form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
+              <div><label className="label-caps block mb-1">Nº de Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates, installmentValues: [] }); }} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" />
+                {form.installments > 0 && (form.totalValue || 0) > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">Valor sugerido: <span className="font-medium text-foreground">{formatCurrency((form.totalValue || 0) / form.installments)}</span> / parcela</p>
                 )}
               </div>
             )}
@@ -840,6 +857,25 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+            {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 1 && (
+              <div className="md:col-span-3"><div className="flex items-center justify-between mb-1"><label className="label-caps">Valor das Parcelas (editáveis)</label>
+                {(() => { const vals = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues); const sum = vals.reduce((s, v) => s + (Number(v) || 0), 0); const diff = (form.totalValue || 0) - sum; return (<span className={`text-xs ${Math.abs(diff) < 0.01 ? 'text-muted-foreground' : 'text-destructive'}`}>Soma: {formatCurrency(sum)} / Total NF: {formatCurrency(form.totalValue || 0)}{Math.abs(diff) >= 0.01 ? ` (dif. ${formatCurrency(diff)})` : ''}</span>); })()}
+              </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).map((v, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground w-8">{i + 1}ª</span>
+                      <input type="number" min="0" step="0.01" value={v} onChange={(e) => {
+                        const arr = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).slice();
+                        arr[i] = parseFloat(e.target.value) || 0;
+                        setForm({ ...form, installmentValues: arr });
+                      }} className="flex-1 px-2 py-1 rounded-lg border border-input bg-background text-xs" />
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setForm({ ...form, installmentValues: [] })} className="text-xs text-primary mt-1 hover:underline">Redistribuir igualmente</button>
               </div>
             )}
             <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
@@ -894,11 +930,15 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                       const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod);
                       const label = pm?.label || '—';
                       if ((p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1) {
-                        const itemTotalPm = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
-                        const perParcel = itemTotalPm / p.installments;
+                        const hasValues = Array.isArray(p.installmentValues) && p.installmentValues.length === p.installments;
+                        const perParcel = (p.totalValue || 0) / p.installments;
+                        const allEqual = hasValues && p.installmentValues.every((v: number) => Math.abs(Number(v) - Number(p.installmentValues[0])) < 0.01);
+                        const summary = hasValues && !allEqual
+                          ? `${label} ${p.installments}x (valores variáveis)`
+                          : `${label} ${p.installments}x de ${formatCurrency(hasValues ? Number(p.installmentValues[0]) : perParcel)}`;
                         return (
                           <div className="leading-tight">
-                            <div>{label} {p.installments}x de {formatCurrency(perParcel)}</div>
+                            <div>{summary}</div>
                             {p.paymentMethod === 'boleto' && p.firstInstallmentDate && (
                               <div className="text-xs text-muted-foreground">1ª: {formatDate(p.firstInstallmentDate)}</div>
                             )}
@@ -963,11 +1003,11 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                   </select>
                                 </div>
                                 {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates, installmentValues: [] }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                                 )}
                               </div>
-                              {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
-                                <p className="text-xs text-muted-foreground -mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
+                              {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 0 && (form.totalValue || 0) > 0 && (
+                                <p className="text-xs text-muted-foreground -mt-1">Sugerido: {formatCurrency((form.totalValue || 0) / form.installments)} / parcela</p>
                               )}
                               {form.paymentMethod === 'boleto' && (
                                 <div><label className="label-caps block mb-1 text-xs">1ª Parcela em</label><input type="date" value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value, installmentDates: regenInstallmentDates(e.target.value, form.installments) })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
@@ -986,6 +1026,27 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                       </div>
                                     ))}
                                   </div>
+                                </div>
+                              )}
+                              {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 1 && (
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="label-caps text-xs">Valor das Parcelas</label>
+                                    <button type="button" onClick={() => setForm({ ...form, installmentValues: [] })} className="text-[10px] text-primary hover:underline">Redistribuir</button>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                                    {buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).map((v, i) => (
+                                      <div key={i} className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground w-6">{i + 1}ª</span>
+                                        <input type="number" min="0" step="0.01" value={v} onChange={(e) => {
+                                          const arr = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).slice();
+                                          arr[i] = parseFloat(e.target.value) || 0;
+                                          setForm({ ...form, installmentValues: arr });
+                                        }} className="flex-1 px-1.5 py-1 rounded border border-input bg-background text-xs" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {(() => { const vals = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues); const sum = vals.reduce((s, x) => s + (Number(x) || 0), 0); const diff = (form.totalValue || 0) - sum; return Math.abs(diff) >= 0.01 ? (<p className="text-[10px] text-destructive mt-1">Soma {formatCurrency(sum)} ≠ Total {formatCurrency(form.totalValue || 0)} (dif. {formatCurrency(diff)})</p>) : (<p className="text-[10px] text-muted-foreground mt-1">Soma: {formatCurrency(sum)}</p>); })()}
                                 </div>
                               )}
                               <div><label className="label-caps block mb-1 text-xs">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
