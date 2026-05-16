@@ -620,6 +620,32 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const [editId, setEditId] = useState<string | null>(null);
   const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', installmentDates: [] as string[], installmentValues: [] as number[], freightPaymentDate: '', icmsPaymentDate: '' };
   const [form, setForm] = useState(emptyForm);
+  const [editedInstallmentIdx, setEditedInstallmentIdx] = useState<Set<number>>(new Set());
+
+  // When user edits a specific installment value, prorate the remainder across the not-yet-edited installments
+  const handleInstallmentValueChange = (i: number, raw: string) => {
+    const v = parseFloat(raw) || 0;
+    const n = form.installments;
+    const total = form.totalValue || 0;
+    const current = buildInstallmentValues(total, n, form.installmentValues).slice();
+    current[i] = v;
+    const newEdited = new Set(editedInstallmentIdx);
+    newEdited.add(i);
+    const editedSum = Array.from(newEdited).reduce((s, idx) => s + (Number(current[idx]) || 0), 0);
+    const nonEdited: number[] = [];
+    for (let k = 0; k < n; k++) if (!newEdited.has(k)) nonEdited.push(k);
+    if (nonEdited.length > 0) {
+      const per = Math.max(0, Math.round(((total - editedSum) / nonEdited.length) * 100) / 100);
+      nonEdited.forEach((k) => { current[k] = per; });
+    }
+    setEditedInstallmentIdx(newEdited);
+    setForm({ ...form, installmentValues: current });
+  };
+
+  const resetInstallmentValues = () => {
+    setEditedInstallmentIdx(new Set());
+    setForm((f) => ({ ...f, installmentValues: [] }));
+  };
 
   // Compute default installment dates: first date + 30 days each. Preserves user-edited entries when length matches.
   const buildInstallmentDates = (firstDate: string, count: number, existing: string[] = []): string[] => {
