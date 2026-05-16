@@ -893,15 +893,11 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                   {buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).map((v, i) => (
                     <div key={i} className="flex items-center gap-1">
                       <span className="text-xs text-muted-foreground w-8">{i + 1}ª</span>
-                      <input type="number" min="0" step="0.01" value={v} onChange={(e) => {
-                        const arr = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).slice();
-                        arr[i] = parseFloat(e.target.value) || 0;
-                        setForm({ ...form, installmentValues: arr });
-                      }} className="flex-1 px-2 py-1 rounded-lg border border-input bg-background text-xs" />
+                      <input type="number" min="0" step="0.01" value={v} onChange={(e) => handleInstallmentValueChange(i, e.target.value)} className={`flex-1 px-2 py-1 rounded-lg border border-input bg-background text-xs ${editedInstallmentIdx.has(i) ? 'font-medium' : ''}`} />
                     </div>
                   ))}
                 </div>
-                <button type="button" onClick={() => setForm({ ...form, installmentValues: [] })} className="text-xs text-primary mt-1 hover:underline">Redistribuir igualmente</button>
+                <button type="button" onClick={resetInstallmentValues} className="text-xs text-primary mt-1 hover:underline">Redistribuir igualmente</button>
               </div>
             )}
             <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
