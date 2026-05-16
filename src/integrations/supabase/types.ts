@@ -1340,6 +1340,7 @@ export type Database = {
           icms_value: number
           id: string
           installment_dates: Json | null
+          installment_values: Json | null
           installments: number
           invoice_number: string
           material_id: string | null
@@ -1363,6 +1364,7 @@ export type Database = {
           icms_value?: number
           id?: string
           installment_dates?: Json | null
+          installment_values?: Json | null
           installments?: number
           invoice_number?: string
           material_id?: string | null
@@ -1386,6 +1388,7 @@ export type Database = {
           icms_value?: number
           id?: string
           installment_dates?: Json | null
+          installment_values?: Json | null
           installments?: number
           invoice_number?: string
           material_id?: string | null
