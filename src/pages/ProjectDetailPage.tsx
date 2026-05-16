@@ -647,6 +647,9 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
     setForm((f) => ({ ...f, installmentValues: [] }));
   };
 
+  // Reset edited-index tracker whenever installments count, payment method or edit target changes
+  React.useEffect(() => { setEditedInstallmentIdx(new Set()); }, [form.installments, form.paymentMethod, editId]);
+
   // Compute default installment dates: first date + 30 days each. Preserves user-edited entries when length matches.
   const buildInstallmentDates = (firstDate: string, count: number, existing: string[] = []): string[] => {
     if (!firstDate || count <= 1) return [];
