@@ -999,11 +999,11 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                   </select>
                                 </div>
                                 {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && (
-                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
+                                  <div><label className="label-caps block mb-1 text-xs">Parcelas</label><input type="number" min="1" max="48" value={form.installments} onChange={(e) => { const n = parseInt(e.target.value) || 1; setForm({ ...form, installments: n, installmentDates: form.paymentMethod === 'boleto' ? buildInstallmentDates(form.firstInstallmentDate, n, form.installmentDates) : form.installmentDates, installmentValues: [] }); }} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
                                 )}
                               </div>
-                              {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 0 && (form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) > 0 && (
-                                <p className="text-xs text-muted-foreground -mt-1">Valor por parcela: <span className="font-medium text-foreground">{formatCurrency((form.totalValue + (form.freightValue || 0) + (form.icmsValue || 0)) / form.installments)}</span></p>
+                              {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 0 && (form.totalValue || 0) > 0 && (
+                                <p className="text-xs text-muted-foreground -mt-1">Sugerido: {formatCurrency((form.totalValue || 0) / form.installments)} / parcela</p>
                               )}
                               {form.paymentMethod === 'boleto' && (
                                 <div><label className="label-caps block mb-1 text-xs">1ª Parcela em</label><input type="date" value={form.firstInstallmentDate} onChange={(e) => setForm({ ...form, firstInstallmentDate: e.target.value, installmentDates: regenInstallmentDates(e.target.value, form.installments) })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
@@ -1022,6 +1022,27 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                       </div>
                                     ))}
                                   </div>
+                                </div>
+                              )}
+                              {(form.paymentMethod === 'credito' || form.paymentMethod === 'boleto') && form.installments > 1 && (
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="label-caps text-xs">Valor das Parcelas</label>
+                                    <button type="button" onClick={() => setForm({ ...form, installmentValues: [] })} className="text-[10px] text-primary hover:underline">Redistribuir</button>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
+                                    {buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).map((v, i) => (
+                                      <div key={i} className="flex items-center gap-1">
+                                        <span className="text-xs text-muted-foreground w-6">{i + 1}ª</span>
+                                        <input type="number" min="0" step="0.01" value={v} onChange={(e) => {
+                                          const arr = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).slice();
+                                          arr[i] = parseFloat(e.target.value) || 0;
+                                          setForm({ ...form, installmentValues: arr });
+                                        }} className="flex-1 px-1.5 py-1 rounded border border-input bg-background text-xs" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  {(() => { const vals = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues); const sum = vals.reduce((s, x) => s + (Number(x) || 0), 0); const diff = (form.totalValue || 0) - sum; return Math.abs(diff) >= 0.01 ? (<p className="text-[10px] text-destructive mt-1">Soma {formatCurrency(sum)} ≠ Total {formatCurrency(form.totalValue || 0)} (dif. {formatCurrency(diff)})</p>) : (<p className="text-[10px] text-muted-foreground mt-1">Soma: {formatCurrency(sum)}</p>); })()}
                                 </div>
                               )}
                               <div><label className="label-caps block mb-1 text-xs">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-2 py-1.5 rounded-lg border border-input bg-background text-sm" /></div>
