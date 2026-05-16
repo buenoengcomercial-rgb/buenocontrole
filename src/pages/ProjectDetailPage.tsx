@@ -620,6 +620,35 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const [editId, setEditId] = useState<string | null>(null);
   const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', installmentDates: [] as string[], installmentValues: [] as number[], freightPaymentDate: '', icmsPaymentDate: '' };
   const [form, setForm] = useState(emptyForm);
+  const [editedInstallmentIdx, setEditedInstallmentIdx] = useState<Set<number>>(new Set());
+
+  // When user edits a specific installment value, prorate the remainder across the not-yet-edited installments
+  const handleInstallmentValueChange = (i: number, raw: string) => {
+    const v = parseFloat(raw) || 0;
+    const n = form.installments;
+    const total = form.totalValue || 0;
+    const current = buildInstallmentValues(total, n, form.installmentValues).slice();
+    current[i] = v;
+    const newEdited = new Set(editedInstallmentIdx);
+    newEdited.add(i);
+    const editedSum = Array.from(newEdited).reduce((s, idx) => s + (Number(current[idx]) || 0), 0);
+    const nonEdited: number[] = [];
+    for (let k = 0; k < n; k++) if (!newEdited.has(k)) nonEdited.push(k);
+    if (nonEdited.length > 0) {
+      const per = Math.max(0, Math.round(((total - editedSum) / nonEdited.length) * 100) / 100);
+      nonEdited.forEach((k) => { current[k] = per; });
+    }
+    setEditedInstallmentIdx(newEdited);
+    setForm({ ...form, installmentValues: current });
+  };
+
+  const resetInstallmentValues = () => {
+    setEditedInstallmentIdx(new Set());
+    setForm((f) => ({ ...f, installmentValues: [] }));
+  };
+
+  // Reset edited-index tracker whenever installments count, payment method or edit target changes
+  React.useEffect(() => { setEditedInstallmentIdx(new Set()); }, [form.installments, form.paymentMethod, editId]);
 
   // Compute default installment dates: first date + 30 days each. Preserves user-edited entries when length matches.
   const buildInstallmentDates = (firstDate: string, count: number, existing: string[] = []): string[] => {
@@ -867,15 +896,11 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                   {buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).map((v, i) => (
                     <div key={i} className="flex items-center gap-1">
                       <span className="text-xs text-muted-foreground w-8">{i + 1}ª</span>
-                      <input type="number" min="0" step="0.01" value={v} onChange={(e) => {
-                        const arr = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).slice();
-                        arr[i] = parseFloat(e.target.value) || 0;
-                        setForm({ ...form, installmentValues: arr });
-                      }} className="flex-1 px-2 py-1 rounded-lg border border-input bg-background text-xs" />
+                      <input type="number" min="0" step="0.01" value={v} onChange={(e) => handleInstallmentValueChange(i, e.target.value)} className={`flex-1 px-2 py-1 rounded-lg border border-input bg-background text-xs ${editedInstallmentIdx.has(i) ? 'font-medium' : ''}`} />
                     </div>
                   ))}
                 </div>
-                <button type="button" onClick={() => setForm({ ...form, installmentValues: [] })} className="text-xs text-primary mt-1 hover:underline">Redistribuir igualmente</button>
+                <button type="button" onClick={resetInstallmentValues} className="text-xs text-primary mt-1 hover:underline">Redistribuir igualmente</button>
               </div>
             )}
             <div><label className="label-caps block mb-1">Observações</label><input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm" /></div>
@@ -1032,17 +1057,13 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                 <div>
                                   <div className="flex items-center justify-between mb-1">
                                     <label className="label-caps text-xs">Valor das Parcelas</label>
-                                    <button type="button" onClick={() => setForm({ ...form, installmentValues: [] })} className="text-[10px] text-primary hover:underline">Redistribuir</button>
+                                    <button type="button" onClick={resetInstallmentValues} className="text-[10px] text-primary hover:underline">Redistribuir</button>
                                   </div>
                                   <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
                                     {buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).map((v, i) => (
                                       <div key={i} className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground w-6">{i + 1}ª</span>
-                                        <input type="number" min="0" step="0.01" value={v} onChange={(e) => {
-                                          const arr = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).slice();
-                                          arr[i] = parseFloat(e.target.value) || 0;
-                                          setForm({ ...form, installmentValues: arr });
-                                        }} className="flex-1 px-1.5 py-1 rounded border border-input bg-background text-xs" />
+                                        <input type="number" min="0" step="0.01" value={v} onChange={(e) => handleInstallmentValueChange(i, e.target.value)} className={`flex-1 px-1.5 py-1 rounded border border-input bg-background text-xs ${editedInstallmentIdx.has(i) ? 'font-medium' : ''}`} />
                                       </div>
                                     ))}
                                   </div>
