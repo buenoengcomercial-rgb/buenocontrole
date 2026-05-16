@@ -618,7 +618,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const { addSupplier, addMaterial, updateMaterial } = useAppData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', installmentDates: [] as string[], freightPaymentDate: '', icmsPaymentDate: '' };
+  const emptyForm = { date: '', supplierId: '', materialId: '', category: '', invoiceNumber: '', quantity: 1, unitPrice: 0, totalValue: 0, freightValue: 0, icmsValue: 0, description: '', notes: '', paymentMethod: '', installments: 1, firstInstallmentDate: '', installmentDates: [] as string[], installmentValues: [] as number[], freightPaymentDate: '', icmsPaymentDate: '' };
   const [form, setForm] = useState(emptyForm);
 
   // Compute default installment dates: first date + 30 days each. Preserves user-edited entries when length matches.
@@ -635,6 +635,14 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   };
 
   const regenInstallmentDates = (firstDate: string, count: number) => buildInstallmentDates(firstDate, count, []);
+
+  // Editable per-installment values. Preserves user edits when count matches; otherwise distributes evenly.
+  const buildInstallmentValues = (total: number, count: number, existing: number[] = []): number[] => {
+    if (count <= 1) return [];
+    const per = Math.round((total / count) * 100) / 100;
+    if (existing.length === count && existing.every((v) => typeof v === 'number' && !isNaN(v))) return existing;
+    return Array.from({ length: count }, () => per);
+  };
 
   // Quick-add supplier
   const [showQuickSupplier, setShowQuickSupplier] = useState(false);
