@@ -930,11 +930,15 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                       const pm = PAYMENT_METHODS.find(x => x.value === p.paymentMethod);
                       const label = pm?.label || '—';
                       if ((p.paymentMethod === 'credito' || p.paymentMethod === 'boleto') && p.installments > 1) {
-                        const itemTotalPm = p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0);
-                        const perParcel = itemTotalPm / p.installments;
+                        const hasValues = Array.isArray(p.installmentValues) && p.installmentValues.length === p.installments;
+                        const perParcel = (p.totalValue || 0) / p.installments;
+                        const allEqual = hasValues && p.installmentValues.every((v: number) => Math.abs(Number(v) - Number(p.installmentValues[0])) < 0.01);
+                        const summary = hasValues && !allEqual
+                          ? `${label} ${p.installments}x (valores variáveis)`
+                          : `${label} ${p.installments}x de ${formatCurrency(hasValues ? Number(p.installmentValues[0]) : perParcel)}`;
                         return (
                           <div className="leading-tight">
-                            <div>{label} {p.installments}x de {formatCurrency(perParcel)}</div>
+                            <div>{summary}</div>
                             {p.paymentMethod === 'boleto' && p.firstInstallmentDate && (
                               <div className="text-xs text-muted-foreground">1ª: {formatDate(p.firstInstallmentDate)}</div>
                             )}
