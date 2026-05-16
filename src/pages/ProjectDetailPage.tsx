@@ -699,10 +699,14 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
   const handlePopoverSave = () => {
     if (editId) {
       const existing = (projectPurchases || []).find((p: any) => p.id === editId);
+      const isParceled = (form.paymentMethod === 'boleto' || form.paymentMethod === 'credito') && form.installments > 1;
       const finalDates = form.paymentMethod === 'boleto' && form.installments > 1
         ? buildInstallmentDates(form.firstInstallmentDate, form.installments, form.installmentDates)
         : null;
-      if (existing) onUpdate({ ...existing, ...form, installmentDates: finalDates as any, supplierId: form.supplierId || null, materialId: form.materialId || null });
+      const finalValues = isParceled
+        ? buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues)
+        : null;
+      if (existing) onUpdate({ ...existing, ...form, installmentDates: finalDates as any, installmentValues: finalValues as any, supplierId: form.supplierId || null, materialId: form.materialId || null });
       if (form.materialId && form.category) {
         const mat = materials.find((m: any) => m.id === form.materialId);
         if (mat && mat.category !== form.category) updateMaterial({ ...mat, category: form.category });
