@@ -133,6 +133,7 @@ export interface ProjectPurchase {
   installments: number;
   firstInstallmentDate: string | null;
   installmentDates: string[] | null;
+  installmentValues: number[] | null;
   freightPaymentDate: string | null;
   icmsPaymentDate: string | null;
   createdAt: string;
