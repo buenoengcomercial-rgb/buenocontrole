@@ -1060,11 +1060,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                     {buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).map((v, i) => (
                                       <div key={i} className="flex items-center gap-1">
                                         <span className="text-xs text-muted-foreground w-6">{i + 1}ª</span>
-                                        <input type="number" min="0" step="0.01" value={v} onChange={(e) => {
-                                          const arr = buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).slice();
-                                          arr[i] = parseFloat(e.target.value) || 0;
-                                          setForm({ ...form, installmentValues: arr });
-                                        }} className="flex-1 px-1.5 py-1 rounded border border-input bg-background text-xs" />
+                                        <input type="number" min="0" step="0.01" value={v} onChange={(e) => handleInstallmentValueChange(i, e.target.value)} className={`flex-1 px-1.5 py-1 rounded border border-input bg-background text-xs ${editedInstallmentIdx.has(i) ? 'font-medium' : ''}`} />
                                       </div>
                                     ))}
                                   </div>
