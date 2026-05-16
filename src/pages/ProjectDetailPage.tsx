@@ -1054,7 +1054,7 @@ function MaterialsTab({ projectId, purchases, suppliers, materials, projectPurch
                                 <div>
                                   <div className="flex items-center justify-between mb-1">
                                     <label className="label-caps text-xs">Valor das Parcelas</label>
-                                    <button type="button" onClick={() => setForm({ ...form, installmentValues: [] })} className="text-[10px] text-primary hover:underline">Redistribuir</button>
+                                    <button type="button" onClick={resetInstallmentValues} className="text-[10px] text-primary hover:underline">Redistribuir</button>
                                   </div>
                                   <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto pr-1">
                                     {buildInstallmentValues(form.totalValue || 0, form.installments, form.installmentValues).map((v, i) => (
