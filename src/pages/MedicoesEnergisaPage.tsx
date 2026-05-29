@@ -536,7 +536,7 @@ export default function MedicoesEnergisaPage() {
 
     setBillingInProgress(false);
     setShowBillingConfirm(false);
-    toast({ title: `${nextNumber}ª Cobrança emitida`, description: 'Os itens acumulados foram zerados para uma nova medição.' });
+    toast({ title: `${formatBillingLabel({ billing_number: nextNumber, billing_date: todayIso })} emitida`, description: 'Os itens acumulados foram zerados para uma nova medição.' });
   }, [exportExcel, unbilledRecords, accumulatedByItem, contractItems, billings, totalMonthValue, totalMaterialValue, totalLaborValue]);
 
   const formatBillingLabel = (b: { billing_number: number; billing_date: string }) => {
