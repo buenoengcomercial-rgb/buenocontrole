@@ -496,11 +496,13 @@ export default function MedicoesEnergisaPage() {
       });
     }
 
-    const nextNumber = (billings[0]?.billing_number || 0) + 1;
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const currentYear = todayIso.slice(0, 4);
+    const nextNumber = billings.filter(x => (x.billing_date || '').slice(0, 4) === currentYear).length + 1;
 
     const { data: billingRow, error: billingErr } = await supabase.from('energisa_billings').insert({
       billing_number: nextNumber,
-      billing_date: new Date().toISOString().slice(0, 10),
+      billing_date: todayIso,
       total_value: totalMonthValue,
       material_value: totalMaterialValue,
       labor_value: totalLaborValue,
@@ -534,8 +536,13 @@ export default function MedicoesEnergisaPage() {
 
     setBillingInProgress(false);
     setShowBillingConfirm(false);
-    toast({ title: `${nextNumber}ª Cobrança emitida`, description: 'Os itens acumulados foram zerados para uma nova medição.' });
+    toast({ title: `${formatBillingLabel({ billing_number: nextNumber, billing_date: todayIso })} emitida`, description: 'Os itens acumulados foram zerados para uma nova medição.' });
   }, [exportExcel, unbilledRecords, accumulatedByItem, contractItems, billings, totalMonthValue, totalMaterialValue, totalLaborValue]);
+
+  const formatBillingLabel = (b: { billing_number: number; billing_date: string }) => {
+    const year = (b.billing_date || '').slice(0, 4);
+    return `${b.billing_number}ª Cobrança ${year}`;
+  };
 
   const reExportBilling = useCallback((b: Billing) => {
     if (!b.snapshot || b.snapshot.length === 0) {
@@ -544,8 +551,9 @@ export default function MedicoesEnergisaPage() {
     }
     const lines: string[] = [];
     const sanitize = (s: string) => (s || '').replace(/[\r\n;]+/g, ' ').trim();
-    lines.push(`${b.billing_number}ª COBRANÇA - ENERGISA`);
+    lines.push(`${formatBillingLabel(b).toUpperCase()} - ENERGISA`);
     lines.push(`Data: ${b.billing_date.split('-').reverse().join('/')}`);
+
     lines.push('');
     lines.push('RESUMO POR ITEM');
     lines.push('Item;Descrição;Unidade;Qtd;Valor Unit Material;Valor Unit MO;Valor Total;Unidades Energisa;Datas');
@@ -589,7 +597,7 @@ export default function MedicoesEnergisaPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cobranca_${b.billing_number}_energisa_${b.billing_date}.csv`;
+    a.download = `cobranca_${b.billing_number}_${(b.billing_date || '').slice(0, 4)}_energisa_${b.billing_date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }, []);
@@ -1082,7 +1090,7 @@ export default function MedicoesEnergisaPage() {
                 <TableBody>
                   {billings.map(b => (
                     <TableRow key={b.id}>
-                      <TableCell className="font-semibold text-sm">{b.billing_number}ª Cobrança</TableCell>
+                      <TableCell className="font-semibold text-sm">{formatBillingLabel(b)}</TableCell>
                       <TableCell className="text-xs">{b.billing_date.split('-').reverse().join('/')}</TableCell>
                       <TableCell className="text-xs text-right tabular-nums">{b.records_count}</TableCell>
                       <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.material_value)}</TableCell>
@@ -1112,7 +1120,7 @@ export default function MedicoesEnergisaPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
-              {viewingBilling?.billing_number}ª Cobrança - {viewingBilling?.billing_date.split('-').reverse().join('/')}
+              {viewingBilling && formatBillingLabel(viewingBilling)} - {viewingBilling?.billing_date.split('-').reverse().join('/')}
             </DialogTitle>
           </DialogHeader>
           {viewingBilling && (
