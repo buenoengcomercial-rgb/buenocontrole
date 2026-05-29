@@ -38,6 +38,13 @@ interface ServiceRecord {
   created_at: string;
 }
 
+interface BillingSnapshotRecord {
+  unit_name: string;
+  date: string;
+  quantity: number;
+  notes: string;
+}
+
 interface BillingSnapshotItem {
   item_code: string;
   description: string;
@@ -48,6 +55,7 @@ interface BillingSnapshotItem {
   total: number;
   unit_names: string;
   dates: string;
+  records?: BillingSnapshotRecord[];
 }
 
 interface Billing {
