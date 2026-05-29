@@ -1120,7 +1120,7 @@ export default function MedicoesEnergisaPage() {
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
-              {viewingBilling?.billing_number}ª Cobrança - {viewingBilling?.billing_date.split('-').reverse().join('/')}
+              {viewingBilling && formatBillingLabel(viewingBilling)} - {viewingBilling?.billing_date.split('-').reverse().join('/')}
             </DialogTitle>
           </DialogHeader>
           {viewingBilling && (
