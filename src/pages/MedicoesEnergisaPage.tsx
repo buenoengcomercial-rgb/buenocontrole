@@ -597,7 +597,7 @@ export default function MedicoesEnergisaPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `cobranca_${b.billing_number}_energisa_${b.billing_date}.csv`;
+    a.download = `cobranca_${b.billing_number}_${(b.billing_date || '').slice(0, 4)}_energisa_${b.billing_date}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }, []);
