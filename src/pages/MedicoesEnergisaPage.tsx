@@ -1146,6 +1146,60 @@ export default function MedicoesEnergisaPage() {
                   </TableBody>
                 </Table>
               </div>
+              {(() => {
+                const byUnit = new Map<string, { s: BillingSnapshotItem; r: BillingSnapshotRecord }[]>();
+                for (const s of (viewingBilling.snapshot || [])) {
+                  if (!s.records) continue;
+                  for (const r of s.records) {
+                    const key = r.unit_name || '(sem unidade)';
+                    const list = byUnit.get(key) || [];
+                    list.push({ s, r });
+                    byUnit.set(key, list);
+                  }
+                }
+                if (byUnit.size === 0) return null;
+                return (
+                  <div className="border rounded-md overflow-hidden">
+                    <div className="bg-muted px-3 py-2 text-xs font-semibold uppercase tracking-wide">Detalhamento por unidade Energisa</div>
+                    <div className="max-h-72 overflow-y-auto divide-y">
+                      {Array.from(byUnit.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([unitName, entries]) => {
+                        let subtotal = 0;
+                        entries.forEach(({ s, r }) => { subtotal += r.quantity * (s.material_unit_value + s.labor_unit_value); });
+                        return (
+                          <div key={unitName} className="p-3">
+                            <div className="flex justify-between items-center mb-1">
+                              <p className="text-xs font-semibold">{unitName}</p>
+                              <p className="text-xs font-medium tabular-nums">{formatCurrency(subtotal)}</p>
+                            </div>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-[10px] h-6 w-20">Data</TableHead>
+                                  <TableHead className="text-[10px] h-6 w-16">Item</TableHead>
+                                  <TableHead className="text-[10px] h-6">Descrição</TableHead>
+                                  <TableHead className="text-[10px] h-6 text-right w-12">Qtd</TableHead>
+                                  <TableHead className="text-[10px] h-6">Observações</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {entries.sort((a, b) => a.r.date.localeCompare(b.r.date)).map(({ s, r }, i) => (
+                                  <TableRow key={i}>
+                                    <TableCell className="text-xs py-1">{r.date.split('-').reverse().join('/')}</TableCell>
+                                    <TableCell className="text-xs py-1 font-mono">{s.item_code}</TableCell>
+                                    <TableCell className="text-xs py-1 max-w-[260px] whitespace-normal break-words">{s.description}</TableCell>
+                                    <TableCell className="text-xs py-1 text-right tabular-nums">{r.quantity}</TableCell>
+                                    <TableCell className="text-xs py-1 text-muted-foreground whitespace-normal break-words">{r.notes || '—'}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
               <DialogFooter>
                 <Button variant="outline" onClick={() => reExportBilling(viewingBilling)}>
                   <Download className="h-4 w-4 mr-1" /> Re-exportar CSV
