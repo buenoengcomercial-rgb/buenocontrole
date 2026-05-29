@@ -496,11 +496,13 @@ export default function MedicoesEnergisaPage() {
       });
     }
 
-    const nextNumber = (billings[0]?.billing_number || 0) + 1;
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const currentYear = todayIso.slice(0, 4);
+    const nextNumber = billings.filter(x => (x.billing_date || '').slice(0, 4) === currentYear).length + 1;
 
     const { data: billingRow, error: billingErr } = await supabase.from('energisa_billings').insert({
       billing_number: nextNumber,
-      billing_date: new Date().toISOString().slice(0, 10),
+      billing_date: todayIso,
       total_value: totalMonthValue,
       material_value: totalMaterialValue,
       labor_value: totalLaborValue,
