@@ -543,17 +543,47 @@ export default function MedicoesEnergisaPage() {
       return;
     }
     const lines: string[] = [];
+    const sanitize = (s: string) => (s || '').replace(/[\r\n;]+/g, ' ').trim();
     lines.push(`${b.billing_number}ª COBRANÇA - ENERGISA`);
     lines.push(`Data: ${b.billing_date.split('-').reverse().join('/')}`);
     lines.push('');
+    lines.push('RESUMO POR ITEM');
     lines.push('Item;Descrição;Unidade;Qtd;Valor Unit Material;Valor Unit MO;Valor Total;Unidades Energisa;Datas');
     for (const s of b.snapshot) {
-      lines.push(`${s.item_code};${s.description};${s.unit};${s.quantity};${s.material_unit_value.toFixed(2)};${s.labor_unit_value.toFixed(2)};${s.total.toFixed(2)};${s.unit_names};${s.dates}`);
+      lines.push(`${s.item_code};${sanitize(s.description)};${s.unit};${s.quantity};${s.material_unit_value.toFixed(2)};${s.labor_unit_value.toFixed(2)};${s.total.toFixed(2)};${sanitize(s.unit_names)};${s.dates}`);
     }
     lines.push('');
     lines.push(`;;;;;;TOTAL MATERIAL;${b.material_value.toFixed(2)};`);
     lines.push(`;;;;;;TOTAL MÃO DE OBRA;${b.labor_value.toFixed(2)};`);
     lines.push(`;;;;;;TOTAL GERAL;${b.total_value.toFixed(2)};`);
+
+    // Per-unit breakdown with observations
+    const byUnit = new Map<string, { s: BillingSnapshotItem; r: BillingSnapshotRecord }[]>();
+    for (const s of b.snapshot) {
+      if (!s.records) continue;
+      for (const r of s.records) {
+        const key = r.unit_name || '(sem unidade)';
+        const list = byUnit.get(key) || [];
+        list.push({ s, r });
+        byUnit.set(key, list);
+      }
+    }
+    if (byUnit.size > 0) {
+      lines.push('');
+      lines.push('DETALHAMENTO POR UNIDADE ENERGISA');
+      lines.push('Unidade Energisa;Data;Item;Descrição;Qtd;Unidade;Valor Total;Observações');
+      for (const [unitName, entries] of Array.from(byUnit.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
+        let unitSubtotal = 0;
+        for (const { s, r } of entries.sort((a, b) => a.r.date.localeCompare(b.r.date))) {
+          const unitTotal = s.material_unit_value + s.labor_unit_value;
+          const lineTotal = r.quantity * unitTotal;
+          unitSubtotal += lineTotal;
+          lines.push(`${sanitize(unitName)};${r.date.split('-').reverse().join('/')};${s.item_code};${sanitize(s.description)};${r.quantity};${s.unit};${lineTotal.toFixed(2)};${sanitize(r.notes)}`);
+        }
+        lines.push(`;;;;;;Subtotal ${sanitize(unitName)};${unitSubtotal.toFixed(2)}`);
+        lines.push('');
+      }
+    }
     const bom = '\uFEFF';
     const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
