@@ -539,6 +539,11 @@ export default function MedicoesEnergisaPage() {
     toast({ title: `${nextNumber}ª Cobrança emitida`, description: 'Os itens acumulados foram zerados para uma nova medição.' });
   }, [exportExcel, unbilledRecords, accumulatedByItem, contractItems, billings, totalMonthValue, totalMaterialValue, totalLaborValue]);
 
+  const formatBillingLabel = (b: { billing_number: number; billing_date: string }) => {
+    const year = (b.billing_date || '').slice(0, 4);
+    return `${b.billing_number}ª Cobrança ${year}`;
+  };
+
   const reExportBilling = useCallback((b: Billing) => {
     if (!b.snapshot || b.snapshot.length === 0) {
       toast({ title: 'Sem dados para exportar', variant: 'destructive' });
@@ -546,8 +551,9 @@ export default function MedicoesEnergisaPage() {
     }
     const lines: string[] = [];
     const sanitize = (s: string) => (s || '').replace(/[\r\n;]+/g, ' ').trim();
-    lines.push(`${b.billing_number}ª COBRANÇA - ENERGISA`);
+    lines.push(`${formatBillingLabel(b).toUpperCase()} - ENERGISA`);
     lines.push(`Data: ${b.billing_date.split('-').reverse().join('/')}`);
+
     lines.push('');
     lines.push('RESUMO POR ITEM');
     lines.push('Item;Descrição;Unidade;Qtd;Valor Unit Material;Valor Unit MO;Valor Total;Unidades Energisa;Datas');
