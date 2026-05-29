@@ -412,7 +412,8 @@ export default function MedicoesEnergisaPage() {
     lines.push('MEDIÇÃO ACUMULADA - ENERGISA');
     lines.push(`Mês: ${selectedMonth}`);
     lines.push('');
-    lines.push('Item;Descrição;Unidade;Qtd Contrato;Qtd Executada;Valor Unit Material;Valor Unit MO;Valor Total;Unidade Energisa;Data');
+    lines.push('RESUMO POR ITEM');
+    lines.push('Item;Descrição;Unidade;Qtd Contrato;Qtd Executada;Valor Unit Material;Valor Unit MO;Valor Total;Unidades Energisa;Datas');
 
     for (const item of contractItems) {
       const acc = accumulatedByItem.get(item.id);
@@ -428,6 +429,33 @@ export default function MedicoesEnergisaPage() {
     lines.push(`;;;;;;TOTAL MÃO DE OBRA;${totalLaborValue.toFixed(2)};`);
     lines.push(`;;;;;;TOTAL GERAL;${totalMonthValue.toFixed(2)};`);
 
+    // Per-unit breakdown with notes (observations) so the client understands what was used at each unit
+    lines.push('');
+    lines.push('DETALHAMENTO POR UNIDADE ENERGISA');
+    lines.push('Unidade Energisa;Data;Item;Descrição;Qtd;Unidade;Valor Total;Observações');
+
+    const byUnit = new Map<string, { rec: ServiceRecord; item: ContractItem }[]>();
+    for (const r of unbilledRecords) {
+      const item = contractItems.find(i => i.id === r.contract_item_id);
+      if (!item) continue;
+      const key = r.unit_name || '(sem unidade)';
+      const list = byUnit.get(key) || [];
+      list.push({ rec: r, item });
+      byUnit.set(key, list);
+    }
+    const sanitize = (s: string) => (s || '').replace(/[\r\n;]+/g, ' ').trim();
+    for (const [unitName, entries] of Array.from(byUnit.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
+      let unitSubtotal = 0;
+      for (const { rec, item } of entries.sort((a, b) => a.rec.date.localeCompare(b.rec.date))) {
+        const unitTotal = item.material_unit_value + item.labor_unit_value;
+        const lineTotal = rec.quantity * unitTotal;
+        unitSubtotal += lineTotal;
+        lines.push(`${sanitize(unitName)};${rec.date.split('-').reverse().join('/')};${item.item_code};${sanitize(item.description)};${rec.quantity};${item.unit};${lineTotal.toFixed(2)};${sanitize(rec.notes)}`);
+      }
+      lines.push(`;;;;;;Subtotal ${sanitize(unitName)};${unitSubtotal.toFixed(2)}`);
+      lines.push('');
+    }
+
     const bom = '\uFEFF';
     const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -437,7 +465,7 @@ export default function MedicoesEnergisaPage() {
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: 'Relatório exportado com sucesso' });
-  }, [contractItems, accumulatedByItem, selectedMonth, totalMonthValue, totalMaterialValue, totalLaborValue]);
+  }, [contractItems, accumulatedByItem, selectedMonth, totalMonthValue, totalMaterialValue, totalLaborValue, unbilledRecords]);
 
   const handleEmitBilling = useCallback(async () => {
     setBillingInProgress(true);
