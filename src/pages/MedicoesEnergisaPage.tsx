@@ -492,6 +492,7 @@ export default function MedicoesEnergisaPage() {
         total: data.totalQty * unitTotal,
         unit_names: data.records.map(r => r.unitLabel).join(' / '),
         dates: data.records.map(r => r.date.split('-').reverse().join('/')).join(' / '),
+        records: data.records.map(r => ({ unit_name: r.unit_name || '', date: r.date, quantity: r.quantity, notes: r.notes || '' })),
       });
     }
 
