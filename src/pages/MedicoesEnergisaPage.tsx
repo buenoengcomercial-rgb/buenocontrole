@@ -1090,7 +1090,7 @@ export default function MedicoesEnergisaPage() {
                 <TableBody>
                   {billings.map(b => (
                     <TableRow key={b.id}>
-                      <TableCell className="font-semibold text-sm">{b.billing_number}ª Cobrança</TableCell>
+                      <TableCell className="font-semibold text-sm">{formatBillingLabel(b)}</TableCell>
                       <TableCell className="text-xs">{b.billing_date.split('-').reverse().join('/')}</TableCell>
                       <TableCell className="text-xs text-right tabular-nums">{b.records_count}</TableCell>
                       <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.material_value)}</TableCell>
