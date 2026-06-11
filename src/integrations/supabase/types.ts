@@ -586,36 +586,57 @@ export type Database = {
           billing_number: number
           created_at: string
           id: string
+          invoice_date: string | null
+          invoice_issued: boolean
+          invoice_number: string | null
           labor_value: number
           material_value: number
           notes: string | null
           records_count: number
+          return_date: string | null
+          return_received: boolean
+          sent_date: string | null
           snapshot: Json | null
           total_value: number
+          verification_deadline: string | null
         }
         Insert: {
           billing_date?: string
           billing_number: number
           created_at?: string
           id?: string
+          invoice_date?: string | null
+          invoice_issued?: boolean
+          invoice_number?: string | null
           labor_value?: number
           material_value?: number
           notes?: string | null
           records_count?: number
+          return_date?: string | null
+          return_received?: boolean
+          sent_date?: string | null
           snapshot?: Json | null
           total_value?: number
+          verification_deadline?: string | null
         }
         Update: {
           billing_date?: string
           billing_number?: number
           created_at?: string
           id?: string
+          invoice_date?: string | null
+          invoice_issued?: boolean
+          invoice_number?: string | null
           labor_value?: number
           material_value?: number
           notes?: string | null
           records_count?: number
+          return_date?: string | null
+          return_received?: boolean
+          sent_date?: string | null
           snapshot?: Json | null
           total_value?: number
+          verification_deadline?: string | null
         }
         Relationships: []
       }

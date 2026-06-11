@@ -10,7 +10,8 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText, ClipboardList, History, Eye } from 'lucide-react';
+import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText, ClipboardList, History, Eye, Pencil, CheckCircle2, Clock, AlertTriangle, Receipt } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/format';
 
@@ -69,6 +70,13 @@ interface Billing {
   snapshot: BillingSnapshotItem[] | null;
   notes: string | null;
   created_at: string;
+  sent_date: string | null;
+  verification_deadline: string | null;
+  return_received: boolean;
+  return_date: string | null;
+  invoice_issued: boolean;
+  invoice_number: string | null;
+  invoice_date: string | null;
 }
 
 interface PendingItem {
@@ -82,6 +90,23 @@ const currentMonth = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
+const addDaysIso = (iso: string, days: number) => {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+const fmtDateBr = (iso: string | null | undefined) => (iso ? iso.split('-').reverse().join('/') : '—');
+
+const mapBillingRow = (b: any): Billing => ({
+  id: b.id, billing_number: b.billing_number, billing_date: b.billing_date,
+  total_value: Number(b.total_value), material_value: Number(b.material_value), labor_value: Number(b.labor_value),
+  records_count: b.records_count, snapshot: b.snapshot, notes: b.notes, created_at: b.created_at,
+  sent_date: b.sent_date || null, verification_deadline: b.verification_deadline || null,
+  return_received: !!b.return_received, return_date: b.return_date || null,
+  invoice_issued: !!b.invoice_issued, invoice_number: b.invoice_number || null, invoice_date: b.invoice_date || null,
+});
+
 export default function MedicoesEnergisaPage() {
   const [contractItems, setContractItems] = useState<ContractItem[]>([]);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
@@ -94,6 +119,7 @@ export default function MedicoesEnergisaPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [trackingBilling, setTrackingBilling] = useState<Billing | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showBillingConfirm, setShowBillingConfirm] = useState(false);
   const [billingInProgress, setBillingInProgress] = useState(false);
@@ -134,11 +160,7 @@ export default function MedicoesEnergisaPage() {
         id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
         quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, billed: r.billed || false, created_at: r.created_at,
       })));
-      setBillings((bills.data || []).map((b: any) => ({
-        id: b.id, billing_number: b.billing_number, billing_date: b.billing_date,
-        total_value: Number(b.total_value), material_value: Number(b.material_value), labor_value: Number(b.labor_value),
-        records_count: b.records_count, snapshot: b.snapshot, notes: b.notes, created_at: b.created_at,
-      })));
+      setBillings((bills.data || []).map(mapBillingRow));
       setLoading(false);
     });
   }, []);
@@ -508,6 +530,8 @@ export default function MedicoesEnergisaPage() {
       labor_value: totalLaborValue,
       records_count: unbilledIds.length,
       snapshot: snapshot as any,
+      sent_date: todayIso,
+      verification_deadline: addDaysIso(todayIso, 30),
     }).select().single();
 
     if (billingErr || !billingRow) {
@@ -527,12 +551,7 @@ export default function MedicoesEnergisaPage() {
       return;
     }
     setServiceRecords(prev => prev.map(r => unbilledIds.includes(r.id) ? { ...r, billed: true } : r));
-    setBillings(prev => [{
-      id: billingRow.id, billing_number: billingRow.billing_number, billing_date: billingRow.billing_date,
-      total_value: Number(billingRow.total_value), material_value: Number(billingRow.material_value),
-      labor_value: Number(billingRow.labor_value), records_count: billingRow.records_count,
-      snapshot: billingRow.snapshot as any, notes: billingRow.notes, created_at: billingRow.created_at,
-    }, ...prev]);
+    setBillings(prev => [mapBillingRow(billingRow), ...prev]);
 
     setBillingInProgress(false);
     setShowBillingConfirm(false);
@@ -1067,7 +1086,7 @@ export default function MedicoesEnergisaPage() {
 
       {/* Billing History Dialog */}
       <Dialog open={showBillingHistory} onOpenChange={setShowBillingHistory}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Histórico de Cobranças</DialogTitle>
           </DialogHeader>
@@ -1078,42 +1097,92 @@ export default function MedicoesEnergisaPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-32">Cobrança</TableHead>
-                    <TableHead className="w-28">Data</TableHead>
-                    <TableHead className="w-20 text-right">Itens</TableHead>
-                    <TableHead className="text-right">Material</TableHead>
-                    <TableHead className="text-right">Mão de Obra</TableHead>
+                    <TableHead className="w-28">Cobrança</TableHead>
+                    <TableHead className="w-24">Emissão</TableHead>
+                    <TableHead className="w-24">Envio</TableHead>
+                    <TableHead className="w-28">Prazo Retorno</TableHead>
+                    <TableHead className="w-32">Status</TableHead>
+                    <TableHead className="w-32">Nota Fiscal</TableHead>
                     <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="w-28 text-right">Ações</TableHead>
+                    <TableHead className="w-32 text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {billings.map(b => (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-semibold text-sm">{formatBillingLabel(b)}</TableCell>
-                      <TableCell className="text-xs">{b.billing_date.split('-').reverse().join('/')}</TableCell>
-                      <TableCell className="text-xs text-right tabular-nums">{b.records_count}</TableCell>
-                      <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.material_value)}</TableCell>
-                      <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.labor_value)}</TableCell>
-                      <TableCell className="text-xs text-right tabular-nums font-semibold">{formatCurrency(b.total_value)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => setViewingBilling(b)} title="Ver detalhes">
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => reExportBilling(b)} title="Re-exportar CSV">
-                            <Download className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {billings.map(b => {
+                    const todayIso = new Date().toISOString().slice(0, 10);
+                    const overdue = !b.return_received && b.verification_deadline && b.verification_deadline < todayIso;
+                    const daysLeft = b.verification_deadline && !b.return_received
+                      ? Math.ceil((new Date(b.verification_deadline + 'T00:00:00').getTime() - new Date(todayIso + 'T00:00:00').getTime()) / 86400000)
+                      : null;
+                    return (
+                      <TableRow key={b.id}>
+                        <TableCell className="font-semibold text-xs">{formatBillingLabel(b)}</TableCell>
+                        <TableCell className="text-xs">{fmtDateBr(b.billing_date)}</TableCell>
+                        <TableCell className="text-xs">{fmtDateBr(b.sent_date)}</TableCell>
+                        <TableCell className="text-xs">
+                          <div className="flex flex-col">
+                            <span className={overdue ? 'text-destructive font-medium' : ''}>{fmtDateBr(b.verification_deadline)}</span>
+                            {daysLeft !== null && (
+                              <span className={`text-[10px] ${overdue ? 'text-destructive' : daysLeft <= 5 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
+                                {overdue ? `${Math.abs(daysLeft)}d vencido` : `${daysLeft}d restantes`}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {b.return_received ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> Retornou {b.return_date ? fmtDateBr(b.return_date) : ''}
+                            </Badge>
+                          ) : overdue ? (
+                            <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Vencido</Badge>
+                          ) : (
+                            <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Aguardando</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {b.invoice_issued ? (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100 gap-1">
+                              <Receipt className="h-3 w-3" /> {b.invoice_number || 'Emitida'}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-right tabular-nums font-semibold">{formatCurrency(b.total_value)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => setTrackingBilling(b)} title="Editar envio / retorno / NF">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setViewingBilling(b)} title="Ver detalhes">
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => reExportBilling(b)} title="Re-exportar CSV">
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Billing Tracking Dialog (envio / retorno / NF) */}
+      <BillingTrackingDialog
+        billing={trackingBilling}
+        onClose={() => setTrackingBilling(null)}
+        onSaved={(updated) => {
+          setBillings(prev => prev.map(x => x.id === updated.id ? updated : x));
+          setTrackingBilling(null);
+        }}
+      />
+
 
       {/* Billing Detail Dialog */}
       <Dialog open={!!viewingBilling} onOpenChange={open => !open && setViewingBilling(null)}>
@@ -1221,3 +1290,131 @@ export default function MedicoesEnergisaPage() {
     </div>
   );
 }
+
+interface BillingTrackingDialogProps {
+  billing: Billing | null;
+  onClose: () => void;
+  onSaved: (b: Billing) => void;
+}
+
+function BillingTrackingDialog({ billing, onClose, onSaved }: BillingTrackingDialogProps) {
+  const [sentDate, setSentDate] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [returnReceived, setReturnReceived] = useState(false);
+  const [returnDate, setReturnDate] = useState('');
+  const [invoiceIssued, setInvoiceIssued] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!billing) return;
+    setSentDate(billing.sent_date || '');
+    setDeadline(billing.verification_deadline || '');
+    setReturnReceived(billing.return_received);
+    setReturnDate(billing.return_date || '');
+    setInvoiceIssued(billing.invoice_issued);
+    setInvoiceNumber(billing.invoice_number || '');
+    setInvoiceDate(billing.invoice_date || '');
+    setNotes(billing.notes || '');
+  }, [billing]);
+
+  // Auto-recalc deadline when sent date changes (if deadline is empty or was the default +30)
+  const handleSentDateChange = (val: string) => {
+    setSentDate(val);
+    if (val && (!deadline || (billing?.sent_date && deadline === addDaysIso(billing.sent_date, 30)))) {
+      setDeadline(addDaysIso(val, 30));
+    }
+  };
+
+  const handleSave = async () => {
+    if (!billing) return;
+    setSaving(true);
+    const payload = {
+      sent_date: sentDate || null,
+      verification_deadline: deadline || null,
+      return_received: returnReceived,
+      return_date: returnReceived ? (returnDate || null) : null,
+      invoice_issued: invoiceIssued,
+      invoice_number: invoiceIssued ? (invoiceNumber || null) : null,
+      invoice_date: invoiceIssued ? (invoiceDate || null) : null,
+      notes: notes || null,
+    };
+    const { data, error } = await supabase.from('energisa_billings').update(payload).eq('id', billing.id).select().single();
+    setSaving(false);
+    if (error || !data) {
+      toast({ title: 'Erro ao salvar', description: error?.message, variant: 'destructive' });
+      return;
+    }
+    onSaved(mapBillingRow(data));
+    toast({ title: 'Cobrança atualizada' });
+  };
+
+  return (
+    <Dialog open={!!billing} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            Acompanhamento — {billing && `${billing.billing_number}ª Cobrança ${(billing.billing_date || '').slice(0, 4)}`}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Data de envio</Label>
+              <Input type="date" value={sentDate} onChange={e => handleSentDateChange(e.target.value)} className="h-9" />
+            </div>
+            <div>
+              <Label className="text-xs">Prazo para verificação de retorno</Label>
+              <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="h-9" />
+              <p className="text-[10px] text-muted-foreground mt-1">Padrão: 30 dias após o envio</p>
+            </div>
+          </div>
+
+          <div className="border rounded-md p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox id="return-received" checked={returnReceived} onCheckedChange={v => setReturnReceived(!!v)} />
+              <Label htmlFor="return-received" className="text-sm font-medium cursor-pointer">Cobrança teve retorno</Label>
+            </div>
+            {returnReceived && (
+              <div>
+                <Label className="text-xs">Data do retorno</Label>
+                <Input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} className="h-9 max-w-[220px]" />
+              </div>
+            )}
+          </div>
+
+          <div className="border rounded-md p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox id="invoice-issued" checked={invoiceIssued} onCheckedChange={v => setInvoiceIssued(!!v)} />
+              <Label htmlFor="invoice-issued" className="text-sm font-medium cursor-pointer">Nota Fiscal emitida</Label>
+            </div>
+            {invoiceIssued && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Número da NF</Label>
+                  <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} placeholder="Ex.: 12345" className="h-9" />
+                </div>
+                <div>
+                  <Label className="text-xs">Data de emissão da NF</Label>
+                  <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-9" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <Label className="text-xs">Observações</Label>
+            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="text-sm" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
