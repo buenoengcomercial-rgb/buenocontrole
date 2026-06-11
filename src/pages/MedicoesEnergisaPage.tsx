@@ -1290,3 +1290,131 @@ export default function MedicoesEnergisaPage() {
     </div>
   );
 }
+
+interface BillingTrackingDialogProps {
+  billing: Billing | null;
+  onClose: () => void;
+  onSaved: (b: Billing) => void;
+}
+
+function BillingTrackingDialog({ billing, onClose, onSaved }: BillingTrackingDialogProps) {
+  const [sentDate, setSentDate] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [returnReceived, setReturnReceived] = useState(false);
+  const [returnDate, setReturnDate] = useState('');
+  const [invoiceIssued, setInvoiceIssued] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!billing) return;
+    setSentDate(billing.sent_date || '');
+    setDeadline(billing.verification_deadline || '');
+    setReturnReceived(billing.return_received);
+    setReturnDate(billing.return_date || '');
+    setInvoiceIssued(billing.invoice_issued);
+    setInvoiceNumber(billing.invoice_number || '');
+    setInvoiceDate(billing.invoice_date || '');
+    setNotes(billing.notes || '');
+  }, [billing]);
+
+  // Auto-recalc deadline when sent date changes (if deadline is empty or was the default +30)
+  const handleSentDateChange = (val: string) => {
+    setSentDate(val);
+    if (val && (!deadline || (billing?.sent_date && deadline === addDaysIso(billing.sent_date, 30)))) {
+      setDeadline(addDaysIso(val, 30));
+    }
+  };
+
+  const handleSave = async () => {
+    if (!billing) return;
+    setSaving(true);
+    const payload = {
+      sent_date: sentDate || null,
+      verification_deadline: deadline || null,
+      return_received: returnReceived,
+      return_date: returnReceived ? (returnDate || null) : null,
+      invoice_issued: invoiceIssued,
+      invoice_number: invoiceIssued ? (invoiceNumber || null) : null,
+      invoice_date: invoiceIssued ? (invoiceDate || null) : null,
+      notes: notes || null,
+    };
+    const { data, error } = await supabase.from('energisa_billings').update(payload).eq('id', billing.id).select().single();
+    setSaving(false);
+    if (error || !data) {
+      toast({ title: 'Erro ao salvar', description: error?.message, variant: 'destructive' });
+      return;
+    }
+    onSaved(mapBillingRow(data));
+    toast({ title: 'Cobrança atualizada' });
+  };
+
+  return (
+    <Dialog open={!!billing} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>
+            Acompanhamento — {billing && `${billing.billing_number}ª Cobrança ${(billing.billing_date || '').slice(0, 4)}`}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Data de envio</Label>
+              <Input type="date" value={sentDate} onChange={e => handleSentDateChange(e.target.value)} className="h-9" />
+            </div>
+            <div>
+              <Label className="text-xs">Prazo para verificação de retorno</Label>
+              <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="h-9" />
+              <p className="text-[10px] text-muted-foreground mt-1">Padrão: 30 dias após o envio</p>
+            </div>
+          </div>
+
+          <div className="border rounded-md p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox id="return-received" checked={returnReceived} onCheckedChange={v => setReturnReceived(!!v)} />
+              <Label htmlFor="return-received" className="text-sm font-medium cursor-pointer">Cobrança teve retorno</Label>
+            </div>
+            {returnReceived && (
+              <div>
+                <Label className="text-xs">Data do retorno</Label>
+                <Input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} className="h-9 max-w-[220px]" />
+              </div>
+            )}
+          </div>
+
+          <div className="border rounded-md p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <Checkbox id="invoice-issued" checked={invoiceIssued} onCheckedChange={v => setInvoiceIssued(!!v)} />
+              <Label htmlFor="invoice-issued" className="text-sm font-medium cursor-pointer">Nota Fiscal emitida</Label>
+            </div>
+            {invoiceIssued && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Número da NF</Label>
+                  <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} placeholder="Ex.: 12345" className="h-9" />
+                </div>
+                <div>
+                  <Label className="text-xs">Data de emissão da NF</Label>
+                  <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="h-9" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <Label className="text-xs">Observações</Label>
+            <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="text-sm" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
