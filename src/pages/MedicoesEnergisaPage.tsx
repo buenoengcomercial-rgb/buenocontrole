@@ -529,6 +529,8 @@ export default function MedicoesEnergisaPage() {
       labor_value: totalLaborValue,
       records_count: unbilledIds.length,
       snapshot: snapshot as any,
+      sent_date: todayIso,
+      verification_deadline: addDaysIso(todayIso, 30),
     }).select().single();
 
     if (billingErr || !billingRow) {
@@ -548,12 +550,7 @@ export default function MedicoesEnergisaPage() {
       return;
     }
     setServiceRecords(prev => prev.map(r => unbilledIds.includes(r.id) ? { ...r, billed: true } : r));
-    setBillings(prev => [{
-      id: billingRow.id, billing_number: billingRow.billing_number, billing_date: billingRow.billing_date,
-      total_value: Number(billingRow.total_value), material_value: Number(billingRow.material_value),
-      labor_value: Number(billingRow.labor_value), records_count: billingRow.records_count,
-      snapshot: billingRow.snapshot as any, notes: billingRow.notes, created_at: billingRow.created_at,
-    }, ...prev]);
+    setBillings(prev => [mapBillingRow(billingRow), ...prev]);
 
     setBillingInProgress(false);
     setShowBillingConfirm(false);
