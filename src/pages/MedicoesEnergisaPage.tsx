@@ -119,6 +119,7 @@ export default function MedicoesEnergisaPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [trackingBilling, setTrackingBilling] = useState<Billing | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showBillingConfirm, setShowBillingConfirm] = useState(false);
   const [billingInProgress, setBillingInProgress] = useState(false);
