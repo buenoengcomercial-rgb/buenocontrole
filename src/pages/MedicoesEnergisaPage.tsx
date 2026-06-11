@@ -10,7 +10,8 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText, ClipboardList, History, Eye } from 'lucide-react';
+import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, FileText, ClipboardList, History, Eye, Pencil, CheckCircle2, Clock, AlertTriangle, Receipt } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/format';
 
@@ -69,6 +70,13 @@ interface Billing {
   snapshot: BillingSnapshotItem[] | null;
   notes: string | null;
   created_at: string;
+  sent_date: string | null;
+  verification_deadline: string | null;
+  return_received: boolean;
+  return_date: string | null;
+  invoice_issued: boolean;
+  invoice_number: string | null;
+  invoice_date: string | null;
 }
 
 interface PendingItem {
@@ -81,6 +89,23 @@ const currentMonth = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
+
+const addDaysIso = (iso: string, days: number) => {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+const fmtDateBr = (iso: string | null | undefined) => (iso ? iso.split('-').reverse().join('/') : '—');
+
+const mapBillingRow = (b: any): Billing => ({
+  id: b.id, billing_number: b.billing_number, billing_date: b.billing_date,
+  total_value: Number(b.total_value), material_value: Number(b.material_value), labor_value: Number(b.labor_value),
+  records_count: b.records_count, snapshot: b.snapshot, notes: b.notes, created_at: b.created_at,
+  sent_date: b.sent_date || null, verification_deadline: b.verification_deadline || null,
+  return_received: !!b.return_received, return_date: b.return_date || null,
+  invoice_issued: !!b.invoice_issued, invoice_number: b.invoice_number || null, invoice_date: b.invoice_date || null,
+});
 
 export default function MedicoesEnergisaPage() {
   const [contractItems, setContractItems] = useState<ContractItem[]>([]);
@@ -134,11 +159,7 @@ export default function MedicoesEnergisaPage() {
         id: r.id, contract_item_id: r.contract_item_id, unit_name: r.unit_name || '',
         quantity: Number(r.quantity), date: r.date, month: r.month, notes: r.notes, billed: r.billed || false, created_at: r.created_at,
       })));
-      setBillings((bills.data || []).map((b: any) => ({
-        id: b.id, billing_number: b.billing_number, billing_date: b.billing_date,
-        total_value: Number(b.total_value), material_value: Number(b.material_value), labor_value: Number(b.labor_value),
-        records_count: b.records_count, snapshot: b.snapshot, notes: b.notes, created_at: b.created_at,
-      })));
+      setBillings((bills.data || []).map(mapBillingRow));
       setLoading(false);
     });
   }, []);
