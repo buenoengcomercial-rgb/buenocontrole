@@ -1086,7 +1086,7 @@ export default function MedicoesEnergisaPage() {
 
       {/* Billing History Dialog */}
       <Dialog open={showBillingHistory} onOpenChange={setShowBillingHistory}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Histórico de Cobranças</DialogTitle>
           </DialogHeader>
@@ -1097,42 +1097,92 @@ export default function MedicoesEnergisaPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-32">Cobrança</TableHead>
-                    <TableHead className="w-28">Data</TableHead>
-                    <TableHead className="w-20 text-right">Itens</TableHead>
-                    <TableHead className="text-right">Material</TableHead>
-                    <TableHead className="text-right">Mão de Obra</TableHead>
+                    <TableHead className="w-28">Cobrança</TableHead>
+                    <TableHead className="w-24">Emissão</TableHead>
+                    <TableHead className="w-24">Envio</TableHead>
+                    <TableHead className="w-28">Prazo Retorno</TableHead>
+                    <TableHead className="w-32">Status</TableHead>
+                    <TableHead className="w-32">Nota Fiscal</TableHead>
                     <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="w-28 text-right">Ações</TableHead>
+                    <TableHead className="w-32 text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {billings.map(b => (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-semibold text-sm">{formatBillingLabel(b)}</TableCell>
-                      <TableCell className="text-xs">{b.billing_date.split('-').reverse().join('/')}</TableCell>
-                      <TableCell className="text-xs text-right tabular-nums">{b.records_count}</TableCell>
-                      <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.material_value)}</TableCell>
-                      <TableCell className="text-xs text-right tabular-nums">{formatCurrency(b.labor_value)}</TableCell>
-                      <TableCell className="text-xs text-right tabular-nums font-semibold">{formatCurrency(b.total_value)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => setViewingBilling(b)} title="Ver detalhes">
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => reExportBilling(b)} title="Re-exportar CSV">
-                            <Download className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {billings.map(b => {
+                    const todayIso = new Date().toISOString().slice(0, 10);
+                    const overdue = !b.return_received && b.verification_deadline && b.verification_deadline < todayIso;
+                    const daysLeft = b.verification_deadline && !b.return_received
+                      ? Math.ceil((new Date(b.verification_deadline + 'T00:00:00').getTime() - new Date(todayIso + 'T00:00:00').getTime()) / 86400000)
+                      : null;
+                    return (
+                      <TableRow key={b.id}>
+                        <TableCell className="font-semibold text-xs">{formatBillingLabel(b)}</TableCell>
+                        <TableCell className="text-xs">{fmtDateBr(b.billing_date)}</TableCell>
+                        <TableCell className="text-xs">{fmtDateBr(b.sent_date)}</TableCell>
+                        <TableCell className="text-xs">
+                          <div className="flex flex-col">
+                            <span className={overdue ? 'text-destructive font-medium' : ''}>{fmtDateBr(b.verification_deadline)}</span>
+                            {daysLeft !== null && (
+                              <span className={`text-[10px] ${overdue ? 'text-destructive' : daysLeft <= 5 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
+                                {overdue ? `${Math.abs(daysLeft)}d vencido` : `${daysLeft}d restantes`}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {b.return_received ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 gap-1">
+                              <CheckCircle2 className="h-3 w-3" /> Retornou {b.return_date ? fmtDateBr(b.return_date) : ''}
+                            </Badge>
+                          ) : overdue ? (
+                            <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Vencido</Badge>
+                          ) : (
+                            <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Aguardando</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {b.invoice_issued ? (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100 gap-1">
+                              <Receipt className="h-3 w-3" /> {b.invoice_number || 'Emitida'}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-right tabular-nums font-semibold">{formatCurrency(b.total_value)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => setTrackingBilling(b)} title="Editar envio / retorno / NF">
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setViewingBilling(b)} title="Ver detalhes">
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => reExportBilling(b)} title="Re-exportar CSV">
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Billing Tracking Dialog (envio / retorno / NF) */}
+      <BillingTrackingDialog
+        billing={trackingBilling}
+        onClose={() => setTrackingBilling(null)}
+        onSaved={(updated) => {
+          setBillings(prev => prev.map(x => x.id === updated.id ? updated : x));
+          setTrackingBilling(null);
+        }}
+      />
+
 
       {/* Billing Detail Dialog */}
       <Dialog open={!!viewingBilling} onOpenChange={open => !open && setViewingBilling(null)}>
