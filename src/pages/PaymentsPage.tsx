@@ -319,7 +319,7 @@ export default function PaymentsPage() {
                 <label className="label-caps mb-1 block">Colaborador</label>
                 <Select value={advEmployee} onValueChange={setAdvEmployee}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}{e.status === 'desligado' ? ' (desligado)' : ''}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
