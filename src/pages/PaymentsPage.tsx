@@ -17,7 +17,15 @@ const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'
 
 export default function PaymentsPage() {
   const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, updateAdvance, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
-  const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
+  const activeEmployees = useMemo(() => {
+    const list = [...employees];
+    list.sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'ativo' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    return list;
+  }, [employees]);
+  const activeOnly = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
 
   // Advance generation
   const [advMonth, setAdvMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -42,7 +50,7 @@ export default function PaymentsPage() {
 
   const handleGenerateAllAdvances = () => {
     let count = 0;
-    activeEmployees.forEach(emp => {
+    activeOnly.forEach(emp => {
       const exists = advances.find(a => a.employeeId === emp.id && a.month === advMonth);
       if (!exists) { generateAdvance(emp.id, advMonth); count++; }
     });
@@ -158,7 +166,7 @@ export default function PaymentsPage() {
                       <label className="label-caps mb-1 block">Colaborador</label>
                       <Select value={payForm.employeeId} onValueChange={v => setPayForm(f => ({ ...f, employeeId: v }))}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent>{activeEmployees.filter(e => !payForm.month || !payments.some(p => p.employeeId === e.id && p.month === payForm.month)).map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                        <SelectContent>{activeEmployees.filter(e => !payForm.month || !payments.some(p => p.employeeId === e.id && p.month === payForm.month)).map(e => <SelectItem key={e.id} value={e.id}>{e.name}{e.status === 'desligado' ? ' (desligado)' : ''}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div><label className="label-caps mb-1 block">Mês Referência</label><Input type="month" value={payForm.month} onChange={e => setPayForm(f => ({ ...f, month: e.target.value }))} /></div>
@@ -311,7 +319,7 @@ export default function PaymentsPage() {
                 <label className="label-caps mb-1 block">Colaborador</label>
                 <Select value={advEmployee} onValueChange={setAdvEmployee}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}{e.status === 'desligado' ? ' (desligado)' : ''}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
