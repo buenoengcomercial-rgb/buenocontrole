@@ -166,7 +166,7 @@ export default function PaymentsPage() {
                       <label className="label-caps mb-1 block">Colaborador</label>
                       <Select value={payForm.employeeId} onValueChange={v => setPayForm(f => ({ ...f, employeeId: v }))}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                        <SelectContent>{activeEmployees.filter(e => !payForm.month || !payments.some(p => p.employeeId === e.id && p.month === payForm.month)).map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                        <SelectContent>{activeEmployees.filter(e => !payForm.month || !payments.some(p => p.employeeId === e.id && p.month === payForm.month)).map(e => <SelectItem key={e.id} value={e.id}>{e.name}{e.status === 'desligado' ? ' (desligado)' : ''}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div><label className="label-caps mb-1 block">Mês Referência</label><Input type="month" value={payForm.month} onChange={e => setPayForm(f => ({ ...f, month: e.target.value }))} /></div>
