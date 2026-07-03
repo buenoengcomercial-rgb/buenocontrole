@@ -50,7 +50,7 @@ export default function PaymentsPage() {
 
   const handleGenerateAllAdvances = () => {
     let count = 0;
-    activeEmployees.forEach(emp => {
+    activeOnly.forEach(emp => {
       const exists = advances.find(a => a.employeeId === emp.id && a.month === advMonth);
       if (!exists) { generateAdvance(emp.id, advMonth); count++; }
     });
