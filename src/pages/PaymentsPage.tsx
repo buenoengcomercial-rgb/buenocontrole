@@ -17,7 +17,15 @@ const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'
 
 export default function PaymentsPage() {
   const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, updateAdvance, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
-  const activeEmployees = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
+  const activeEmployees = useMemo(() => {
+    const list = [...employees];
+    list.sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'ativo' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    return list;
+  }, [employees]);
+  const activeOnly = useMemo(() => employees.filter(e => e.status === 'ativo'), [employees]);
 
   // Advance generation
   const [advMonth, setAdvMonth] = useState(() => new Date().toISOString().slice(0, 7));
