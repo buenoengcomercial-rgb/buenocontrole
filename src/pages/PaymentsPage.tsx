@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCard, KeyRound, ChevronDown, ChevronRight, Pencil, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
+import { exportRowsToXlsx } from '@/lib/xlsx-export';
 
 const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'] as const;
 
