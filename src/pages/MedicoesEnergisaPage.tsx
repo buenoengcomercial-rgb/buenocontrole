@@ -558,23 +558,22 @@ export default function MedicoesEnergisaPage() {
       toast({ title: 'Sem dados para exportar', variant: 'destructive' });
       return;
     }
-    const lines: string[] = [];
-    const sanitize = (s: string) => (s || '').replace(/[\r\n;]+/g, ' ').trim();
-    lines.push(`${formatBillingLabel(b).toUpperCase()} - ENERGISA`);
-    lines.push(`Data: ${b.billing_date.split('-').reverse().join('/')}`);
+    const rows: XlsxRow[] = [];
+    const sanitize = (s: string) => (s || '').replace(/[\r\n]+/g, ' ').trim();
+    rows.push([`${formatBillingLabel(b).toUpperCase()} - ENERGISA`]);
+    rows.push([`Data: ${b.billing_date.split('-').reverse().join('/')}`]);
 
-    lines.push('');
-    lines.push('RESUMO POR ITEM');
-    lines.push('Item;Descrição;Unidade;Qtd;Valor Unit Material;Valor Unit MO;Valor Total;Unidades Energisa;Datas');
+    rows.push([]);
+    rows.push(['RESUMO POR ITEM']);
+    rows.push(['Item', 'Descrição', 'Unidade', 'Qtd', 'Valor Unit Material', 'Valor Unit MO', 'Valor Total', 'Unidades Energisa', 'Datas']);
     for (const s of b.snapshot) {
-      lines.push(`${s.item_code};${sanitize(s.description)};${s.unit};${s.quantity};${s.material_unit_value.toFixed(2)};${s.labor_unit_value.toFixed(2)};${s.total.toFixed(2)};${sanitize(s.unit_names)};${s.dates}`);
+      rows.push([s.item_code, sanitize(s.description), s.unit, s.quantity, s.material_unit_value, s.labor_unit_value, s.total, sanitize(s.unit_names), s.dates]);
     }
-    lines.push('');
-    lines.push(`;;;;;;TOTAL MATERIAL;${b.material_value.toFixed(2)};`);
-    lines.push(`;;;;;;TOTAL MÃO DE OBRA;${b.labor_value.toFixed(2)};`);
-    lines.push(`;;;;;;TOTAL GERAL;${b.total_value.toFixed(2)};`);
+    rows.push([]);
+    rows.push(['', '', '', '', '', '', 'TOTAL MATERIAL', b.material_value, '']);
+    rows.push(['', '', '', '', '', '', 'TOTAL MÃO DE OBRA', b.labor_value, '']);
+    rows.push(['', '', '', '', '', '', 'TOTAL GERAL', b.total_value, '']);
 
-    // Per-unit breakdown with observations
     const byUnit = new Map<string, { s: BillingSnapshotItem; r: BillingSnapshotRecord }[]>();
     for (const s of b.snapshot) {
       if (!s.records) continue;
@@ -586,29 +585,26 @@ export default function MedicoesEnergisaPage() {
       }
     }
     if (byUnit.size > 0) {
-      lines.push('');
-      lines.push('DETALHAMENTO POR UNIDADE ENERGISA');
-      lines.push('Unidade Energisa;Data;Item;Descrição;Qtd;Unidade;Valor Total;Observações');
+      rows.push([]);
+      rows.push(['DETALHAMENTO POR UNIDADE ENERGISA']);
+      rows.push(['Unidade Energisa', 'Data', 'Item', 'Descrição', 'Qtd', 'Unidade', 'Valor Total', 'Observações']);
       for (const [unitName, entries] of Array.from(byUnit.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
         let unitSubtotal = 0;
         for (const { s, r } of entries.sort((a, b) => a.r.date.localeCompare(b.r.date))) {
           const unitTotal = s.material_unit_value + s.labor_unit_value;
           const lineTotal = r.quantity * unitTotal;
           unitSubtotal += lineTotal;
-          lines.push(`${sanitize(unitName)};${r.date.split('-').reverse().join('/')};${s.item_code};${sanitize(s.description)};${r.quantity};${s.unit};${lineTotal.toFixed(2)};${sanitize(r.notes)}`);
+          rows.push([sanitize(unitName), r.date.split('-').reverse().join('/'), s.item_code, sanitize(s.description), r.quantity, s.unit, lineTotal, sanitize(r.notes)]);
         }
-        lines.push(`;;;;;;Subtotal ${sanitize(unitName)};${unitSubtotal.toFixed(2)}`);
-        lines.push('');
+        rows.push(['', '', '', '', '', '', `Subtotal ${sanitize(unitName)}`, unitSubtotal]);
+        rows.push([]);
       }
     }
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cobranca_${b.billing_number}_${(b.billing_date || '').slice(0, 4)}_energisa_${b.billing_date}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportRowsToXlsx({
+      filename: `cobranca_${b.billing_number}_${(b.billing_date || '').slice(0, 4)}_energisa_${b.billing_date}.xlsx`,
+      sheetName: `Cobrança ${b.billing_number}`,
+      rows,
+    });
   }, []);
 
   const getItemLabel = (itemId: string) => {
