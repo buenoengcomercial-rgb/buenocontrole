@@ -5,6 +5,7 @@ import { useAppData } from '@/context/AppContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency } from '@/lib/format';
 import { Download } from 'lucide-react';
+import { exportRowsToXlsx } from '@/lib/xlsx-export';
 
 export default function ProjectReportsPage() {
   const { projects, allocations, outsourcedServices } = useProjectData();
