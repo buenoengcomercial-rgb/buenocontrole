@@ -29,7 +29,7 @@ export function exportRowsToXlsx(opts: {
         const cell = ws[addr];
         if (cell && typeof cell.v === 'number') {
           cell.t = 'n';
-          cell.z = Number.isInteger(cell.v) && Math.abs(cell.v) < 1000 ? BR_INT_FORMAT : numberFormat;
+          cell.z = numberFormat;
         }
       }
     }
