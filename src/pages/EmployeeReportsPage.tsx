@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { exportObjectsToXlsx } from '@/lib/xlsx-export';
 
 export default function EmployeeReportsPage() {
   const { employees, advances, payments, workDays } = useEmployeeData();
