@@ -428,12 +428,12 @@ export default function MedicoesEnergisaPage() {
   }, [budgetItems, contractItems, budgetTotal, budgetMaterialTotal, budgetLaborTotal]);
 
   const exportExcel = useCallback(async () => {
-    const lines: string[] = [];
-    lines.push('MEDIÇÃO ACUMULADA - ENERGISA');
-    lines.push(`Mês: ${selectedMonth}`);
-    lines.push('');
-    lines.push('RESUMO POR ITEM');
-    lines.push('Item;Descrição;Unidade;Qtd Contrato;Qtd Executada;Valor Unit Material;Valor Unit MO;Valor Total;Unidades Energisa;Datas');
+    const rows: XlsxRow[] = [];
+    rows.push(['MEDIÇÃO ACUMULADA - ENERGISA']);
+    rows.push([`Mês: ${selectedMonth}`]);
+    rows.push([]);
+    rows.push(['RESUMO POR ITEM']);
+    rows.push(['Item', 'Descrição', 'Unidade', 'Qtd Contrato', 'Qtd Executada', 'Valor Unit Material', 'Valor Unit MO', 'Valor Total', 'Unidades Energisa', 'Datas']);
 
     for (const item of contractItems) {
       const acc = accumulatedByItem.get(item.id);
@@ -441,18 +441,17 @@ export default function MedicoesEnergisaPage() {
       const unitTotal = item.material_unit_value + item.labor_unit_value;
       const unidades = acc.records.map(r => r.unitLabel).join(' / ');
       const datas = acc.records.map(r => r.date.split('-').reverse().join('/')).join(' / ');
-      lines.push(`${item.item_code};${item.description};${item.unit};${item.quantity};${acc.totalQty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${(acc.totalQty * unitTotal).toFixed(2)};${unidades};${datas}`);
+      rows.push([item.item_code, item.description, item.unit, item.quantity, acc.totalQty, item.material_unit_value, item.labor_unit_value, acc.totalQty * unitTotal, unidades, datas]);
     }
 
-    lines.push('');
-    lines.push(`;;;;;;TOTAL MATERIAL;${totalMaterialValue.toFixed(2)};`);
-    lines.push(`;;;;;;TOTAL MÃO DE OBRA;${totalLaborValue.toFixed(2)};`);
-    lines.push(`;;;;;;TOTAL GERAL;${totalMonthValue.toFixed(2)};`);
+    rows.push([]);
+    rows.push(['', '', '', '', '', '', 'TOTAL MATERIAL', totalMaterialValue, '', '']);
+    rows.push(['', '', '', '', '', '', 'TOTAL MÃO DE OBRA', totalLaborValue, '', '']);
+    rows.push(['', '', '', '', '', '', 'TOTAL GERAL', totalMonthValue, '', '']);
 
-    // Per-unit breakdown with notes (observations) so the client understands what was used at each unit
-    lines.push('');
-    lines.push('DETALHAMENTO POR UNIDADE ENERGISA');
-    lines.push('Unidade Energisa;Data;Item;Descrição;Qtd;Unidade;Valor Total;Observações');
+    rows.push([]);
+    rows.push(['DETALHAMENTO POR UNIDADE ENERGISA']);
+    rows.push(['Unidade Energisa', 'Data', 'Item', 'Descrição', 'Qtd', 'Unidade', 'Valor Total', 'Observações']);
 
     const byUnit = new Map<string, { rec: ServiceRecord; item: ContractItem }[]>();
     for (const r of unbilledRecords) {
@@ -463,27 +462,20 @@ export default function MedicoesEnergisaPage() {
       list.push({ rec: r, item });
       byUnit.set(key, list);
     }
-    const sanitize = (s: string) => (s || '').replace(/[\r\n;]+/g, ' ').trim();
+    const sanitize = (s: string) => (s || '').replace(/[\r\n]+/g, ' ').trim();
     for (const [unitName, entries] of Array.from(byUnit.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
       let unitSubtotal = 0;
       for (const { rec, item } of entries.sort((a, b) => a.rec.date.localeCompare(b.rec.date))) {
         const unitTotal = item.material_unit_value + item.labor_unit_value;
         const lineTotal = rec.quantity * unitTotal;
         unitSubtotal += lineTotal;
-        lines.push(`${sanitize(unitName)};${rec.date.split('-').reverse().join('/')};${item.item_code};${sanitize(item.description)};${rec.quantity};${item.unit};${lineTotal.toFixed(2)};${sanitize(rec.notes)}`);
+        rows.push([sanitize(unitName), rec.date.split('-').reverse().join('/'), item.item_code, sanitize(item.description), rec.quantity, item.unit, lineTotal, sanitize(rec.notes)]);
       }
-      lines.push(`;;;;;;Subtotal ${sanitize(unitName)};${unitSubtotal.toFixed(2)}`);
-      lines.push('');
+      rows.push(['', '', '', '', '', '', `Subtotal ${sanitize(unitName)}`, unitSubtotal]);
+      rows.push([]);
     }
 
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `medicao_energisa_${selectedMonth}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportRowsToXlsx({ filename: `medicao_energisa_${selectedMonth}.xlsx`, sheetName: 'Medição', rows });
     toast({ title: 'Relatório exportado com sucesso' });
   }, [contractItems, accumulatedByItem, selectedMonth, totalMonthValue, totalMaterialValue, totalLaborValue, unbilledRecords]);
 
