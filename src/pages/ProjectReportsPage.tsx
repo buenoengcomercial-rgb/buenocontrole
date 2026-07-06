@@ -52,7 +52,7 @@ export default function ProjectReportsPage() {
       <div className="flex items-center justify-between">
         <h1>Relatórios de Obras</h1>
         <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
-          <Download className="w-4 h-4" /> Exportar CSV
+          <Download className="w-4 h-4" /> Exportar Excel
         </button>
       </div>
 
