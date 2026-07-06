@@ -400,33 +400,30 @@ export default function MedicoesEnergisaPage() {
 
   const exportBudgetCSV = useCallback(() => {
     if (budgetItems.length === 0) return;
-    const lines: string[] = [];
-    lines.push('ORÇAMENTO - ENERGISA');
-    lines.push(`Data: ${new Date().toLocaleDateString('pt-BR')}`);
-    lines.push('');
-    lines.push('Item;Descrição;Unidade;Quantidade;Valor Unit Material;Valor Unit MO;Valor Total Unit;Valor Total');
+    const rows: XlsxRow[] = [];
+    rows.push(['ORÇAMENTO - ENERGISA']);
+    rows.push([`Data: ${new Date().toLocaleDateString('pt-BR')}`]);
+    rows.push([]);
+    rows.push(['Item', 'Descrição', 'Unidade', 'Quantidade', 'Valor Unit Material', 'Valor Unit MO', 'Valor Total Unit', 'Valor Total']);
 
     for (const bi of budgetItems) {
       const item = contractItems.find(i => i.id === bi.contract_item_id);
       if (!item) continue;
       const qty = parseFloat(bi.quantity || '0');
       const unitTotal = item.material_unit_value + item.labor_unit_value;
-      lines.push(`${item.item_code};${item.description};${item.unit};${qty};${item.material_unit_value.toFixed(2)};${item.labor_unit_value.toFixed(2)};${unitTotal.toFixed(2)};${(qty * unitTotal).toFixed(2)}`);
+      rows.push([item.item_code, item.description, item.unit, qty, item.material_unit_value, item.labor_unit_value, unitTotal, qty * unitTotal]);
     }
 
-    lines.push('');
-    lines.push(`;;;;;;TOTAL MATERIAL;${budgetMaterialTotal.toFixed(2)}`);
-    lines.push(`;;;;;;TOTAL MÃO DE OBRA;${budgetLaborTotal.toFixed(2)}`);
-    lines.push(`;;;;;;TOTAL GERAL;${budgetTotal.toFixed(2)}`);
+    rows.push([]);
+    rows.push(['', '', '', '', '', '', 'TOTAL MATERIAL', budgetMaterialTotal]);
+    rows.push(['', '', '', '', '', '', 'TOTAL MÃO DE OBRA', budgetLaborTotal]);
+    rows.push(['', '', '', '', '', '', 'TOTAL GERAL', budgetTotal]);
 
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `orcamento_energisa_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportRowsToXlsx({
+      filename: `orcamento_energisa_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: 'Orçamento',
+      rows,
+    });
     toast({ title: 'Orçamento exportado com sucesso' });
   }, [budgetItems, contractItems, budgetTotal, budgetMaterialTotal, budgetLaborTotal]);
 
