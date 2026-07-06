@@ -14,6 +14,7 @@ import { Plus, Search, Trash2, Download, Filter, ChevronDown, ChevronUp, X, File
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/format';
+import { exportRowsToXlsx, type XlsxRow } from '@/lib/xlsx-export';
 
 interface ContractItem {
   id: string;
