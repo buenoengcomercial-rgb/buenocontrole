@@ -43,13 +43,8 @@ export default function ProjectReportsPage() {
 
   const exportCSV = () => {
     const headers = ['Obra', 'Cliente', 'Contrato', 'Materiais', 'Mão de Obra', 'Terceirizados', 'Custo Total', 'Lucro'];
-    const rows = projectCosts.map(p => [p.name, p.client, p.contractValue, p.materialCost, p.laborCost, p.outsourcedCost, p.totalCost, p.profit].join(','));
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'relatorio_obras.csv'; a.click();
-    URL.revokeObjectURL(url);
+    const rows = [headers, ...projectCosts.map(p => [p.name, p.client, p.contractValue, p.materialCost, p.laborCost, p.outsourcedCost, p.totalCost, p.profit])];
+    exportRowsToXlsx({ filename: 'relatorio_obras.xlsx', sheetName: 'Obras', rows });
   };
 
   return (
