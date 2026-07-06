@@ -5,6 +5,7 @@ import { useAppData } from '@/context/AppContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency } from '@/lib/format';
 import { Download } from 'lucide-react';
+import { exportRowsToXlsx } from '@/lib/xlsx-export';
 
 export default function ProjectReportsPage() {
   const { projects, allocations, outsourcedServices } = useProjectData();
@@ -42,13 +43,8 @@ export default function ProjectReportsPage() {
 
   const exportCSV = () => {
     const headers = ['Obra', 'Cliente', 'Contrato', 'Materiais', 'Mão de Obra', 'Terceirizados', 'Custo Total', 'Lucro'];
-    const rows = projectCosts.map(p => [p.name, p.client, p.contractValue, p.materialCost, p.laborCost, p.outsourcedCost, p.totalCost, p.profit].join(','));
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'relatorio_obras.csv'; a.click();
-    URL.revokeObjectURL(url);
+    const rows = [headers, ...projectCosts.map(p => [p.name, p.client, p.contractValue, p.materialCost, p.laborCost, p.outsourcedCost, p.totalCost, p.profit])];
+    exportRowsToXlsx({ filename: 'relatorio_obras.xlsx', sheetName: 'Obras', rows });
   };
 
   return (
@@ -56,7 +52,7 @@ export default function ProjectReportsPage() {
       <div className="flex items-center justify-between">
         <h1>Relatórios de Obras</h1>
         <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
-          <Download className="w-4 h-4" /> Exportar CSV
+          <Download className="w-4 h-4" /> Exportar Excel
         </button>
       </div>
 

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { exportObjectsToXlsx } from '@/lib/xlsx-export';
 
 export default function EmployeeReportsPage() {
   const { employees, advances, payments, workDays } = useEmployeeData();
@@ -67,13 +68,7 @@ export default function EmployeeReportsPage() {
 
   const exportCSV = (data: Record<string, unknown>[], filename: string) => {
     if (data.length === 0) { toast.error('Sem dados para exportar.'); return; }
-    const headers = Object.keys(data[0]);
-    const csv = [headers.join(';'), ...data.map(row => headers.map(h => String(row[h] ?? '')).join(';'))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `${filename}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    exportObjectsToXlsx({ filename: `${filename}.xlsx`, sheetName: filename.slice(0, 31), data: data as Record<string, string | number | null | undefined>[] });
     toast.success('Relatório exportado.');
   };
 
