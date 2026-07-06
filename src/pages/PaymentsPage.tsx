@@ -357,16 +357,14 @@ export default function PaymentsPage() {
                   })
                   .sort((a, b) => a.name.localeCompare(b.name) || a.date.localeCompare(b.date));
                 if (!rows.length) { toast.error('Nenhum adiantamento para exportar.'); return; }
-                const lines = ['Colaborador;Data;Valor;Observações'];
-                rows.forEach(r => lines.push(`${r.name};${formatDate(r.date)};${formatCurrency(r.value)};${r.notes}`));
                 const total = rows.reduce((s, r) => s + r.value, 0);
-                lines.push('');
-                lines.push(`Total;;${formatCurrency(total)};`);
-                const bom = '\uFEFF';
-                const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = `adiantamentos_${filterMonth}.csv`; a.click();
-                URL.revokeObjectURL(url);
+                const data: (string | number)[][] = [
+                  ['Colaborador', 'Data', 'Valor', 'Observações'],
+                  ...rows.map(r => [r.name, formatDate(r.date), r.value, r.notes]),
+                  ['', '', '', ''],
+                  ['Total', '', total, ''],
+                ];
+                exportRowsToXlsx({ filename: `adiantamentos_${filterMonth}.xlsx`, sheetName: 'Adiantamentos', rows: data });
                 toast.success('Relatório exportado.');
               }}>
                 <FileText className="w-4 h-4 mr-1" /> Relatório
