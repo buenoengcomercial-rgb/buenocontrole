@@ -212,6 +212,63 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return costEvolution.map(d => { acc += d.total; return { ...d, acumulado: acc }; });
   }, [costEvolution]);
 
+  // Upcoming payments (boletos, parcelas, frete, ICMS) in a ±window from today
+  const upcomingPayments = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const horizon = new Date(today); horizon.setDate(horizon.getDate() + 30);
+    const pastWindow = new Date(today); pastWindow.setDate(pastWindow.getDate() - 15);
+    const items: { date: string; value: number; label: string; supplier: string; type: string; overdue: boolean; days: number }[] = [];
+    const supplierName = (id: string) => suppliers?.find((s: any) => s.id === id)?.name || '—';
+    const pushItem = (dateStr: string | null | undefined, value: number, label: string, supplier: string, type: string) => {
+      if (!dateStr || !value) return;
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return;
+      if (d < pastWindow || d > horizon) return;
+      const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+      items.push({ date: dateStr, value, label, supplier, type, overdue: diff < 0, days: diff });
+    };
+    (projectPurchases || []).forEach((p: any) => {
+      const sup = supplierName(p.supplierId);
+      const doc = p.invoiceNumber ? `NF ${p.invoiceNumber}` : (p.description || 'Compra');
+      const materialTotal = p.totalValue || 0;
+      const isParceled = (p.paymentMethod === 'boleto' || p.paymentMethod === 'credito') && (p.installments || 1) > 1;
+      if (isParceled) {
+        const n = p.installments;
+        const hasValues = Array.isArray(p.installmentValues) && p.installmentValues.length === n;
+        const perDefault = materialTotal / n;
+        const dates: string[] = Array.isArray(p.installmentDates) && p.installmentDates.length === n
+          ? p.installmentDates
+          : (() => {
+              const start = new Date((p.firstInstallmentDate || p.date) + 'T00:00:00');
+              return Array.from({ length: n }, (_, i) => {
+                const d = new Date(start.getFullYear(), start.getMonth() + i, start.getDate());
+                return d.toISOString().slice(0, 10);
+              });
+            })();
+        dates.forEach((ds, i) => {
+          const v = hasValues ? Number(p.installmentValues[i] || 0) : perDefault;
+          pushItem(ds, v, `${doc} — ${i + 1}/${n} (${p.paymentMethod === 'boleto' ? 'Boleto' : 'Crédito'})`, sup, 'parcela');
+        });
+      } else if (p.paymentMethod === 'boleto') {
+        pushItem(p.firstInstallmentDate || p.date, materialTotal, `${doc} (Boleto)`, sup, 'parcela');
+      }
+      if ((p.freightValue || 0) > 0 && p.freightPaymentDate) {
+        pushItem(p.freightPaymentDate, p.freightValue, `${doc} — Frete`, sup, 'frete');
+      }
+      if ((p.icmsValue || 0) > 0 && p.icmsPaymentDate) {
+        pushItem(p.icmsPaymentDate, p.icmsValue, `${doc} — ICMS`, sup, 'icms');
+      }
+    });
+    return items.sort((a, b) => a.date.localeCompare(b.date));
+  }, [projectPurchases, suppliers]);
+
+  const upcomingTotals = useMemo(() => {
+    const overdue = upcomingPayments.filter(i => i.overdue).reduce((s, i) => s + i.value, 0);
+    const next7 = upcomingPayments.filter(i => !i.overdue && i.days <= 7).reduce((s, i) => s + i.value, 0);
+    const next30 = upcomingPayments.filter(i => !i.overdue && i.days <= 30).reduce((s, i) => s + i.value, 0);
+    return { overdue, next7, next30 };
+  }, [upcomingPayments]);
+
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
