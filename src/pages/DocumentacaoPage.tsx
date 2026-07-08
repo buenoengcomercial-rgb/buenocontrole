@@ -23,7 +23,10 @@ export default function DocumentacaoPage() {
   const [expandedEmployees, setExpandedEmployees] = useState<Record<string, boolean>>({});
 
   const empName = (id: string) => employees.find(e => e.id === id)?.name ?? '—';
-  const activeEmployees = employees.filter(e => e.status === 'ativo');
+  const activeEmployees = [...employees].sort((a, b) => {
+    if (a.status !== b.status) return a.status === 'ativo' ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
 
   const filtered = filterEmployee === 'all' ? documents : documents.filter(d => d.employeeId === filterEmployee);
 
