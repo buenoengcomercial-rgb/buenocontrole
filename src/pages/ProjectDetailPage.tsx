@@ -11,7 +11,7 @@ import { calculate13thDailyCost } from '@/types/employee';
 import { PROJECT_DOC_TYPES, MEASUREMENT_STATUSES, EQUIPMENT_TYPES, BILLING_TYPES, PAYMENT_METHODS } from '@/types/project';
 import { MATERIAL_CATEGORIES, UNITS } from '@/types';
 import type { ProjectDocType, MeasurementStatus, Measurement, EquipmentRental, EquipmentType, BillingType } from '@/types/project';
-import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck, Paperclip, Scale } from 'lucide-react';
+import { ArrowLeft, Users, Package, Wrench, FileText, DollarSign, Plus, Trash2, AlertTriangle, BarChart3, Ruler, Pencil, Truck, Paperclip, Scale, CalendarClock } from 'lucide-react';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
@@ -67,7 +67,7 @@ export default function ProjectDetailPage() {
         )}
       </div>
 
-      {tab === 'dashboard' && <DashboardTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} measurements={projMeasurements} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} />}
+      {tab === 'dashboard' && <DashboardTab project={project} allocations={projAllocations} employees={employees} purchases={projPurchases} outsourced={projOutsourced} charges={charges} measurements={projMeasurements} dasExpenses={dasExpenses} allProjects={projects} projectPurchases={projProjectPurchases} projectDocs={projDocs} rentals={projRentals} suppliers={suppliers} />}
       {tab === 'measurements' && <MeasurementsTab projectId={id!} measurements={projMeasurements} onAdd={addMeasurement} onUpdate={updateMeasurement} onDelete={deleteMeasurement} />}
       {tab === 'allocations' && <AllocationsTab projectId={id!} allocations={projAllocations} employees={employees} onAdd={addWorkDay} onDelete={deleteWorkDay} />}
       {tab === 'materials' && <MaterialsTab projectId={id!} purchases={projPurchases} suppliers={suppliers} materials={materials} projectPurchases={projProjectPurchases} onAdd={addProjectPurchase} onUpdate={updateProjectPurchase} onDelete={deleteProjectPurchase} />}
@@ -81,7 +81,7 @@ export default function ProjectDetailPage() {
 }
 
 /* ── Dashboard Tab ── */
-function DashboardTab({ project, allocations, employees, purchases, outsourced, charges, measurements, dasExpenses, allProjects, projectPurchases, projectDocs, rentals }: any) {
+function DashboardTab({ project, allocations, employees, purchases, outsourced, charges, measurements, dasExpenses, allProjects, projectPurchases, projectDocs, rentals, suppliers }: any) {
   const totalMaterials = purchases.reduce((s: number, p: any) => s + p.finalPrice, 0);
   const totalProjectPurchases = (projectPurchases || []).reduce((s: number, p: any) => s + p.totalValue + (p.freightValue || 0) + (p.icmsValue || 0), 0);
   const totalOutsourced = outsourced.reduce((s: number, sv: any) => s + sv.value, 0);
@@ -212,6 +212,63 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
     return costEvolution.map(d => { acc += d.total; return { ...d, acumulado: acc }; });
   }, [costEvolution]);
 
+  // Upcoming payments (boletos, parcelas, frete, ICMS) in a ±window from today
+  const upcomingPayments = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const horizon = new Date(today); horizon.setDate(horizon.getDate() + 30);
+    const pastWindow = new Date(today); pastWindow.setDate(pastWindow.getDate() - 15);
+    const items: { date: string; value: number; label: string; supplier: string; type: string; overdue: boolean; days: number }[] = [];
+    const supplierName = (id: string) => suppliers?.find((s: any) => s.id === id)?.name || '—';
+    const pushItem = (dateStr: string | null | undefined, value: number, label: string, supplier: string, type: string) => {
+      if (!dateStr || !value) return;
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return;
+      if (d < pastWindow || d > horizon) return;
+      const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+      items.push({ date: dateStr, value, label, supplier, type, overdue: diff < 0, days: diff });
+    };
+    (projectPurchases || []).forEach((p: any) => {
+      const sup = supplierName(p.supplierId);
+      const doc = p.invoiceNumber ? `NF ${p.invoiceNumber}` : (p.description || 'Compra');
+      const materialTotal = p.totalValue || 0;
+      const isParceled = (p.paymentMethod === 'boleto' || p.paymentMethod === 'credito') && (p.installments || 1) > 1;
+      if (isParceled) {
+        const n = p.installments;
+        const hasValues = Array.isArray(p.installmentValues) && p.installmentValues.length === n;
+        const perDefault = materialTotal / n;
+        const dates: string[] = Array.isArray(p.installmentDates) && p.installmentDates.length === n
+          ? p.installmentDates
+          : (() => {
+              const start = new Date((p.firstInstallmentDate || p.date) + 'T00:00:00');
+              return Array.from({ length: n }, (_, i) => {
+                const d = new Date(start.getFullYear(), start.getMonth() + i, start.getDate());
+                return d.toISOString().slice(0, 10);
+              });
+            })();
+        dates.forEach((ds, i) => {
+          const v = hasValues ? Number(p.installmentValues[i] || 0) : perDefault;
+          pushItem(ds, v, `${doc} — ${i + 1}/${n} (${p.paymentMethod === 'boleto' ? 'Boleto' : 'Crédito'})`, sup, 'parcela');
+        });
+      } else if (p.paymentMethod === 'boleto') {
+        pushItem(p.firstInstallmentDate || p.date, materialTotal, `${doc} (Boleto)`, sup, 'parcela');
+      }
+      if ((p.freightValue || 0) > 0 && p.freightPaymentDate) {
+        pushItem(p.freightPaymentDate, p.freightValue, `${doc} — Frete`, sup, 'frete');
+      }
+      if ((p.icmsValue || 0) > 0 && p.icmsPaymentDate) {
+        pushItem(p.icmsPaymentDate, p.icmsValue, `${doc} — ICMS`, sup, 'icms');
+      }
+    });
+    return items.sort((a, b) => a.date.localeCompare(b.date));
+  }, [projectPurchases, suppliers]);
+
+  const upcomingTotals = useMemo(() => {
+    const overdue = upcomingPayments.filter(i => i.overdue).reduce((s, i) => s + i.value, 0);
+    const next7 = upcomingPayments.filter(i => !i.overdue && i.days <= 7).reduce((s, i) => s + i.value, 0);
+    const next30 = upcomingPayments.filter(i => !i.overdue && i.days <= 30).reduce((s, i) => s + i.value, 0);
+    return { overdue, next7, next30 };
+  }, [upcomingPayments]);
+
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
@@ -231,6 +288,63 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
         <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">Aluguéis</span><p className="text-lg font-semibold mt-1">{formatCurrency(totalRentals)}</p></div>
         <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">DAS Proporcional</span><p className="text-lg font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
       </div>
+
+      {/* Upcoming payments */}
+      <div className="bg-card rounded-xl shadow-card overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold">Próximos Pagamentos (30 dias)</h3>
+          </div>
+          <div className="flex gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 bg-destructive/10 text-destructive px-2 py-1 rounded-full font-medium">Vencidos: {formatCurrency(upcomingTotals.overdue)}</span>
+            <span className="inline-flex items-center gap-1 bg-warning/20 text-warning px-2 py-1 rounded-full font-medium">7 dias: {formatCurrency(upcomingTotals.next7)}</span>
+            <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">30 dias: {formatCurrency(upcomingTotals.next30)}</span>
+          </div>
+        </div>
+        {upcomingPayments.length === 0 ? (
+          <p className="text-xs text-muted-foreground p-6 text-center">Nenhum pagamento previsto para os próximos 30 dias.</p>
+        ) : (
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-muted">
+                <tr>
+                  <th className="label-caps text-left px-3 py-2">Vencimento</th>
+                  <th className="label-caps text-left px-3 py-2">Status</th>
+                  <th className="label-caps text-left px-3 py-2">Fornecedor</th>
+                  <th className="label-caps text-left px-3 py-2">Descrição</th>
+                  <th className="label-caps text-right px-3 py-2">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcomingPayments.map((it, idx) => {
+                  const badge = it.overdue
+                    ? 'bg-destructive/10 text-destructive'
+                    : it.days <= 7
+                    ? 'bg-warning/20 text-warning'
+                    : 'bg-success/10 text-success';
+                  const badgeText = it.overdue
+                    ? `Vencido há ${Math.abs(it.days)}d`
+                    : it.days === 0
+                    ? 'Hoje'
+                    : `Em ${it.days}d`;
+                  return (
+                    <tr key={idx} className="border-b border-border hover:bg-row-hover">
+                      <td className="px-3 py-2 font-medium whitespace-nowrap">{formatDate(it.date)}</td>
+                      <td className="px-3 py-2"><span className={`inline-flex px-2 py-0.5 rounded-full font-medium ${badge}`}>{badgeText}</span></td>
+                      <td className="px-3 py-2 truncate max-w-[200px]" title={it.supplier}>{it.supplier}</td>
+                      <td className="px-3 py-2 truncate max-w-[320px]" title={it.label}>{it.label}</td>
+                      <td className="px-3 py-2 text-right font-semibold whitespace-nowrap">{formatCurrency(it.value)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
