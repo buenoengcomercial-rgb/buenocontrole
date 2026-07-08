@@ -75,7 +75,7 @@ export default function DocumentacaoPage() {
                 <label className="label-caps mb-1 block">Colaborador</label>
                 <Select value={form.employeeId} onValueChange={v => setForm(f => ({ ...f, employeeId: v }))}>
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}{e.status === 'desligado' ? ' (desligado)' : ''}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
@@ -117,7 +117,7 @@ export default function DocumentacaoPage() {
             <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              {activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
+              {activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}{e.status === 'desligado' ? ' (desligado)' : ''}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
