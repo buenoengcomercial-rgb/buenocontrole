@@ -289,6 +289,63 @@ function DashboardTab({ project, allocations, employees, purchases, outsourced, 
         <div className="bg-card rounded-xl p-4 shadow-card"><span className="label-caps text-xs">DAS Proporcional</span><p className="text-lg font-semibold mt-1">{formatCurrency(dasCost)}</p></div>
       </div>
 
+      {/* Upcoming payments */}
+      <div className="bg-card rounded-xl shadow-card overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold">Próximos Pagamentos (30 dias)</h3>
+          </div>
+          <div className="flex gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 bg-destructive/10 text-destructive px-2 py-1 rounded-full font-medium">Vencidos: {formatCurrency(upcomingTotals.overdue)}</span>
+            <span className="inline-flex items-center gap-1 bg-warning/20 text-warning px-2 py-1 rounded-full font-medium">7 dias: {formatCurrency(upcomingTotals.next7)}</span>
+            <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">30 dias: {formatCurrency(upcomingTotals.next30)}</span>
+          </div>
+        </div>
+        {upcomingPayments.length === 0 ? (
+          <p className="text-xs text-muted-foreground p-6 text-center">Nenhum pagamento previsto para os próximos 30 dias.</p>
+        ) : (
+          <div className="overflow-x-auto max-h-96">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-muted">
+                <tr>
+                  <th className="label-caps text-left px-3 py-2">Vencimento</th>
+                  <th className="label-caps text-left px-3 py-2">Status</th>
+                  <th className="label-caps text-left px-3 py-2">Fornecedor</th>
+                  <th className="label-caps text-left px-3 py-2">Descrição</th>
+                  <th className="label-caps text-right px-3 py-2">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcomingPayments.map((it, idx) => {
+                  const badge = it.overdue
+                    ? 'bg-destructive/10 text-destructive'
+                    : it.days <= 7
+                    ? 'bg-warning/20 text-warning'
+                    : 'bg-success/10 text-success';
+                  const badgeText = it.overdue
+                    ? `Vencido há ${Math.abs(it.days)}d`
+                    : it.days === 0
+                    ? 'Hoje'
+                    : `Em ${it.days}d`;
+                  return (
+                    <tr key={idx} className="border-b border-border hover:bg-row-hover">
+                      <td className="px-3 py-2 font-medium whitespace-nowrap">{formatDate(it.date)}</td>
+                      <td className="px-3 py-2"><span className={`inline-flex px-2 py-0.5 rounded-full font-medium ${badge}`}>{badgeText}</span></td>
+                      <td className="px-3 py-2 truncate max-w-[200px]" title={it.supplier}>{it.supplier}</td>
+                      <td className="px-3 py-2 truncate max-w-[320px]" title={it.label}>{it.label}</td>
+                      <td className="px-3 py-2 text-right font-semibold whitespace-nowrap">{formatCurrency(it.value)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie */}
