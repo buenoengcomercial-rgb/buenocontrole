@@ -260,7 +260,7 @@ export default function PaymentsPage() {
               <Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" />
             </div>
             <div className="bg-primary text-primary-foreground rounded-xl px-6 py-4 shadow-card min-w-[320px] sm:text-right">
-              <span className="label-caps text-xs text-primary-foreground/70">Somatório dos pagamentos do mês de referência</span>
+              <span className="label-caps text-xs text-primary-foreground/70">Somatório total dos pagamentos do mês de referência</span>
               <p className="text-3xl font-semibold tracking-tight">{formatCurrency(filteredPaymentsTotal)}</p>
               <p className="text-xs text-primary-foreground/70">{filteredPayments.length} pagamento(s) somado(s)</p>
             </div>
