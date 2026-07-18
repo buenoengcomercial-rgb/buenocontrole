@@ -85,6 +85,58 @@ export default function DashboardPage() {
     });
   }, [projects, allocations, purchases, outsourcedServices, employees, charges, dasExpenses]);
 
+  const payrollTrendData = useMemo(() => {
+    const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' });
+    const today = new Date();
+
+    return Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth() - (5 - index), 1);
+      const month = date.toISOString().slice(0, 7);
+
+      const salarios = payments
+        .filter(p => p.month === month)
+        .reduce((sum, payment) => sum + payment.netSalary, 0);
+      const adiantamentos = advances
+        .filter(a => a.month === month)
+        .reduce((sum, advance) => sum + advance.value, 0);
+      const inss = charges
+        .filter(c => c.month === month && c.chargeType === 'INSS')
+        .reduce((sum, charge) => sum + charge.value, 0);
+      const fgts = charges
+        .filter(c => c.month === month && c.chargeType === 'FGTS')
+        .reduce((sum, charge) => sum + charge.value, 0);
+      const ferias = vacations
+        .filter(v => v.paymentDate && v.paymentDate.startsWith(month))
+        .reduce((sum, vacation) => sum + vacation.totalPaid, 0);
+      const valeAlimentacao = workDays
+        .filter(w => w.date.startsWith(month))
+        .reduce((sum, workDay) => sum + workDay.mealVoucherValue, 0);
+      const rescisoes = terminations
+        .filter(t => t.paymentDate && t.paymentDate.startsWith(month))
+        .reduce((sum, termination) => sum + termination.value, 0);
+
+      return {
+        month,
+        label: monthFormatter.format(date).replace('.', ''),
+        salarios,
+        adiantamentos,
+        inss,
+        fgts,
+        ferias,
+        valeAlimentacao,
+        rescisoes,
+        total: salarios + adiantamentos + inss + fgts + ferias + valeAlimentacao + rescisoes,
+      };
+    });
+  }, [payments, advances, charges, vacations, workDays, terminations]);
+
+  const payrollTrendTotal = useMemo(
+    () => payrollTrendData.reduce((sum, month) => sum + month.total, 0),
+    [payrollTrendData]
+  );
+
+  const payrollTrendAverage = payrollTrendData.length > 0 ? payrollTrendTotal / payrollTrendData.length : 0;
+
   const kpis = [
     { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Adiant: ${formatCurrency(totalAdvancesPaid)}${totalTerminations > 0 ? ` | Resc: ${formatCurrency(totalTerminations)}` : ''}` },
     { label: 'Encargos (INSS+FGTS)', value: formatCurrency(totalCharges), icon: Shield },
@@ -186,6 +238,43 @@ export default function DashboardPage() {
         <AlertCard icon={Stethoscope} label="ASO Vencendo" count={expiringASOs.length} color="red" link="/seguranca/aso" />
         <AlertCard icon={GraduationCap} label="Treinamentos Vencendo" count={expiringTrainings.length} color="orange" link="/seguranca/treinamentos" />
         <AlertCard icon={FileText} label="Docs Obra Vencendo" count={expiringProjectDocs.length} color="amber" link="/obras" />
+      </div>
+
+      <div className="bg-card rounded-xl p-6 shadow-card">
+        <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2>Folha de Pagamentos - Últimos 6 Meses</h2>
+            <p className="text-sm text-muted-foreground mt-1">Salários, adiantamentos, INSS, FGTS, férias, vale alimentação e rescisões lançados.</p>
+          </div>
+          <div className="text-left sm:text-right">
+            <p className="text-xs text-muted-foreground">Total no período</p>
+            <p className="text-lg font-semibold">{formatCurrency(payrollTrendTotal)}</p>
+            <p className="text-xs text-muted-foreground">Média mensal: {formatCurrency(payrollTrendAverage)}</p>
+          </div>
+        </div>
+
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={payrollTrendData} margin={{ left: 8, right: 8, top: 8, bottom: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
+              <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={value => `R$${(Number(value) / 1000).toFixed(0)}k`} />
+              <Tooltip
+                formatter={(value: number, name: string) => [formatCurrency(value), name]}
+                labelFormatter={(_, payload) => payload?.[0]?.payload?.month || ''}
+                contentStyle={{ borderRadius: 8, border: '1px solid hsl(240 6% 90%)' }}
+              />
+              <Legend />
+              <Bar dataKey="salarios" name="Salários" fill="hsl(221 83% 53%)" stackId="folha" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="adiantamentos" name="Adiantamentos" fill="hsl(199 89% 48%)" stackId="folha" />
+              <Bar dataKey="inss" name="INSS" fill="hsl(162 72% 36%)" stackId="folha" />
+              <Bar dataKey="fgts" name="FGTS" fill="hsl(142 76% 36%)" stackId="folha" />
+              <Bar dataKey="ferias" name="Férias" fill="hsl(38 92% 50%)" stackId="folha" />
+              <Bar dataKey="valeAlimentacao" name="Vale Alimentação" fill="hsl(280 60% 50%)" stackId="folha" />
+              <Bar dataKey="rescisoes" name="Rescisões" fill="hsl(0 84% 60%)" stackId="folha" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {projectCostData.length > 0 && (
