@@ -129,6 +129,7 @@ export default function PaymentsPage() {
 
   const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredPayments = useMemo(() => payments.filter(p => p.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, filterMonth]);
+  const filteredPaymentsTotal = useMemo(() => filteredPayments.reduce((sum, payment) => sum + getSalaryPaymentTotal(payment), 0), [filteredPayments]);
 
   // Expand advance details (now grouped by employee)
   const [expandedAdvance, setExpandedAdvance] = useState<string | null>(null);
@@ -253,7 +254,14 @@ export default function PaymentsPage() {
             </Dialog>
           </div>
 
-          <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
+            <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
+            <div className="bg-card rounded-xl px-5 py-3 shadow-card min-w-[240px]">
+              <span className="label-caps text-xs text-muted-foreground">Total pago no mês</span>
+              <p className="text-2xl font-semibold tracking-tight">{formatCurrency(filteredPaymentsTotal)}</p>
+              <p className="text-xs text-muted-foreground">{filteredPayments.length} pagamento(s) registrado(s)</p>
+            </div>
+          </div>
 
 
           {/* Payments list as expandable cards */}
