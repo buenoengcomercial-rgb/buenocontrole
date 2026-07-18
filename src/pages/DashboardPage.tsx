@@ -17,6 +17,8 @@ export default function DashboardPage() {
   const { projects, allocations, outsourcedServices, projectDocuments, dasExpenses } = useProjectData();
 
   const currentMonth = new Date().toISOString().slice(0, 7);
+  const previousTaxMonth = getPreviousMonth(currentMonth);
+  const previousTaxMonthLabel = formatMonthLabel(previousTaxMonth);
   const activeEmployees = employees.filter(e => e.status === 'ativo');
 
   // Folha de pagamento = aba Salários + férias + rescisões.
@@ -29,8 +31,8 @@ export default function DashboardPage() {
   const totalTerminations = useMemo(() => terminations.filter(t => t.paymentDate && t.paymentDate.startsWith(currentMonth)).reduce((s, t) => s + t.value, 0), [terminations, currentMonth]);
   const totalPayroll = useMemo(() => totalSalariesPaid + totalVacationsPaid + totalTerminations, [totalSalariesPaid, totalVacationsPaid, totalTerminations]);
 
-  const totalCharges = useMemo(() => charges.filter(c => c.month === currentMonth).reduce((s, c) => s + c.value, 0), [charges, currentMonth]);
-  const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === currentMonth).reduce((s, d) => s + d.value, 0), [dasExpenses, currentMonth]);
+  const totalCharges = useMemo(() => charges.filter(c => c.month === previousTaxMonth).reduce((s, c) => s + c.value, 0), [charges, previousTaxMonth]);
+  const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === previousTaxMonth).reduce((s, d) => s + d.value, 0), [dasExpenses, previousTaxMonth]);
 
   const onVacation = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -43,8 +45,8 @@ export default function DashboardPage() {
   const totalMaterialsMonth = useMemo(() => purchases.filter(p => p.date.startsWith(currentMonth)).reduce((s, p) => s + p.finalPrice, 0), [purchases, currentMonth]);
 
   // DAS status
-  const dasCurrentMonth = useMemo(() => dasExpenses.find(d => d.month === currentMonth), [dasExpenses, currentMonth]);
-  const chargesCurrentMonth = useMemo(() => charges.filter(c => c.month === currentMonth), [charges, currentMonth]);
+  const dasCurrentMonth = useMemo(() => dasExpenses.find(d => d.month === previousTaxMonth), [dasExpenses, previousTaxMonth]);
+  const chargesCurrentMonth = useMemo(() => charges.filter(c => c.month === previousTaxMonth), [charges, previousTaxMonth]);
 
   const projectCostData = useMemo(() => {
     const activeProjectCount = projects.length || 1;
@@ -136,9 +138,9 @@ export default function DashboardPage() {
 
   const kpis = [
     { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Férias: ${formatCurrency(totalVacationsPaid)}${totalTerminations > 0 ? ` | Resc: ${formatCurrency(totalTerminations)}` : ''}` },
-    { label: 'Encargos (INSS+FGTS)', value: formatCurrency(totalCharges), icon: Shield },
+    { label: 'Encargos a Pagar', value: formatCurrency(totalCharges), icon: Shield, subtitle: `Competência ${previousTaxMonthLabel}` },
     { label: 'Vale Alimentação', value: formatCurrency(totalMealVoucher), icon: HardHat },
-    { label: 'DAS do Mês', value: formatCurrency(totalDASMonth), icon: Receipt },
+    { label: 'DAS a Pagar', value: formatCurrency(totalDASMonth), icon: Receipt, subtitle: `Competência ${previousTaxMonthLabel}` },
     { label: 'Materiais no Mês', value: formatCurrency(totalMaterialsMonth), icon: Package },
   ];
 
@@ -188,12 +190,13 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-foreground">DAS</span>
             <Receipt className="w-4 h-4 text-muted-foreground" />
           </div>
+          <p className="text-xs text-muted-foreground mb-2">Competência {previousTaxMonthLabel}</p>
           {dasCurrentMonth ? (
             dasCurrentMonth.paid
               ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
               : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>
           ) : (
-            <span className="text-xs text-muted-foreground">Sem registro neste mês</span>
+            <span className="text-xs text-muted-foreground">Sem registro desta competência</span>
           )}
         </Link>
 
@@ -202,6 +205,7 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-foreground">INSS</span>
             <Shield className="w-4 h-4 text-muted-foreground" />
           </div>
+          <p className="text-xs text-muted-foreground mb-2">Competência {previousTaxMonthLabel}</p>
           {(() => {
             const inssCharge = chargesCurrentMonth.find(c => c.chargeType === 'INSS');
             if (inssCharge) {
@@ -209,7 +213,7 @@ export default function DashboardPage() {
                 ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
                 : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>;
             }
-            return <span className="text-xs text-muted-foreground">Sem registro neste mês</span>;
+            return <span className="text-xs text-muted-foreground">Sem registro desta competência</span>;
           })()}
         </Link>
 
@@ -218,6 +222,7 @@ export default function DashboardPage() {
             <span className="text-sm font-medium text-foreground">FGTS</span>
             <Shield className="w-4 h-4 text-muted-foreground" />
           </div>
+          <p className="text-xs text-muted-foreground mb-2">Competência {previousTaxMonthLabel}</p>
           {(() => {
             const fgtsCharge = chargesCurrentMonth.find(c => c.chargeType === 'FGTS');
             if (fgtsCharge) {
@@ -225,7 +230,7 @@ export default function DashboardPage() {
                 ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
                 : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>;
             }
-            return <span className="text-xs text-muted-foreground">Sem registro neste mês</span>;
+            return <span className="text-xs text-muted-foreground">Sem registro desta competência</span>;
           })()}
         </Link>
       </div>
@@ -404,4 +409,21 @@ function AlertCard({ icon: Icon, label, count, color, link }: { icon: React.Elem
       {count > 0 && <AlertTriangle className="w-4 h-4 ml-auto text-warning" />}
     </Link>
   );
+}
+
+function getPreviousMonth(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  if (!year || !monthNumber) return month;
+
+  const previousYear = monthNumber === 1 ? year - 1 : year;
+  const previousMonth = monthNumber === 1 ? 12 : monthNumber - 1;
+
+  return `${previousYear}-${String(previousMonth).padStart(2, '0')}`;
+}
+
+function formatMonthLabel(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  if (!year || !monthNumber) return month;
+
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(year, monthNumber - 1, 1));
 }
