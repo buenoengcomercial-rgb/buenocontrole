@@ -241,7 +241,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2>Folha de Pagamentos - Últimos 12 Meses</h2>
-            <p className="text-sm text-muted-foreground mt-1">Visualização por mês com pagamento de salário, impostos (INSS e FGTS), férias e rescisões. Adiantamento e vale alimentação ficam considerados dentro de salários.</p>
+            <p className="text-sm text-muted-foreground mt-1">Visualização por mês com pagamento de salário, impostos (INSS e FGTS), férias e rescisões, sem duplicar adiantamento e vale alimentação.</p>
           </div>
           <div className="text-left sm:text-right">
             <p className="text-xs text-muted-foreground">Total no período</p>
