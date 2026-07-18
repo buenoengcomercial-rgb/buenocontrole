@@ -12,22 +12,22 @@ import { Link } from 'react-router-dom';
 
 export default function DashboardPage() {
   const { purchases } = useAppData();
-  const { employees, workDays, payments, advances, terminations } = useEmployeeData();
+  const { employees, workDays, payments, terminations } = useEmployeeData();
   const { charges, vacations, asos, trainings } = useSafetyData();
   const { projects, allocations, outsourcedServices, projectDocuments, dasExpenses } = useProjectData();
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const activeEmployees = employees.filter(e => e.status === 'ativo');
 
-  // Folha de pagamento = salários pagos + adiantamentos + férias + vale alimentação
+  // Folha de pagamento = aba Salários + férias + rescisões.
+  // Adiantamento e vale alimentação já entram no fechamento de salários.
   const totalSalariesPaid = useMemo(() => payments.filter(p => p.month === currentMonth).reduce((s, p) => s + p.netSalary, 0), [payments, currentMonth]);
-  const totalAdvancesPaid = useMemo(() => advances.filter(a => a.month === currentMonth).reduce((s, a) => s + a.value, 0), [advances, currentMonth]);
   const totalVacationsPaid = useMemo(() => {
     return vacations.filter(v => v.paymentDate && v.paymentDate.startsWith(currentMonth)).reduce((s, v) => s + v.totalPaid, 0);
   }, [vacations, currentMonth]);
   const totalMealVoucher = useMemo(() => workDays.filter(w => w.date.startsWith(currentMonth)).reduce((s, w) => s + w.mealVoucherValue, 0), [workDays, currentMonth]);
   const totalTerminations = useMemo(() => terminations.filter(t => t.paymentDate && t.paymentDate.startsWith(currentMonth)).reduce((s, t) => s + t.value, 0), [terminations, currentMonth]);
-  const totalPayroll = useMemo(() => totalSalariesPaid + totalAdvancesPaid + totalVacationsPaid + totalMealVoucher + totalTerminations, [totalSalariesPaid, totalAdvancesPaid, totalVacationsPaid, totalMealVoucher, totalTerminations]);
+  const totalPayroll = useMemo(() => totalSalariesPaid + totalVacationsPaid + totalTerminations, [totalSalariesPaid, totalVacationsPaid, totalTerminations]);
 
   const totalCharges = useMemo(() => charges.filter(c => c.month === currentMonth).reduce((s, c) => s + c.value, 0), [charges, currentMonth]);
   const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === currentMonth).reduce((s, d) => s + d.value, 0), [dasExpenses, currentMonth]);
@@ -89,16 +89,13 @@ export default function DashboardPage() {
     const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' });
     const today = new Date();
 
-    return Array.from({ length: 6 }, (_, index) => {
-      const date = new Date(today.getFullYear(), today.getMonth() - (5 - index), 1);
+    return Array.from({ length: 12 }, (_, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth() - (11 - index), 1);
       const month = date.toISOString().slice(0, 7);
 
       const salarios = payments
         .filter(p => p.month === month)
         .reduce((sum, payment) => sum + payment.netSalary, 0);
-      const adiantamentos = advances
-        .filter(a => a.month === month)
-        .reduce((sum, advance) => sum + advance.value, 0);
       const inss = charges
         .filter(c => c.month === month && c.chargeType === 'INSS')
         .reduce((sum, charge) => sum + charge.value, 0);
@@ -108,9 +105,6 @@ export default function DashboardPage() {
       const ferias = vacations
         .filter(v => v.paymentDate && v.paymentDate.startsWith(month))
         .reduce((sum, vacation) => sum + vacation.totalPaid, 0);
-      const valeAlimentacao = workDays
-        .filter(w => w.date.startsWith(month))
-        .reduce((sum, workDay) => sum + workDay.mealVoucherValue, 0);
       const rescisoes = terminations
         .filter(t => t.paymentDate && t.paymentDate.startsWith(month))
         .reduce((sum, termination) => sum + termination.value, 0);
@@ -119,26 +113,29 @@ export default function DashboardPage() {
         month,
         label: monthFormatter.format(date).replace('.', ''),
         salarios,
-        adiantamentos,
         inss,
         fgts,
         ferias,
-        valeAlimentacao,
         rescisoes,
-        total: salarios + adiantamentos + inss + fgts + ferias + valeAlimentacao + rescisoes,
+        total: salarios + inss + fgts + ferias + rescisoes,
       };
     });
-  }, [payments, advances, charges, vacations, workDays, terminations]);
+  }, [payments, charges, vacations, terminations]);
 
   const payrollTrendTotal = useMemo(
     () => payrollTrendData.reduce((sum, month) => sum + month.total, 0),
     [payrollTrendData]
   );
 
-  const payrollTrendAverage = payrollTrendData.length > 0 ? payrollTrendTotal / payrollTrendData.length : 0;
+  const payrollTrendMonthsWithData = useMemo(
+    () => payrollTrendData.filter(month => month.total > 0).length,
+    [payrollTrendData]
+  );
+
+  const payrollTrendAverage = payrollTrendMonthsWithData > 0 ? payrollTrendTotal / payrollTrendMonthsWithData : 0;
 
   const kpis = [
-    { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Adiant: ${formatCurrency(totalAdvancesPaid)}${totalTerminations > 0 ? ` | Resc: ${formatCurrency(totalTerminations)}` : ''}` },
+    { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Férias: ${formatCurrency(totalVacationsPaid)}${totalTerminations > 0 ? ` | Resc: ${formatCurrency(totalTerminations)}` : ''}` },
     { label: 'Encargos (INSS+FGTS)', value: formatCurrency(totalCharges), icon: Shield },
     { label: 'Vale Alimentação', value: formatCurrency(totalMealVoucher), icon: HardHat },
     { label: 'DAS do Mês', value: formatCurrency(totalDASMonth), icon: Receipt },
@@ -243,14 +240,26 @@ export default function DashboardPage() {
       <div className="bg-card rounded-xl p-6 shadow-card">
         <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2>Folha de Pagamentos - Últimos 6 Meses</h2>
-            <p className="text-sm text-muted-foreground mt-1">Salários, adiantamentos, INSS, FGTS, férias, vale alimentação e rescisões lançados.</p>
+            <h2>Folha de Pagamentos - Últimos 12 Meses</h2>
+            <p className="text-sm text-muted-foreground mt-1">Visualização por mês com pagamento de salário, impostos (INSS e FGTS), férias e rescisões. Adiantamento e vale alimentação ficam considerados dentro de salários.</p>
           </div>
           <div className="text-left sm:text-right">
             <p className="text-xs text-muted-foreground">Total no período</p>
             <p className="text-lg font-semibold">{formatCurrency(payrollTrendTotal)}</p>
-            <p className="text-xs text-muted-foreground">Média mensal: {formatCurrency(payrollTrendAverage)}</p>
+            <p className="text-xs text-muted-foreground">
+              {payrollTrendMonthsWithData > 0
+                ? `Média dos meses com dados: ${formatCurrency(payrollTrendAverage)}`
+                : 'Sem dados lançados no período'}
+            </p>
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3 mb-4 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[hsl(221_83%_53%)]" />Salários</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[hsl(162_72%_36%)]" />INSS</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[hsl(142_76%_36%)]" />FGTS</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[hsl(38_92%_50%)]" />Férias</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[hsl(0_84%_60%)]" />Rescisões</span>
         </div>
 
         <div className="h-80">
@@ -259,18 +268,12 @@ export default function DashboardPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
               <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={value => `R$${(Number(value) / 1000).toFixed(0)}k`} />
-              <Tooltip
-                formatter={(value: number, name: string) => [formatCurrency(value), name]}
-                labelFormatter={(_, payload) => payload?.[0]?.payload?.month || ''}
-                contentStyle={{ borderRadius: 8, border: '1px solid hsl(240 6% 90%)' }}
-              />
+              <Tooltip content={<PayrollTrendTooltip />} />
               <Legend />
               <Bar dataKey="salarios" name="Salários" fill="hsl(221 83% 53%)" stackId="folha" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="adiantamentos" name="Adiantamentos" fill="hsl(199 89% 48%)" stackId="folha" />
               <Bar dataKey="inss" name="INSS" fill="hsl(162 72% 36%)" stackId="folha" />
               <Bar dataKey="fgts" name="FGTS" fill="hsl(142 76% 36%)" stackId="folha" />
               <Bar dataKey="ferias" name="Férias" fill="hsl(38 92% 50%)" stackId="folha" />
-              <Bar dataKey="valeAlimentacao" name="Vale Alimentação" fill="hsl(280 60% 50%)" stackId="folha" />
               <Bar dataKey="rescisoes" name="Rescisões" fill="hsl(0 84% 60%)" stackId="folha" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -343,6 +346,41 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PayrollTrendTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+  if (!active || !payload?.length) return null;
+
+  const data = payload[0]?.payload || {};
+  const rows = [
+    { key: 'salarios', label: 'Pagamento de salário', color: 'hsl(221 83% 53%)' },
+    { key: 'inss', label: 'Imposto INSS', color: 'hsl(162 72% 36%)' },
+    { key: 'fgts', label: 'Imposto FGTS', color: 'hsl(142 76% 36%)' },
+    { key: 'ferias', label: 'Férias', color: 'hsl(38 92% 50%)' },
+    { key: 'rescisoes', label: 'Rescisões', color: 'hsl(0 84% 60%)' },
+  ];
+
+  return (
+    <div className="rounded-lg border bg-card p-3 shadow-md min-w-[240px]">
+      <p className="text-sm font-semibold mb-2">{data.label || data.month}</p>
+      <div className="space-y-1.5">
+        {rows.map(row => (
+          <div key={row.key} className="flex items-center justify-between gap-4 text-xs">
+            <span className="inline-flex items-center gap-2 text-muted-foreground">
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: row.color }} />
+              {row.label}
+            </span>
+            <span className="font-medium text-foreground">{formatCurrency(Number(data[row.key] || 0))}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between gap-4 border-t mt-2 pt-2 text-sm font-semibold">
+        <span>Total do mês</span>
+        <span>{formatCurrency(Number(data.total || 0))}</span>
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-2">Adiantamento e vale alimentação não são somados novamente.</p>
     </div>
   );
 }
