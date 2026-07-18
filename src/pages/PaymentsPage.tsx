@@ -261,7 +261,7 @@ export default function PaymentsPage() {
 
 
           {/* Payments list as expandable cards */}
-          <div className="space-y-3">
+          <div className="space-y-3 lg:max-h-[calc(100vh-24rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2">
             {filteredPayments.map(p => {
               const emp = employees.find(e => e.id === p.employeeId);
               const isExpanded = expandedPayment === p.id;
@@ -314,13 +314,13 @@ export default function PaymentsPage() {
             {filteredPayments.length === 0 && (
               <div className="bg-card rounded-xl shadow-card px-6 py-12 text-center text-meta">Nenhum pagamento encontrado.</div>
             )}
-            <div
-              className="bg-card rounded-xl border-2 border-primary/30 shadow-card px-6 py-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
-              aria-live="polite"
-            >
-              <span className="text-sm font-semibold uppercase text-foreground">Total</span>
-              <span className="text-xl font-semibold text-primary">{formatCurrency(filteredPaymentsTotal)}</span>
-            </div>
+          </div>
+          <div
+            className="bg-card rounded-xl border-2 border-primary/30 shadow-card px-6 py-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+            aria-live="polite"
+          >
+            <span className="text-sm font-semibold uppercase text-foreground">Total</span>
+            <span className="text-xl font-semibold text-primary">{formatCurrency(filteredPaymentsTotal)}</span>
           </div>
         </TabsContent>
 
