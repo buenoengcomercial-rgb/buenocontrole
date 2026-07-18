@@ -18,11 +18,12 @@ export default function EncargosPage() {
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [filterType, setFilterType] = useState<'all' | ChargeType>('all');
   const [attachOpenId, setAttachOpenId] = useState<string | null>(null);
+  const currentMonth = new Date().toISOString().slice(0, 7);
   const [form, setForm] = useState({
     chargeType: 'INSS' as ChargeType,
-    month: new Date().toISOString().slice(0, 7),
+    month: currentMonth,
     value: 0,
-    dueDate: '',
+    dueDate: getDefaultTaxDueDate(currentMonth),
     paid: false,
     paymentDate: '',
     notes: '',
@@ -42,9 +43,13 @@ export default function EncargosPage() {
       setForm({ chargeType: c.chargeType, month: c.month, value: c.value, dueDate: c.dueDate, paid: c.paid, paymentDate: c.paymentDate, notes: c.notes });
     } else {
       setEditId(null);
-      setForm({ chargeType: 'INSS', month: new Date().toISOString().slice(0, 7), value: 0, dueDate: '', paid: false, paymentDate: '', notes: '' });
+      setForm({ chargeType: 'INSS', month: currentMonth, value: 0, dueDate: getDefaultTaxDueDate(currentMonth), paid: false, paymentDate: '', notes: '' });
     }
     setOpen(true);
+  };
+
+  const handleMonthChange = (month: string) => {
+    setForm(prev => ({ ...prev, month, dueDate: getDefaultTaxDueDate(month) }));
   };
 
   const handleSubmit = () => {
@@ -92,10 +97,10 @@ export default function EncargosPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label-caps mb-1 block">Mês de Referência</label>
-                  <Input type="month" value={form.month} onChange={e => setForm(f => ({ ...f, month: e.target.value }))} />
+                  <Input type="month" value={form.month} onChange={e => handleMonthChange(e.target.value)} />
                 </div>
                 <div>
-                  <label className="label-caps mb-1 block">Data de Vencimento</label>
+                  <label className="label-caps mb-1 block">Vencimento do Boleto</label>
                   <Input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
                 </div>
               </div>
@@ -200,4 +205,14 @@ export default function EncargosPage() {
       </div>
     </div>
   );
+}
+
+function getDefaultTaxDueDate(month: string): string {
+  const [year, monthNumber] = month.split('-').map(Number);
+  if (!year || !monthNumber) return '';
+
+  const dueYear = monthNumber === 12 ? year + 1 : year;
+  const dueMonth = monthNumber === 12 ? 1 : monthNumber + 1;
+
+  return `${dueYear}-${String(dueMonth).padStart(2, '0')}-20`;
 }
