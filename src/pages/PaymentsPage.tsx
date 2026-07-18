@@ -254,12 +254,15 @@ export default function PaymentsPage() {
             </Dialog>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
-            <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
-            <div className="bg-card rounded-xl px-5 py-3 shadow-card min-w-[240px]">
-              <span className="label-caps text-xs text-muted-foreground">Total pago no mês</span>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 w-full">
+            <div>
+              <label className="label-caps mb-1 block">Filtrar por mês</label>
+              <Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" />
+            </div>
+            <div className="bg-primary text-primary-foreground rounded-xl px-5 py-3 shadow-card min-w-[260px] sm:text-right">
+              <span className="label-caps text-xs text-primary-foreground/70">Total pago no mês</span>
               <p className="text-2xl font-semibold tracking-tight">{formatCurrency(filteredPaymentsTotal)}</p>
-              <p className="text-xs text-muted-foreground">{filteredPayments.length} pagamento(s) registrado(s)</p>
+              <p className="text-xs text-primary-foreground/70">{filteredPayments.length} pagamento(s) registrado(s)</p>
             </div>
           </div>
 
