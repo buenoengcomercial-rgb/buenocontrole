@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { Fragment, useState, useMemo } from 'react';
 import { useProjectData } from '@/context/ProjectContext';
 import { formatCurrency, formatDate } from '@/lib/format';
 import type { DASExpense } from '@/types/project';
-import { Plus, Trash2, Pencil, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Trash2, Pencil, CheckCircle2, Clock, Paperclip } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 
@@ -10,6 +10,7 @@ export default function DASPage() {
   const { dasExpenses, addDASExpense, updateDASExpense, deleteDASExpense, projects } = useProjectData();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [expandedDASId, setExpandedDASId] = useState<string | null>(null);
   const [form, setForm] = useState({ month: '', dueDate: '', value: 0, paid: false, projectId: '' });
 
   const totalDAS = useMemo(() => dasExpenses.reduce((s, d) => s + d.value, 0), [dasExpenses]);
@@ -111,10 +112,16 @@ export default function DASPage() {
           </tr></thead>
           <tbody>
             {dasExpenses.sort((a, b) => b.month.localeCompare(a.month)).map(d => (
-              <tr key={d.id} className="border-b border-border">
+              <Fragment key={d.id}>
+              <tr onClick={() => setExpandedDASId(expandedDASId === d.id ? null : d.id)} className="border-b border-border cursor-pointer hover:bg-muted/40 transition-colors">
                 <td className="px-4 py-3 font-medium">{getProjectName(d.projectId)}</td>
                 <td className="px-4 py-3">{d.month}</td>
-                <td className="px-4 py-3">{formatDate(d.dueDate)}</td>
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center gap-2 font-medium text-primary">
+                    <Paperclip className="w-3.5 h-3.5" />
+                    {formatDate(d.dueDate)}
+                  </span>
+                </td>
                 <td className="px-4 py-3 text-right font-medium">{formatCurrency(d.value)}</td>
                 <td className="px-4 py-3 text-center">
                   {d.paid
@@ -124,20 +131,25 @@ export default function DASPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-1">
-                    <button onClick={() => handleEdit(d)} className="p-1 text-muted-foreground hover:text-foreground"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => { deleteDASExpense(d.id); toast.success('DAS removido.'); }} className="p-1 text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(d); }} className="p-1 text-muted-foreground hover:text-foreground"><Pencil className="w-3.5 h-3.5" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); deleteDASExpense(d.id); if (expandedDASId === d.id) setExpandedDASId(null); toast.success('DAS removido.'); }} className="p-1 text-destructive"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </td>
               </tr>
+              {expandedDASId === d.id && (
+                <tr className="border-b border-border bg-muted/20">
+                  <td colSpan={6} className="px-4 py-4">
+                    <AttachedDocuments entityType="das" entityId={d.id} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>
         {dasExpenses.length === 0 && <p className="text-muted-foreground text-center py-8">Nenhum DAS registrado.</p>}
       </div>
 
-      {dasExpenses.map(d => (
-        <AttachedDocuments key={d.id} entityType="das" entityId={d.id} />
-      ))}
     </div>
   );
 }
