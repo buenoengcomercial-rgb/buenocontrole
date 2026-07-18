@@ -4,7 +4,7 @@ import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { useProjectData } from '@/context/ProjectContext';
 import { formatCurrency } from '@/lib/format';
-import { calculate13thDailyCost, getSalaryPaymentTotal } from '@/types/employee';
+import { calculate13thDailyCost } from '@/types/employee';
 import { daysUntilExpiry } from '@/types/safety';
 import { TrendingUp, Users, Shield, Palmtree, AlertTriangle, Package, DollarSign, Stethoscope, GraduationCap, FileText, HardHat, Receipt, CheckCircle2, Clock, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   // Folha de pagamento = aba Salários + férias + rescisões.
   // Adiantamento e vale alimentação já entram no fechamento de salários.
-  const totalSalariesPaid = useMemo(() => payments.filter(p => p.month === currentMonth).reduce((s, p) => s + getSalaryPaymentTotal(p), 0), [payments, currentMonth]);
+  const totalSalariesPaid = useMemo(() => payments.filter(p => p.month === currentMonth).reduce((s, p) => s + p.netSalary, 0), [payments, currentMonth]);
   const totalVacationsPaid = useMemo(() => {
     return vacations.filter(v => v.paymentDate && v.paymentDate.startsWith(currentMonth)).reduce((s, v) => s + v.totalPaid, 0);
   }, [vacations, currentMonth]);
@@ -97,7 +97,7 @@ export default function DashboardPage() {
 
       const salarios = payments
         .filter(p => p.month === month)
-        .reduce((sum, payment) => sum + getSalaryPaymentTotal(payment), 0);
+        .reduce((sum, payment) => sum + payment.netSalary, 0);
       const inss = charges
         .filter(c => c.month === month && c.chargeType === 'INSS')
         .reduce((sum, charge) => sum + charge.value, 0);
