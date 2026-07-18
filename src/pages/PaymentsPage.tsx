@@ -291,7 +291,7 @@ export default function PaymentsPage() {
                         <div><span className="label-caps text-xs block">Adiantamento</span><span className="text-destructive">{formatCurrency(p.advanceDiscount)}</span></div>
                         <div><span className="label-caps text-xs block">Descontos</span><span className="text-destructive">{formatCurrency(p.otherDiscounts)}</span></div>
                         <div><span className="label-caps text-xs block">Adicionais</span><span>{formatCurrency(p.otherAdditions)}</span></div>
-                        <div><span className="label-caps text-xs block">Total Pago</span><span className="font-semibold">{formatCurrency(getSalaryPaymentTotal(p))}</span></div>
+                        <div><span className="label-caps text-xs block">Total Pago</span><span className="font-semibold">{formatCurrency(p.netSalary)}</span></div>
                       </div>
                       {emp?.pixKey && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
