@@ -259,10 +259,10 @@ export default function PaymentsPage() {
               <label className="label-caps mb-1 block">Filtrar por mês</label>
               <Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" />
             </div>
-            <div className="bg-primary text-primary-foreground rounded-xl px-5 py-3 shadow-card min-w-[260px] sm:text-right">
-              <span className="label-caps text-xs text-primary-foreground/70">Total pago no mês</span>
-              <p className="text-2xl font-semibold tracking-tight">{formatCurrency(filteredPaymentsTotal)}</p>
-              <p className="text-xs text-primary-foreground/70">{filteredPayments.length} pagamento(s) registrado(s)</p>
+            <div className="bg-primary text-primary-foreground rounded-xl px-6 py-4 shadow-card min-w-[320px] sm:text-right">
+              <span className="label-caps text-xs text-primary-foreground/70">Somatório dos pagamentos do mês de referência</span>
+              <p className="text-3xl font-semibold tracking-tight">{formatCurrency(filteredPaymentsTotal)}</p>
+              <p className="text-xs text-primary-foreground/70">{filteredPayments.length} pagamento(s) somado(s)</p>
             </div>
           </div>
 
