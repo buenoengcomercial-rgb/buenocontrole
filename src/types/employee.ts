@@ -50,6 +50,10 @@ export interface SalaryPayment {
   createdAt: string;
 }
 
+export function getSalaryPaymentTotal(payment: Pick<SalaryPayment, 'netSalary'>): number {
+  return payment.netSalary;
+}
+
 export const EMPLOYEE_STATUSES = ['ativo', 'desligado'] as const;
 
 export function calculateAdvance(grossSalary: number): number {

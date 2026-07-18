@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
-import { calculateAdvance, getSalaryPaymentDate } from '@/types/employee';
+import { calculateAdvance, getSalaryPaymentDate, getSalaryPaymentTotal } from '@/types/employee';
 import type { SalaryPayment, SalaryAdvance } from '@/types/employee';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
@@ -272,7 +272,7 @@ export default function PaymentsPage() {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-end">
                         <span className="text-[10px] text-muted-foreground uppercase">Total</span>
-                        <span className="text-sm font-semibold">{formatCurrency(p.advanceDiscount + ((p.grossSalary + p.otherAdditions) - (p.advanceDiscount + p.otherDiscounts)))}</span>
+                        <span className="text-sm font-semibold">{formatCurrency(getSalaryPaymentTotal(p))}</span>
                       </div>
                       <span className="text-xs text-muted-foreground">{formatDate(p.paymentDate)}</span>
                       {p.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />}
@@ -287,6 +287,7 @@ export default function PaymentsPage() {
                         <div><span className="label-caps text-xs block">Adiantamento</span><span className="text-destructive">{formatCurrency(p.advanceDiscount)}</span></div>
                         <div><span className="label-caps text-xs block">Descontos</span><span className="text-destructive">{formatCurrency(p.otherDiscounts)}</span></div>
                         <div><span className="label-caps text-xs block">Adicionais</span><span>{formatCurrency(p.otherAdditions)}</span></div>
+                        <div><span className="label-caps text-xs block">Total Pago</span><span className="font-semibold">{formatCurrency(getSalaryPaymentTotal(p))}</span></div>
                       </div>
                       {emp?.pixKey && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
