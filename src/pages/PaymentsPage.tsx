@@ -157,7 +157,7 @@ export default function PaymentsPage() {
         </TabsList>
 
         <TabsContent value="salaries" className="space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
             <Dialog open={payOpen} onOpenChange={(open) => { setPayOpen(open); if (!open) resetPayForm(); }}>
               <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Registrar Pagamento</Button></DialogTrigger>
               <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -252,11 +252,6 @@ export default function PaymentsPage() {
                 </div>
               </DialogContent>
             </Dialog>
-            <div className="bg-primary text-primary-foreground rounded-xl px-6 py-4 shadow-card min-w-[320px] lg:text-right">
-              <span className="label-caps text-xs text-primary-foreground/70">Somatório total dos pagamentos do mês de referência</span>
-              <p className="text-3xl font-semibold tracking-tight">{formatCurrency(filteredPaymentsTotal)}</p>
-              <p className="text-xs text-primary-foreground/70">{filteredPayments.length} pagamento(s) somado(s)</p>
-            </div>
           </div>
 
           <div>
@@ -319,6 +314,13 @@ export default function PaymentsPage() {
             {filteredPayments.length === 0 && (
               <div className="bg-card rounded-xl shadow-card px-6 py-12 text-center text-meta">Nenhum pagamento encontrado.</div>
             )}
+            <div
+              className="bg-card rounded-xl border-2 border-primary/30 shadow-card px-6 py-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
+              aria-live="polite"
+            >
+              <span className="text-sm font-semibold uppercase text-foreground">Total</span>
+              <span className="text-xl font-semibold text-primary">{formatCurrency(filteredPaymentsTotal)}</span>
+            </div>
           </div>
         </TabsContent>
 
