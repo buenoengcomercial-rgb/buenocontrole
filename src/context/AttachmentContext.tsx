@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 
 export interface Attachment {
   id: string;
@@ -23,8 +24,12 @@ interface AttachmentState {
 
 const AttachmentContext = createContext<AttachmentState | null>(null);
 const METADATA_SELECT = 'id, entity_type, entity_id, file_name, file_size, file_type, created_at';
+type AttachmentMetadataRow = Pick<
+  Tables<'attachments'>,
+  'id' | 'entity_type' | 'entity_id' | 'file_name' | 'file_size' | 'file_type' | 'created_at'
+>;
 
-function mapRow(r: any): Attachment {
+function mapRow(r: AttachmentMetadataRow): Attachment {
   return {
     id: r.id,
     entityType: r.entity_type,
@@ -60,17 +65,6 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     fetchAttachments();
-
-    // Re-fetch when auth state changes (e.g. user logs in)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        fetchAttachments();
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [fetchAttachments]);
 
   const addAttachment = useCallback(async (a: AttachmentPayload): Promise<boolean> => {
@@ -126,7 +120,7 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
         return null;
       }
       if (!data) return null;
-      return (data as any).file_data;
+      return data.file_data;
     } catch (err) {
       console.error('Erro inesperado ao baixar anexo:', err);
       return null;

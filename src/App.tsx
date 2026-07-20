@@ -128,6 +128,24 @@ function AppRoutes() {
   );
 }
 
+function AuthenticatedDataProviders({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading || !user) return <>{children}</>;
+
+  return (
+    <AppProvider>
+      <EmployeeProvider>
+        <SafetyProvider>
+          <ProjectProvider>
+            <AttachmentProvider>{children}</AttachmentProvider>
+          </ProjectProvider>
+        </SafetyProvider>
+      </EmployeeProvider>
+    </AppProvider>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -135,17 +153,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppProvider>
-            <EmployeeProvider>
-              <SafetyProvider>
-                <ProjectProvider>
-                  <AttachmentProvider>
-                    <AppRoutes />
-                  </AttachmentProvider>
-                </ProjectProvider>
-              </SafetyProvider>
-            </EmployeeProvider>
-          </AppProvider>
+          <AuthenticatedDataProviders>
+            <AppRoutes />
+          </AuthenticatedDataProviders>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
