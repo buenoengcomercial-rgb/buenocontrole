@@ -10,6 +10,14 @@ import { TrendingUp, Users, Shield, Palmtree, AlertTriangle, Package, DollarSign
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { Link } from 'react-router-dom';
 
+type PayrollTrendDetail = {
+  label: string;
+  value: number;
+  description?: string;
+};
+
+type PayrollTrendCategoryKey = 'salarios' | 'inss' | 'fgts' | 'ferias' | 'rescisoes';
+
 export default function DashboardPage() {
   const { purchases } = useAppData();
   const { employees, workDays, payments, terminations } = useEmployeeData();
@@ -90,26 +98,49 @@ export default function DashboardPage() {
   const payrollTrendData = useMemo(() => {
     const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' });
     const today = new Date();
+    const getEmployeeName = (employeeId: string) => employees.find(employee => employee.id === employeeId)?.name || 'Colaborador nao identificado';
 
     return Array.from({ length: 12 }, (_, index) => {
       const date = new Date(today.getFullYear(), today.getMonth() - (11 - index), 1);
       const month = date.toISOString().slice(0, 7);
 
-      const salarios = payments
-        .filter(p => p.month === month)
-        .reduce((sum, payment) => sum + getSalaryPaymentTotal(payment), 0);
-      const inss = charges
-        .filter(c => c.month === month && c.chargeType === 'INSS')
-        .reduce((sum, charge) => sum + charge.value, 0);
-      const fgts = charges
-        .filter(c => c.month === month && c.chargeType === 'FGTS')
-        .reduce((sum, charge) => sum + charge.value, 0);
-      const ferias = vacations
-        .filter(v => v.paymentDate && v.paymentDate.startsWith(month))
-        .reduce((sum, vacation) => sum + vacation.totalPaid, 0);
-      const rescisoes = terminations
-        .filter(t => t.paymentDate && t.paymentDate.startsWith(month))
-        .reduce((sum, termination) => sum + termination.value, 0);
+      const salaryPayments = payments.filter(p => p.month === month);
+      const inssCharges = charges.filter(c => c.month === month && c.chargeType === 'INSS');
+      const fgtsCharges = charges.filter(c => c.month === month && c.chargeType === 'FGTS');
+      const paidVacations = vacations.filter(v => v.paymentDate && v.paymentDate.startsWith(month));
+      const paidTerminations = terminations.filter(t => t.paymentDate && t.paymentDate.startsWith(month));
+
+      const salaryDetails = salaryPayments.map(payment => ({
+        label: getEmployeeName(payment.employeeId),
+        value: getSalaryPaymentTotal(payment),
+        description: payment.paymentDate ? `Pago em ${formatDateLabel(payment.paymentDate)}` : undefined,
+      }));
+      const inssDetails = inssCharges.map(charge => ({
+        label: charge.notes?.trim() || 'INSS',
+        value: charge.value,
+        description: charge.dueDate ? `Venc. ${formatDateLabel(charge.dueDate)}` : undefined,
+      }));
+      const fgtsDetails = fgtsCharges.map(charge => ({
+        label: charge.notes?.trim() || 'FGTS',
+        value: charge.value,
+        description: charge.dueDate ? `Venc. ${formatDateLabel(charge.dueDate)}` : undefined,
+      }));
+      const vacationDetails = paidVacations.map(vacation => ({
+        label: getEmployeeName(vacation.employeeId),
+        value: vacation.totalPaid,
+        description: `${formatDateLabel(vacation.startDate)} a ${formatDateLabel(vacation.endDate)}`,
+      }));
+      const terminationDetails = paidTerminations.map(termination => ({
+        label: getEmployeeName(termination.employeeId),
+        value: termination.value,
+        description: termination.paymentDate ? `Pago em ${formatDateLabel(termination.paymentDate)}` : undefined,
+      }));
+
+      const salarios = salaryDetails.reduce((sum, item) => sum + item.value, 0);
+      const inss = inssDetails.reduce((sum, item) => sum + item.value, 0);
+      const fgts = fgtsDetails.reduce((sum, item) => sum + item.value, 0);
+      const ferias = vacationDetails.reduce((sum, item) => sum + item.value, 0);
+      const rescisoes = terminationDetails.reduce((sum, item) => sum + item.value, 0);
 
       return {
         month,
@@ -120,9 +151,16 @@ export default function DashboardPage() {
         ferias,
         rescisoes,
         total: salarios + inss + fgts + ferias + rescisoes,
+        details: {
+          salarios: salaryDetails,
+          inss: inssDetails,
+          fgts: fgtsDetails,
+          ferias: vacationDetails,
+          rescisoes: terminationDetails,
+        },
       };
     });
-  }, [payments, charges, vacations, terminations]);
+  }, [payments, charges, vacations, terminations, employees]);
 
   const payrollTrendTotal = useMemo(
     () => payrollTrendData.reduce((sum, month) => sum + month.total, 0),
@@ -359,7 +397,7 @@ function PayrollTrendTooltip({ active, payload }: { active?: boolean; payload?: 
   if (!active || !payload?.length) return null;
 
   const data = payload[0]?.payload || {};
-  const rows = [
+  const rows: Array<{ key: PayrollTrendCategoryKey; label: string; color: string }> = [
     { key: 'salarios', label: 'Pagamento de salário', color: 'hsl(221 83% 53%)' },
     { key: 'inss', label: 'Imposto INSS', color: 'hsl(162 72% 36%)' },
     { key: 'fgts', label: 'Imposto FGTS', color: 'hsl(142 76% 36%)' },
@@ -368,18 +406,37 @@ function PayrollTrendTooltip({ active, payload }: { active?: boolean; payload?: 
   ];
 
   return (
-    <div className="rounded-lg border bg-card p-3 shadow-md min-w-[240px]">
+    <div className="rounded-lg border bg-card p-3 shadow-md min-w-[280px] max-w-[360px]">
       <p className="text-sm font-semibold mb-2">{data.label || data.month}</p>
-      <div className="space-y-1.5">
-        {rows.map(row => (
-          <div key={row.key} className="flex items-center justify-between gap-4 text-xs">
-            <span className="inline-flex items-center gap-2 text-muted-foreground">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: row.color }} />
-              {row.label}
-            </span>
-            <span className="font-medium text-foreground">{formatCurrency(Number(data[row.key] || 0))}</span>
-          </div>
-        ))}
+      <div className="max-h-80 overflow-y-auto pr-1 space-y-2">
+        {rows.map(row => {
+          const details = (data.details?.[row.key] || []) as PayrollTrendDetail[];
+          const value = Number(data[row.key] || 0);
+
+          return (
+            <div key={row.key} className="space-y-1">
+              <div className="flex items-center justify-between gap-4 text-xs">
+                <span className="inline-flex items-center gap-2 text-muted-foreground">
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: row.color }} />
+                  {row.label}
+                </span>
+                <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+              </div>
+
+              {details.length > 0 && (
+                <div className="ml-4 space-y-1 border-l pl-2">
+                  {details.map((item, index) => (
+                    <div key={`${row.key}-${index}`} className="grid grid-cols-[1fr_auto] gap-x-3 text-[11px] leading-tight">
+                      <span className="text-muted-foreground truncate" title={item.label}>{item.label}</span>
+                      <span className="font-medium text-foreground">{formatCurrency(item.value)}</span>
+                      {item.description && <span className="col-span-2 text-muted-foreground/80">{item.description}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
       <div className="flex items-center justify-between gap-4 border-t mt-2 pt-2 text-sm font-semibold">
         <span>Total do mês</span>
@@ -388,6 +445,15 @@ function PayrollTrendTooltip({ active, payload }: { active?: boolean; payload?: 
       <p className="text-[11px] text-muted-foreground mt-2">Adiantamento e vale alimentação não são somados novamente.</p>
     </div>
   );
+}
+
+function formatDateLabel(date: string): string {
+  if (!date) return '';
+
+  const [year, month, day] = date.split('-');
+  if (!year || !month || !day) return date;
+
+  return `${day}/${month}/${year}`;
 }
 
 function AlertCard({ icon: Icon, label, count, color, link }: { icon: React.ElementType; label: string; count: number; color: string; link: string }) {
