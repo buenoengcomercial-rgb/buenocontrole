@@ -311,7 +311,7 @@ export default function DashboardPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
               <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={value => `R$${(Number(value) / 1000).toFixed(0)}k`} />
-              <Tooltip content={<PayrollTrendTooltip />} />
+              <Tooltip content={<PayrollTrendTooltip />} shared={false} />
               <Legend />
               <Bar dataKey="salarios" name="Salários" fill="hsl(221 83% 53%)" stackId="folha" radius={[0, 0, 0, 0]} />
               <Bar dataKey="inss" name="INSS" fill="hsl(162 72% 36%)" stackId="folha" />
@@ -397,6 +397,7 @@ function PayrollTrendTooltip({ active, payload }: { active?: boolean; payload?: 
   if (!active || !payload?.length) return null;
 
   const data = payload[0]?.payload || {};
+  const activeKey = payload[0]?.dataKey as PayrollTrendCategoryKey | undefined;
   const rows: Array<{ key: PayrollTrendCategoryKey; label: string; color: string }> = [
     { key: 'salarios', label: 'Pagamento de salário', color: 'hsl(221 83% 53%)' },
     { key: 'inss', label: 'Imposto INSS', color: 'hsl(162 72% 36%)' },
@@ -404,40 +405,40 @@ function PayrollTrendTooltip({ active, payload }: { active?: boolean; payload?: 
     { key: 'ferias', label: 'Férias', color: 'hsl(38 92% 50%)' },
     { key: 'rescisoes', label: 'Rescisões', color: 'hsl(0 84% 60%)' },
   ];
+  const activeRow = rows.find(row => row.key === activeKey) || rows.find(row => Number(data[row.key] || 0) > 0) || rows[0];
+  const details = (data.details?.[activeRow.key] || []) as PayrollTrendDetail[];
+  const activeValue = Number(data[activeRow.key] || 0);
 
   return (
-    <div className="rounded-lg border bg-card p-3 shadow-md min-w-[280px] max-w-[360px]">
+    <div className="rounded-lg border bg-card p-3 shadow-md min-w-[280px] max-w-[340px]">
       <p className="text-sm font-semibold mb-2">{data.label || data.month}</p>
-      <div className="max-h-80 overflow-y-auto pr-1 space-y-2">
-        {rows.map(row => {
-          const details = (data.details?.[row.key] || []) as PayrollTrendDetail[];
-          const value = Number(data[row.key] || 0);
 
-          return (
-            <div key={row.key} className="space-y-1">
-              <div className="flex items-center justify-between gap-4 text-xs">
-                <span className="inline-flex items-center gap-2 text-muted-foreground">
-                  <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: row.color }} />
-                  {row.label}
-                </span>
-                <span className="font-medium text-foreground">{formatCurrency(value)}</span>
-              </div>
-
-              {details.length > 0 && (
-                <div className="ml-4 space-y-1 border-l pl-2">
-                  {details.map((item, index) => (
-                    <div key={`${row.key}-${index}`} className="grid grid-cols-[1fr_auto] gap-x-3 text-[11px] leading-tight">
-                      <span className="text-muted-foreground truncate" title={item.label}>{item.label}</span>
-                      <span className="font-medium text-foreground">{formatCurrency(item.value)}</span>
-                      {item.description && <span className="col-span-2 text-muted-foreground/80">{item.description}</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="rounded-md bg-muted/40 p-2">
+        <div className="flex items-center justify-between gap-4">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: activeRow.color }} />
+            {activeRow.label}
+          </span>
+          <span className="text-sm font-semibold text-foreground">{formatCurrency(activeValue)}</span>
+        </div>
       </div>
+
+      <div className="max-h-60 overflow-y-auto pr-1 mt-2">
+        {details.length > 0 ? (
+          <div className="space-y-1.5">
+            {details.map((item, index) => (
+              <div key={`${activeRow.key}-${index}`} className="grid grid-cols-[1fr_auto] gap-x-3 text-[11px] leading-tight">
+                <span className="text-muted-foreground truncate" title={item.label}>{item.label}</span>
+                <span className="font-medium text-foreground">{formatCurrency(item.value)}</span>
+                {item.description && <span className="col-span-2 text-muted-foreground/80">{item.description}</span>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Sem despesas nesta categoria.</p>
+        )}
+      </div>
+
       <div className="flex items-center justify-between gap-4 border-t mt-2 pt-2 text-sm font-semibold">
         <span>Total do mês</span>
         <span>{formatCurrency(Number(data.total || 0))}</span>
