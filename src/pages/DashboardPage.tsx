@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppData } from '@/context/AppContext';
 import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const { employees, workDays, payments, terminations } = useEmployeeData();
   const { charges, vacations, asos, trainings } = useSafetyData();
   const { projects, allocations, outsourcedServices, projectDocuments, dasExpenses } = useProjectData();
+  const [hoveredPayrollCategory, setHoveredPayrollCategory] = useState<PayrollTrendCategoryKey | null>(null);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const previousTaxMonth = getPreviousMonth(currentMonth);
@@ -311,13 +312,13 @@ export default function DashboardPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(240 6% 90%)" />
               <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" />
               <YAxis tick={{ fontSize: 11 }} stroke="hsl(240 4% 46%)" tickFormatter={value => `R$${(Number(value) / 1000).toFixed(0)}k`} />
-              <Tooltip content={<PayrollTrendTooltip />} shared={false} />
+              <Tooltip content={<PayrollTrendTooltip expandedCategory={hoveredPayrollCategory} />} />
               <Legend />
-              <Bar dataKey="salarios" name="Salários" fill="hsl(221 83% 53%)" stackId="folha" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="inss" name="INSS" fill="hsl(162 72% 36%)" stackId="folha" />
-              <Bar dataKey="fgts" name="FGTS" fill="hsl(142 76% 36%)" stackId="folha" />
-              <Bar dataKey="ferias" name="Férias" fill="hsl(38 92% 50%)" stackId="folha" />
-              <Bar dataKey="rescisoes" name="Rescisões" fill="hsl(0 84% 60%)" stackId="folha" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="salarios" name="Salários" fill="hsl(221 83% 53%)" stackId="folha" radius={[0, 0, 0, 0]} onMouseEnter={() => setHoveredPayrollCategory('salarios')} onMouseLeave={() => setHoveredPayrollCategory(null)} />
+              <Bar dataKey="inss" name="INSS" fill="hsl(162 72% 36%)" stackId="folha" onMouseEnter={() => setHoveredPayrollCategory('inss')} onMouseLeave={() => setHoveredPayrollCategory(null)} />
+              <Bar dataKey="fgts" name="FGTS" fill="hsl(142 76% 36%)" stackId="folha" onMouseEnter={() => setHoveredPayrollCategory('fgts')} onMouseLeave={() => setHoveredPayrollCategory(null)} />
+              <Bar dataKey="ferias" name="Férias" fill="hsl(38 92% 50%)" stackId="folha" onMouseEnter={() => setHoveredPayrollCategory('ferias')} onMouseLeave={() => setHoveredPayrollCategory(null)} />
+              <Bar dataKey="rescisoes" name="Rescisões" fill="hsl(0 84% 60%)" stackId="folha" radius={[4, 4, 0, 0]} onMouseEnter={() => setHoveredPayrollCategory('rescisoes')} onMouseLeave={() => setHoveredPayrollCategory(null)} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -393,11 +394,10 @@ export default function DashboardPage() {
   );
 }
 
-function PayrollTrendTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+function PayrollTrendTooltip({ active, payload, expandedCategory }: { active?: boolean; payload?: any[]; expandedCategory: PayrollTrendCategoryKey | null }) {
   if (!active || !payload?.length) return null;
 
   const data = payload[0]?.payload || {};
-  const activeKey = payload[0]?.dataKey as PayrollTrendCategoryKey | undefined;
   const rows: Array<{ key: PayrollTrendCategoryKey; label: string; color: string }> = [
     { key: 'salarios', label: 'Pagamento de salário', color: 'hsl(221 83% 53%)' },
     { key: 'inss', label: 'Imposto INSS', color: 'hsl(162 72% 36%)' },
@@ -405,38 +405,48 @@ function PayrollTrendTooltip({ active, payload }: { active?: boolean; payload?: 
     { key: 'ferias', label: 'Férias', color: 'hsl(38 92% 50%)' },
     { key: 'rescisoes', label: 'Rescisões', color: 'hsl(0 84% 60%)' },
   ];
-  const activeRow = rows.find(row => row.key === activeKey) || rows.find(row => Number(data[row.key] || 0) > 0) || rows[0];
-  const details = (data.details?.[activeRow.key] || []) as PayrollTrendDetail[];
-  const activeValue = Number(data[activeRow.key] || 0);
+  const expandedRow = expandedCategory ? rows.find(row => row.key === expandedCategory) : undefined;
+  const expandedDetails = expandedRow ? (data.details?.[expandedRow.key] || []) as PayrollTrendDetail[] : [];
 
   return (
     <div className="rounded-lg border bg-card p-3 shadow-md min-w-[280px] max-w-[340px]">
       <p className="text-sm font-semibold mb-2">{data.label || data.month}</p>
 
-      <div className="rounded-md bg-muted/40 p-2">
-        <div className="flex items-center justify-between gap-4">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
-            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: activeRow.color }} />
-            {activeRow.label}
-          </span>
-          <span className="text-sm font-semibold text-foreground">{formatCurrency(activeValue)}</span>
-        </div>
-      </div>
+      <div className="space-y-1.5">
+        {rows.map(row => {
+          const value = Number(data[row.key] || 0);
+          const isExpanded = row.key === expandedCategory;
 
-      <div className="max-h-60 overflow-y-auto pr-1 mt-2">
-        {details.length > 0 ? (
-          <div className="space-y-1.5">
-            {details.map((item, index) => (
-              <div key={`${activeRow.key}-${index}`} className="grid grid-cols-[1fr_auto] gap-x-3 text-[11px] leading-tight">
-                <span className="text-muted-foreground truncate" title={item.label}>{item.label}</span>
-                <span className="font-medium text-foreground">{formatCurrency(item.value)}</span>
-                {item.description && <span className="col-span-2 text-muted-foreground/80">{item.description}</span>}
+          return (
+            <div key={row.key} className={isExpanded ? 'rounded-md bg-muted/40 p-2' : undefined}>
+              <div className="flex items-center justify-between gap-4 text-xs">
+                <span className={`inline-flex items-center gap-2 ${isExpanded ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                  <span className={isExpanded ? 'w-3 h-3 rounded-sm' : 'w-2.5 h-2.5 rounded-sm'} style={{ backgroundColor: row.color }} />
+                  {row.label}
+                </span>
+                <span className="font-medium text-foreground">{formatCurrency(value)}</span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">Sem despesas nesta categoria.</p>
-        )}
+
+              {isExpanded && (
+                <div className="max-h-56 overflow-y-auto pr-1 mt-2">
+                  {expandedDetails.length > 0 ? (
+                    <div className="space-y-1.5 border-l pl-2">
+                      {expandedDetails.map((item, index) => (
+                        <div key={`${row.key}-${index}`} className="grid grid-cols-[1fr_auto] gap-x-3 text-[11px] leading-tight">
+                          <span className="text-muted-foreground truncate" title={item.label}>{item.label}</span>
+                          <span className="font-medium text-foreground">{formatCurrency(item.value)}</span>
+                          {item.description && <span className="col-span-2 text-muted-foreground/80">{item.description}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">Sem despesas nesta categoria.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex items-center justify-between gap-4 border-t mt-2 pt-2 text-sm font-semibold">
