@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense, ProjectPurchase, EquipmentRental } from '@/types/project';
 
@@ -73,7 +73,7 @@ const DAS_COLUMNS = 'id, month, due_date, value, paid, project_id, created_at';
 const PROJECT_PURCHASE_COLUMNS = 'id, project_id, supplier_id, material_id, date, invoice_number, quantity, unit_price, total_value, freight_value, icms_value, description, notes, payment_method, installments, first_installment_date, installment_dates, installment_values, freight_payment_date, icms_payment_date, created_at';
 const EQUIPMENT_RENTAL_COLUMNS = 'id, project_id, equipment_name, equipment_type, supplier, billing_type, unit_value, quantity, total_value, start_date, end_date, invoice_number, notes, created_at';
 
-export function ProjectProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
+export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [allocations, setAllocations] = useState<WorkAllocation[]>([]);
   const [outsourcedServices, setOutsourcedServices] = useState<OutsourcedService[]>([]);
@@ -82,13 +82,9 @@ export function ProjectProvider({ children, enabled = true }: { children: React.
   const [dasExpenses, setDASExpenses] = useState<DASExpense[]>([]);
   const [projectPurchases, setProjectPurchases] = useState<ProjectPurchase[]>([]);
   const [equipmentRentals, setEquipmentRentals] = useState<EquipmentRental[]>([]);
-  const [loading, setLoading] = useState(enabled);
-  const loadedRef = useRef(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!enabled || loadedRef.current) return;
-    loadedRef.current = true;
-    setLoading(true);
     Promise.all([
       supabase.from('projects').select(PROJECT_COLUMNS).then(({ data }) => setProjects((data || []).map(mapProject))),
       supabase.from('work_allocations').select(ALLOCATION_COLUMNS).then(({ data }) => setAllocations((data || []).map(mapAllocation))),
@@ -99,7 +95,7 @@ export function ProjectProvider({ children, enabled = true }: { children: React.
       supabase.from('project_purchases').select(PROJECT_PURCHASE_COLUMNS).order('created_at', { ascending: false }).then(({ data }) => setProjectPurchases((data || []).map(mapProjectPurchase))),
       supabase.from('equipment_rentals').select(EQUIPMENT_RENTAL_COLUMNS).then(({ data }) => setEquipmentRentals((data || []).map(mapEquipmentRental))),
     ]).finally(() => setLoading(false));
-  }, [enabled]);
+  }, []);
 
   const addProject = useCallback(async (p: Omit<Project, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('projects').insert({

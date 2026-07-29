@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'; // v3
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'; // v3
 import { supabase } from '@/integrations/supabase/client';
 import type { Employee, WorkDay, SalaryAdvance, SalaryPayment } from '@/types/employee';
 import { calculateAdvance, calculateMealVoucher, getAdvancePaymentDate } from '@/types/employee';
@@ -59,19 +59,15 @@ const ADVANCE_COLUMNS = 'id, employee_id, month, value, payment_date, notes, cre
 const PAYMENT_COLUMNS = 'id, employee_id, month, gross_salary, advance_discount, other_discounts, other_additions, net_salary, payment_date, payment_method, notes, created_at';
 const TERMINATION_COLUMNS = 'id, employee_id, termination_date, payment_date, value, notes, created_at';
 
-export function EmployeeProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
+export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [workDays, setWorkDays] = useState<WorkDay[]>([]);
   const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
   const [terminations, setTerminations] = useState<Termination[]>([]);
-  const [loading, setLoading] = useState(enabled);
-  const loadedRef = useRef(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!enabled || loadedRef.current) return;
-    loadedRef.current = true;
-    setLoading(true);
     Promise.all([
       supabase.from('employees').select(EMPLOYEE_COLUMNS).then(({ data }) => setEmployees((data || []).map(mapEmployee))),
       supabase.from('work_days').select(WORK_DAY_COLUMNS).then(({ data }) => setWorkDays((data || []).map(mapWorkDay))),
@@ -79,7 +75,7 @@ export function EmployeeProvider({ children, enabled = true }: { children: React
       supabase.from('salary_payments').select(PAYMENT_COLUMNS).then(({ data }) => setPayments((data || []).map(mapPayment))),
       supabase.from('terminations').select(TERMINATION_COLUMNS).then(({ data }) => setTerminations((data || []).map(mapTermination))),
     ]).finally(() => setLoading(false));
-  }, [enabled]);
+  }, []);
 
   const addEmployee = useCallback(async (e: Omit<Employee, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('employees').insert({

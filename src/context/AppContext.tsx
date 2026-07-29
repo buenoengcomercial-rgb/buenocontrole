@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Supplier, Material, Purchase } from '@/types';
 
@@ -33,23 +33,19 @@ const SUPPLIER_COLUMNS = 'id, name, cnpj, phone, email, address, notes, created_
 const MATERIAL_COLUMNS = 'id, name, description, unit, category, notes, created_at';
 const PURCHASE_COLUMNS = 'id, supplier_id, date, invoice_number, material_id, quantity, unit_price, total_price, tax_type, tax_value, final_price, city, created_at';
 
-export function AppProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
+export function AppProvider({ children }: { children: React.ReactNode }) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
-  const [loading, setLoading] = useState(enabled);
-  const loadedRef = useRef(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!enabled || loadedRef.current) return;
-    loadedRef.current = true;
-    setLoading(true);
     Promise.all([
       supabase.from('suppliers').select(SUPPLIER_COLUMNS).then(({ data }) => setSuppliers((data || []).map(mapSupplier))),
       supabase.from('materials').select(MATERIAL_COLUMNS).then(({ data }) => setMaterials((data || []).map(mapMaterial))),
       supabase.from('purchases').select(PURCHASE_COLUMNS).then(({ data }) => setPurchases((data || []).map(mapPurchase))),
     ]).finally(() => setLoading(false));
-  }, [enabled]);
+  }, []);
 
   const addSupplier = useCallback(async (s: Omit<Supplier, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('suppliers').insert({ name: s.name, cnpj: s.cnpj, phone: s.phone, email: s.email, address: s.address, notes: s.notes }).select().single();
