@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -27,6 +27,7 @@ interface AttachmentState {
   addAttachment: (a: AttachmentPayload) => Promise<boolean>;
   deleteAttachment: (id: string) => Promise<boolean>;
   getAttachments: (entityType: string, entityId: string) => Attachment[];
+  loadAttachments: (entityType: string, entityId: string) => Promise<void>;
   downloadAttachment: (id: string) => Promise<string | null>;
 }
 
@@ -72,29 +73,34 @@ function mapRow(r: AttachmentMetadataRow): Attachment {
 
 export function AttachmentProvider({ children }: { children: React.ReactNode }) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const loadedKeysRef = useRef(new Set<string>());
+  const loadingKeysRef = useRef(new Set<string>());
 
-  const fetchAttachments = useCallback(() => {
-    supabase.from('attachments').select(METADATA_SELECT).then(({ data, error }) => {
-      if (error) {
-        console.error('Erro ao carregar anexos:', error.message);
-        return;
-      }
-      if (!data) return;
+  const loadAttachments = useCallback(async (entityType: string, entityId: string) => {
+    const key = `${entityType}:${entityId}`;
+    if (loadedKeysRef.current.has(key) || loadingKeysRef.current.has(key)) return;
 
-      const mapped = data.map(mapRow);
-      setAttachments(prev => {
-        if (prev.length === 0) return mapped;
+    loadingKeysRef.current.add(key);
+    const { data, error } = await supabase
+      .from('attachments')
+      .select(METADATA_SELECT)
+      .eq('entity_type', entityType)
+      .eq('entity_id', entityId);
+    loadingKeysRef.current.delete(key);
 
-        const merged = new Map(prev.map(a => [a.id, a]));
-        mapped.forEach(a => merged.set(a.id, a));
-        return Array.from(merged.values());
-      });
+    if (error) {
+      console.error('Erro ao carregar anexos:', error.message);
+      return;
+    }
+
+    loadedKeysRef.current.add(key);
+    const mapped = (data || []).map(mapRow);
+    setAttachments(prev => {
+      const merged = new Map(prev.map(a => [a.id, a]));
+      mapped.forEach(a => merged.set(a.id, a));
+      return Array.from(merged.values());
     });
   }, []);
-
-  useEffect(() => {
-    fetchAttachments();
-  }, [fetchAttachments]);
 
   const addAttachment = useCallback(async (a: AttachmentPayload): Promise<boolean> => {
     const id = crypto.randomUUID();
@@ -213,7 +219,7 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
   }, [attachments]);
 
   return (
-    <AttachmentContext.Provider value={{ attachments, addAttachment, deleteAttachment, getAttachments, downloadAttachment }}>
+    <AttachmentContext.Provider value={{ attachments, addAttachment, deleteAttachment, getAttachments, loadAttachments, downloadAttachment }}>
       {children}
     </AttachmentContext.Provider>
   );

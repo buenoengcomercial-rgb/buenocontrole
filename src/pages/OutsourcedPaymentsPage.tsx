@@ -80,7 +80,7 @@ export default function OutsourcedPaymentsPage() {
 
       const { data, error } = await supabase
         .from('outsourced_payments')
-        .select('*')
+        .select('id, outsourced_service_id, date, value, notes')
         .in('outsourced_service_id', serviceIds)
         .order('date', { ascending: false });
 

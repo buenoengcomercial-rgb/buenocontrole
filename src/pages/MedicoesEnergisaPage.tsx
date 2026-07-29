@@ -148,9 +148,9 @@ export default function MedicoesEnergisaPage() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('energisa_contract_items').select('*').order('item_code'),
-      supabase.from('energisa_service_records').select('*'),
-      supabase.from('energisa_billings').select('*').order('billing_number', { ascending: false }),
+      supabase.from('energisa_contract_items').select('id, item_code, category, description, quantity, unit, material_unit_value, labor_unit_value, total_value').order('item_code'),
+      supabase.from('energisa_service_records').select('id, contract_item_id, unit_name, quantity, date, month, notes, billed, created_at'),
+      supabase.from('energisa_billings').select('id, billing_number, billing_date, total_value, material_value, labor_value, records_count, snapshot, notes, created_at, sent_date, verification_deadline, return_received, return_date, invoice_issued, invoice_number, invoice_date').order('billing_number', { ascending: false }),
     ]).then(([items, records, bills]) => {
       setContractItems((items.data || []).map((r: any) => ({
         id: r.id, item_code: r.item_code, category: r.category, description: r.description,

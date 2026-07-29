@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'; // v3
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'; // v3
 import { supabase } from '@/integrations/supabase/client';
 import type { Employee, WorkDay, SalaryAdvance, SalaryPayment } from '@/types/employee';
 import { calculateAdvance, calculateMealVoucher, getAdvancePaymentDate } from '@/types/employee';
@@ -53,23 +53,33 @@ function mapPayment(r: any): SalaryPayment {
   return { id: r.id, employeeId: r.employee_id, month: r.month, grossSalary: Number(r.gross_salary), advanceDiscount: Number(r.advance_discount), otherDiscounts: Number(r.other_discounts), otherAdditions: Number(r.other_additions), netSalary: Number(r.net_salary), paymentDate: r.payment_date, paymentMethod: r.payment_method || '', notes: r.notes || '', createdAt: r.created_at };
 }
 
-export function EmployeeProvider({ children }: { children: React.ReactNode }) {
+const EMPLOYEE_COLUMNS = 'id, name, cpf, role, gross_salary, admission_date, phone, pix_key_type, pix_key, status, created_at';
+const WORK_DAY_COLUMNS = 'id, employee_id, project_id, date, worked, interior, meal_voucher_value, absence_type, absence_reason, absence_notes';
+const ADVANCE_COLUMNS = 'id, employee_id, month, value, payment_date, notes, created_at';
+const PAYMENT_COLUMNS = 'id, employee_id, month, gross_salary, advance_discount, other_discounts, other_additions, net_salary, payment_date, payment_method, notes, created_at';
+const TERMINATION_COLUMNS = 'id, employee_id, termination_date, payment_date, value, notes, created_at';
+
+export function EmployeeProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [workDays, setWorkDays] = useState<WorkDay[]>([]);
   const [advances, setAdvances] = useState<SalaryAdvance[]>([]);
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
   const [terminations, setTerminations] = useState<Termination[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
+    if (!enabled || loadedRef.current) return;
+    loadedRef.current = true;
+    setLoading(true);
     Promise.all([
-      supabase.from('employees').select('*').then(({ data }) => setEmployees((data || []).map(mapEmployee))),
-      supabase.from('work_days').select('*').then(({ data }) => setWorkDays((data || []).map(mapWorkDay))),
-      supabase.from('salary_advances').select('*').then(({ data }) => setAdvances((data || []).map(mapAdvance))),
-      supabase.from('salary_payments').select('*').then(({ data }) => setPayments((data || []).map(mapPayment))),
-      supabase.from('terminations').select('*').then(({ data }) => setTerminations((data || []).map(mapTermination))),
+      supabase.from('employees').select(EMPLOYEE_COLUMNS).then(({ data }) => setEmployees((data || []).map(mapEmployee))),
+      supabase.from('work_days').select(WORK_DAY_COLUMNS).then(({ data }) => setWorkDays((data || []).map(mapWorkDay))),
+      supabase.from('salary_advances').select(ADVANCE_COLUMNS).then(({ data }) => setAdvances((data || []).map(mapAdvance))),
+      supabase.from('salary_payments').select(PAYMENT_COLUMNS).then(({ data }) => setPayments((data || []).map(mapPayment))),
+      supabase.from('terminations').select(TERMINATION_COLUMNS).then(({ data }) => setTerminations((data || []).map(mapTermination))),
     ]).finally(() => setLoading(false));
-  }, []);
+  }, [enabled]);
 
   const addEmployee = useCallback(async (e: Omit<Employee, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('employees').insert({

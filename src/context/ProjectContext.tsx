@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense, ProjectPurchase, EquipmentRental } from '@/types/project';
 
@@ -64,7 +64,16 @@ function mapEquipmentRental(r: any): EquipmentRental {
   return { id: r.id, projectId: r.project_id, equipmentName: r.equipment_name, equipmentType: r.equipment_type, supplier: r.supplier, billingType: r.billing_type, unitValue: Number(r.unit_value), quantity: Number(r.quantity), totalValue: Number(r.total_value), startDate: r.start_date, endDate: r.end_date || '', invoiceNumber: r.invoice_number, notes: r.notes, createdAt: r.created_at };
 }
 
-export function ProjectProvider({ children }: { children: React.ReactNode }) {
+const PROJECT_COLUMNS = 'id, name, client, city, address, responsible, start_date, expected_end_date, contract_value, notes, created_at';
+const ALLOCATION_COLUMNS = 'id, employee_id, project_id, date, worked, interior, created_at';
+const OUTSOURCED_COLUMNS = 'id, project_id, date, company, cnpj, description, value, invoice_number, file_name, finalized, finalized_at, created_at';
+const PROJECT_DOCUMENT_COLUMNS = 'id, project_id, type, description, document_date, expiry_date, file_name, value, payment_date, payment_status, doc_notes, created_at';
+const MEASUREMENT_COLUMNS = 'id, project_id, number, date, description, value, percent_executed, status, created_at';
+const DAS_COLUMNS = 'id, month, due_date, value, paid, project_id, created_at';
+const PROJECT_PURCHASE_COLUMNS = 'id, project_id, supplier_id, material_id, date, invoice_number, quantity, unit_price, total_value, freight_value, icms_value, description, notes, payment_method, installments, first_installment_date, installment_dates, installment_values, freight_payment_date, icms_payment_date, created_at';
+const EQUIPMENT_RENTAL_COLUMNS = 'id, project_id, equipment_name, equipment_type, supplier, billing_type, unit_value, quantity, total_value, start_date, end_date, invoice_number, notes, created_at';
+
+export function ProjectProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [allocations, setAllocations] = useState<WorkAllocation[]>([]);
   const [outsourcedServices, setOutsourcedServices] = useState<OutsourcedService[]>([]);
@@ -73,20 +82,24 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [dasExpenses, setDASExpenses] = useState<DASExpense[]>([]);
   const [projectPurchases, setProjectPurchases] = useState<ProjectPurchase[]>([]);
   const [equipmentRentals, setEquipmentRentals] = useState<EquipmentRental[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
+    if (!enabled || loadedRef.current) return;
+    loadedRef.current = true;
+    setLoading(true);
     Promise.all([
-      supabase.from('projects').select('*').then(({ data }) => setProjects((data || []).map(mapProject))),
-      supabase.from('work_allocations').select('*').then(({ data }) => setAllocations((data || []).map(mapAllocation))),
-      supabase.from('outsourced_services').select('*').then(({ data }) => setOutsourcedServices((data || []).map(mapOutsourced))),
-      supabase.from('project_documents').select('*').then(({ data }) => setProjectDocuments((data || []).map(mapProjectDoc))),
-      supabase.from('measurements').select('*').then(({ data }) => setMeasurements((data || []).map(mapMeasurement))),
-      supabase.from('das_expenses').select('*').then(({ data }) => setDASExpenses((data || []).map(mapDAS))),
-      supabase.from('project_purchases').select('*').order('created_at', { ascending: false }).then(({ data }) => setProjectPurchases((data || []).map(mapProjectPurchase))),
-      supabase.from('equipment_rentals').select('*').then(({ data }) => setEquipmentRentals((data || []).map(mapEquipmentRental))),
+      supabase.from('projects').select(PROJECT_COLUMNS).then(({ data }) => setProjects((data || []).map(mapProject))),
+      supabase.from('work_allocations').select(ALLOCATION_COLUMNS).then(({ data }) => setAllocations((data || []).map(mapAllocation))),
+      supabase.from('outsourced_services').select(OUTSOURCED_COLUMNS).then(({ data }) => setOutsourcedServices((data || []).map(mapOutsourced))),
+      supabase.from('project_documents').select(PROJECT_DOCUMENT_COLUMNS).then(({ data }) => setProjectDocuments((data || []).map(mapProjectDoc))),
+      supabase.from('measurements').select(MEASUREMENT_COLUMNS).then(({ data }) => setMeasurements((data || []).map(mapMeasurement))),
+      supabase.from('das_expenses').select(DAS_COLUMNS).then(({ data }) => setDASExpenses((data || []).map(mapDAS))),
+      supabase.from('project_purchases').select(PROJECT_PURCHASE_COLUMNS).order('created_at', { ascending: false }).then(({ data }) => setProjectPurchases((data || []).map(mapProjectPurchase))),
+      supabase.from('equipment_rentals').select(EQUIPMENT_RENTAL_COLUMNS).then(({ data }) => setEquipmentRentals((data || []).map(mapEquipmentRental))),
     ]).finally(() => setLoading(false));
-  }, []);
+  }, [enabled]);
 
   const addProject = useCallback(async (p: Omit<Project, 'id' | 'createdAt'>) => {
     const { data } = await supabase.from('projects').insert({

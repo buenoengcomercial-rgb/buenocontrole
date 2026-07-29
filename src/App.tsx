@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -134,14 +134,47 @@ function AppRoutes() {
 
 function AuthenticatedDataProviders({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { pathname } = useLocation();
 
   if (loading || !user) return <>{children}</>;
 
+  const isDashboard = pathname === "/";
+  const isProjectDetail = /^\/obras\/[^/]+$/.test(pathname);
+  const isProjectReports = pathname === "/obras/relatorios";
+  const isEmployeeRoute = pathname.startsWith("/colaboradores");
+  const isSafetyRoute = pathname.startsWith("/seguranca");
+
+  const loadAppData = isDashboard
+    || ["/fornecedores", "/materiais", "/compras", "/relatorios"].includes(pathname)
+    || isProjectDetail
+    || isProjectReports;
+  const loadEmployeeData = isDashboard
+    || isEmployeeRoute
+    || isSafetyRoute
+    || isProjectDetail
+    || isProjectReports;
+  const loadSafetyData = isDashboard
+    || isSafetyRoute
+    || isProjectDetail
+    || isProjectReports
+    || [
+      "/colaboradores/painel",
+      "/colaboradores/dias",
+      "/colaboradores/encargos",
+      "/colaboradores/ferias",
+      "/colaboradores/relatorios",
+    ].includes(pathname);
+  const loadProjectData = isDashboard
+    || pathname.startsWith("/obras")
+    || pathname === "/financeiro/das"
+    || pathname === "/financeiro/terceirizados"
+    || pathname === "/colaboradores/dias";
+
   return (
-    <AppProvider>
-      <EmployeeProvider>
-        <SafetyProvider>
-          <ProjectProvider>
+    <AppProvider enabled={loadAppData}>
+      <EmployeeProvider enabled={loadEmployeeData}>
+        <SafetyProvider enabled={loadSafetyData}>
+          <ProjectProvider enabled={loadProjectData}>
             <AttachmentProvider>{children}</AttachmentProvider>
           </ProjectProvider>
         </SafetyProvider>

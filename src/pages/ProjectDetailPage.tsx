@@ -1245,7 +1245,7 @@ function OutsourcedTab({ projectId, services, onAdd, onDelete }: any) {
       const { supabase } = await import('@/integrations/supabase/client');
       const serviceIds = services.map((s: any) => s.id);
       if (serviceIds.length === 0) return;
-      const { data } = await supabase.from('outsourced_payments').select('*').in('outsourced_service_id', serviceIds).order('date', { ascending: false });
+      const { data } = await supabase.from('outsourced_payments').select('id, outsourced_service_id, date, value, notes').in('outsourced_service_id', serviceIds).order('date', { ascending: false });
       if (data) {
         const grouped: Record<string, any[]> = {};
         data.forEach((p: any) => {

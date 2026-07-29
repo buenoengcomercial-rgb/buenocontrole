@@ -44,7 +44,7 @@ export default function RescisaoPage() {
   });
 
   const fetchTerminations = async () => {
-    const { data } = await supabase.from('terminations').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('terminations').select('id, employee_id, termination_date, payment_date, value, notes, created_at').order('created_at', { ascending: false });
     if (data) setTerminations(data as Termination[]);
     setLoading(false);
   };

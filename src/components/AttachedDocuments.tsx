@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAttachments } from '@/context/AttachmentContext';
 import { Paperclip, Download, Trash2, FileText, FileSpreadsheet, File } from 'lucide-react';
 import { toast } from 'sonner';
@@ -26,9 +26,13 @@ interface Props {
 }
 
 export default function AttachedDocuments({ entityType, entityId }: Props) {
-  const { addAttachment, deleteAttachment, getAttachments, downloadAttachment } = useAttachments();
+  const { addAttachment, deleteAttachment, getAttachments, loadAttachments, downloadAttachment } = useAttachments();
   const inputRef = useRef<HTMLInputElement>(null);
   const files = getAttachments(entityType, entityId);
+
+  useEffect(() => {
+    void loadAttachments(entityType, entityId);
+  }, [entityId, entityType, loadAttachments]);
 
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList) return;

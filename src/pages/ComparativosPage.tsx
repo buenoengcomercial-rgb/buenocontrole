@@ -46,9 +46,9 @@ export default function ComparativosPage() {
     const load = async () => {
       setLoading(true);
       const [gRes, pRes, mRes] = await Promise.all([
-        supabase.from("purchase_comparisons").select("*").order("created_at", { ascending: false }),
+        supabase.from("purchase_comparisons").select("id, code, description, date, project_id, status, observations").order("created_at", { ascending: false }),
         supabase.from("projects").select("id, name").order("name"),
-        supabase.from("obra_materials").select("*").order("created_at"),
+        supabase.from("obra_materials").select("id, code, description, unit, quantity, price, purchase_group, linked_group_id").order("created_at"),
       ]);
       if (gRes.data) setGroups(gRes.data.map((g: any) => ({ id: g.id, code: g.code, description: g.description, date: g.date, project_id: g.project_id, status: g.status || "aberta", observations: g.observations || "" })));
       if (pRes.data) setProjects(pRes.data);
@@ -60,9 +60,9 @@ export default function ComparativosPage() {
 
   const loadGroupData = useCallback(async (groupId: string) => {
     const [sRes, iRes, hRes] = await Promise.all([
-      supabase.from("comparison_suppliers").select("*").eq("comparison_id", groupId).order("created_at"),
-      supabase.from("comparison_items").select("*").eq("comparison_id", groupId).order("created_at"),
-      supabase.from("price_history").select("*").eq("comparison_id", groupId).order("date", { ascending: false }),
+      supabase.from("comparison_suppliers").select("id, name, delivery_days, rating").eq("comparison_id", groupId).order("created_at"),
+      supabase.from("comparison_items").select("id, code, description, unit, quantity, base_price").eq("comparison_id", groupId).order("created_at"),
+      supabase.from("price_history").select("id, item_code, item_description, supplier_name, price, date, comparison_id").eq("comparison_id", groupId).order("date", { ascending: false }),
     ]);
     const sups = sRes.data || [];
     const itms = iRes.data || [];
@@ -71,7 +71,7 @@ export default function ComparativosPage() {
     setHistory((hRes.data || []).map((h) => ({ id: h.id, item_code: h.item_code, item_description: h.item_description, supplier_name: h.supplier_name, price: h.price, date: h.date, comparison_id: h.comparison_id })));
     if (itms.length > 0) {
       const itemIds = itms.map((i) => i.id);
-      const { data: pricesData } = await supabase.from("comparison_item_prices").select("*").in("item_id", itemIds);
+      const { data: pricesData } = await supabase.from("comparison_item_prices").select("item_id, supplier_id, price").in("item_id", itemIds);
       setPrices((pricesData || []).map((p) => ({ item_id: p.item_id, supplier_id: p.supplier_id, price: p.price })));
     } else { setPrices([]); }
   }, []);

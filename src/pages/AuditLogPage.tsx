@@ -21,7 +21,7 @@ export default function AuditLogPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
   useEffect(() => {
-    supabase.from('audit_log').select('*').order('created_at', { ascending: false }).limit(200).then(({ data }) => {
+    supabase.from('audit_log').select('id, username, action, entity_type, entity_id, details, created_at').order('created_at', { ascending: false }).limit(200).then(({ data }) => {
       if (data) setLogs(data as LogEntry[]);
     });
   }, []);

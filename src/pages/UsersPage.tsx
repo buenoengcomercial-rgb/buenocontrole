@@ -33,8 +33,8 @@ export default function UsersPage() {
   const [form, setForm] = useState({ username: '', full_name: '', password: '', role: 'admin' as string });
 
   const fetchUsers = useCallback(async () => {
-    const { data: profiles } = await supabase.from('profiles').select('*');
-    const { data: roles } = await supabase.from('user_roles').select('*');
+    const { data: profiles } = await supabase.from('profiles').select('id, username, full_name, active');
+    const { data: roles } = await supabase.from('user_roles').select('user_id, role');
     if (profiles && roles) {
       const roleMap = new Map(roles.map((r: any) => [r.user_id, r.role]));
       setUsers(profiles.map((p: any) => ({

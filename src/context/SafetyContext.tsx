@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { CompanyCharge, Vacation, EmployeeDocument, EPIDelivery, ASO, Training } from '@/types/safety';
 
@@ -50,25 +50,36 @@ function mapTraining(r: any): Training {
   return { id: r.id, employeeId: r.employee_id, trainingType: r.training_type, trainingDate: r.training_date, expiryDate: r.expiry_date, fileName: r.file_name, createdAt: r.created_at };
 }
 
-export function SafetyProvider({ children }: { children: React.ReactNode }) {
+const CHARGE_COLUMNS = 'id, charge_type, month, value, due_date, paid, payment_date, notes, created_at';
+const VACATION_COLUMNS = 'id, employee_id, start_date, end_date, status, vacation_value, bonus_value, total_paid, payment_date, notes, created_at';
+const DOCUMENT_COLUMNS = 'id, employee_id, type, completed, date, file_name, created_at';
+const EPI_COLUMNS = 'id, employee_id, epi_type, unit, delivery_date, quantity, notes, file_name, created_at';
+const ASO_COLUMNS = 'id, employee_id, type, exam_date, expiry_date, file_name, created_at';
+const TRAINING_COLUMNS = 'id, employee_id, training_type, training_date, expiry_date, file_name, created_at';
+
+export function SafetyProvider({ children, enabled = true }: { children: React.ReactNode; enabled?: boolean }) {
   const [charges, setCharges] = useState<CompanyCharge[]>([]);
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [epiDeliveries, setEPIDeliveries] = useState<EPIDelivery[]>([]);
   const [asos, setASOs] = useState<ASO[]>([]);
   const [trainings, setTrainings] = useState<Training[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
+    if (!enabled || loadedRef.current) return;
+    loadedRef.current = true;
+    setLoading(true);
     Promise.all([
-      supabase.from('company_charges').select('*').then(({ data }) => setCharges((data || []).map(mapCharge))),
-      supabase.from('vacations').select('*').then(({ data }) => setVacations((data || []).map(mapVacation))),
-      supabase.from('employee_documents').select('*').then(({ data }) => setDocuments((data || []).map(mapDoc))),
-      supabase.from('epi_deliveries').select('*').then(({ data }) => setEPIDeliveries((data || []).map(mapEPI))),
-      supabase.from('asos').select('*').then(({ data }) => setASOs((data || []).map(mapASO))),
-      supabase.from('trainings').select('*').then(({ data }) => setTrainings((data || []).map(mapTraining))),
+      supabase.from('company_charges').select(CHARGE_COLUMNS).then(({ data }) => setCharges((data || []).map(mapCharge))),
+      supabase.from('vacations').select(VACATION_COLUMNS).then(({ data }) => setVacations((data || []).map(mapVacation))),
+      supabase.from('employee_documents').select(DOCUMENT_COLUMNS).then(({ data }) => setDocuments((data || []).map(mapDoc))),
+      supabase.from('epi_deliveries').select(EPI_COLUMNS).then(({ data }) => setEPIDeliveries((data || []).map(mapEPI))),
+      supabase.from('asos').select(ASO_COLUMNS).then(({ data }) => setASOs((data || []).map(mapASO))),
+      supabase.from('trainings').select(TRAINING_COLUMNS).then(({ data }) => setTrainings((data || []).map(mapTraining))),
     ]).finally(() => setLoading(false));
-  }, []);
+  }, [enabled]);
 
   // Company Charges
   const addCharge = useCallback(async (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => {

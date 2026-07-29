@@ -97,7 +97,10 @@ export default function LaudosPage() {
 
   async function fetchLaudos() {
     setLoading(true);
-    const { data, error } = await supabase.from('laudos').select('*').order('data_vencimento', { ascending: true, nullsFirst: false });
+    const { data, error } = await supabase
+      .from('laudos')
+      .select('id, cliente, responsavel, municipio, cnpj, sat, email, numero_projetos, area, distrito, endereco, utilizacao, setor_atendimento, data_vencimento, observacoes, status_cbm, status_bueno, created_at')
+      .order('data_vencimento', { ascending: true, nullsFirst: false });
     if (error) { toast({ title: 'Erro ao carregar laudos', description: error.message, variant: 'destructive' }); }
     else setLaudos((data as any[]) || []);
     setLoading(false);

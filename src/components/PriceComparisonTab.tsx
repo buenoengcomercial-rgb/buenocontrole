@@ -44,8 +44,8 @@ export default function PriceComparisonTab({ projectId }: { projectId: string })
 
   const fetchData = useCallback(async () => {
     const [itemsRes, quotesRes] = await Promise.all([
-      supabase.from('bid_items').select('*').eq('project_id', projectId).order('bid_total', { ascending: false }),
-      supabase.from('price_quotes').select('*').eq('project_id', projectId),
+      supabase.from('bid_items').select('id, code, description, unit, quantity, bid_unit_price, bid_total, project_id').eq('project_id', projectId).order('bid_total', { ascending: false }),
+      supabase.from('price_quotes').select('id, project_id, bid_item_id, supplier_name, quoted_price, notes').eq('project_id', projectId),
     ]);
     setBidItems((itemsRes.data || []) as BidItem[]);
     setQuotes((quotesRes.data || []) as PriceQuote[]);

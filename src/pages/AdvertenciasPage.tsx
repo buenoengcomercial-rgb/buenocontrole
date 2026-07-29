@@ -58,7 +58,7 @@ export default function AdvertenciasPage() {
   });
 
   useEffect(() => {
-    supabase.from('employee_warnings').select('*').then(({ data }) => {
+    supabase.from('employee_warnings').select('id, employee_id, date, type, reason, description, notes, created_at').then(({ data }) => {
       setWarnings((data || []).map(mapWarning));
       setLoading(false);
     });
