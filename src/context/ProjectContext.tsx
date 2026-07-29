@@ -17,7 +17,8 @@ interface ProjectState {
   deleteProject: (id: string) => void;
   addAllocation: (a: Omit<WorkAllocation, 'id' | 'createdAt'>) => void;
   deleteAllocation: (id: string) => void;
-  addOutsourcedService: (s: Omit<OutsourcedService, 'id' | 'createdAt'>) => void;
+  addOutsourcedService: (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt'>) => void;
+  updateOutsourcedServiceStatus: (id: string, finalized: boolean) => Promise<boolean>;
   deleteOutsourcedService: (id: string) => void;
   addProjectDocument: (d: Omit<ProjectDocument, 'id' | 'createdAt'>) => void;
   updateProjectDocument: (d: ProjectDocument) => void;
@@ -45,7 +46,7 @@ function mapAllocation(r: any): WorkAllocation {
   return { id: r.id, employeeId: r.employee_id, projectId: r.project_id, date: r.date, worked: r.worked, interior: r.interior, createdAt: r.created_at };
 }
 function mapOutsourced(r: any): OutsourcedService {
-  return { id: r.id, projectId: r.project_id, date: r.date, company: r.company, cnpj: r.cnpj, description: r.description, value: Number(r.value), invoiceNumber: r.invoice_number, fileName: r.file_name, createdAt: r.created_at };
+  return { id: r.id, projectId: r.project_id, date: r.date, company: r.company, cnpj: r.cnpj, description: r.description, value: Number(r.value), invoiceNumber: r.invoice_number, fileName: r.file_name, finalized: Boolean(r.finalized), finalizedAt: r.finalized_at || null, createdAt: r.created_at };
 }
 function mapProjectDoc(r: any): ProjectDocument {
   return { id: r.id, projectId: r.project_id, type: r.type as ProjectDocument['type'], description: r.description, documentDate: r.document_date, expiryDate: r.expiry_date || '', fileName: r.file_name, value: Number(r.value || 0), paymentDate: r.payment_date || '', paymentStatus: r.payment_status || 'pendente', docNotes: r.doc_notes || '', createdAt: r.created_at };
@@ -117,12 +118,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setAllocations(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addOutsourcedService = useCallback(async (s: Omit<OutsourcedService, 'id' | 'createdAt'>) => {
+  const addOutsourcedService = useCallback(async (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt'>) => {
     const { data } = await supabase.from('outsourced_services').insert({
       project_id: s.projectId, date: s.date, company: s.company, cnpj: s.cnpj, description: s.description,
       value: s.value, invoice_number: s.invoiceNumber, file_name: s.fileName,
     }).select().single();
     if (data) setOutsourcedServices(prev => [...prev, mapOutsourced(data)]);
+  }, []);
+  const updateOutsourcedServiceStatus = useCallback(async (id: string, finalized: boolean) => {
+    const finalizedAt = finalized ? new Date().toISOString() : null;
+    const { data, error } = await supabase
+      .from('outsourced_services')
+      .update({ finalized, finalized_at: finalizedAt })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !data) return false;
+
+    setOutsourcedServices(prev => prev.map(x => x.id === id ? mapOutsourced(data) : x));
+    return true;
   }, []);
   const deleteOutsourcedService = useCallback(async (id: string) => {
     await supabase.from('outsourced_services').delete().eq('id', id);
@@ -239,7 +254,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, projectPurchases, equipmentRentals, loading,
       addProject, updateProject, deleteProject,
       addAllocation, deleteAllocation,
-      addOutsourcedService, deleteOutsourcedService,
+      addOutsourcedService, updateOutsourcedServiceStatus, deleteOutsourcedService,
       addProjectDocument, updateProjectDocument, deleteProjectDocument,
       addMeasurement, updateMeasurement, deleteMeasurement,
       addDASExpense, updateDASExpense, deleteDASExpense,

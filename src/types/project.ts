@@ -32,6 +32,8 @@ export interface OutsourcedService {
   value: number;
   invoiceNumber: string;
   fileName: string;
+  finalized: boolean;
+  finalizedAt: string | null;
   createdAt: string;
 }
 

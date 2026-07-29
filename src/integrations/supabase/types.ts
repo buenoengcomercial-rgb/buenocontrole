@@ -1088,6 +1088,8 @@ export type Database = {
           date: string
           description: string
           file_name: string
+          finalized: boolean
+          finalized_at: string | null
           id: string
           invoice_number: string
           project_id: string
@@ -1100,6 +1102,8 @@ export type Database = {
           date: string
           description?: string
           file_name?: string
+          finalized?: boolean
+          finalized_at?: string | null
           id?: string
           invoice_number?: string
           project_id: string
@@ -1112,6 +1116,8 @@ export type Database = {
           date?: string
           description?: string
           file_name?: string
+          finalized?: boolean
+          finalized_at?: string | null
           id?: string
           invoice_number?: string
           project_id?: string

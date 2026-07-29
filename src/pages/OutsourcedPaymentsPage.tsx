@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronRight, Paperclip, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, Paperclip, AlertTriangle, Archive, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useProjectData } from '@/context/ProjectContext';
@@ -7,6 +7,7 @@ import AttachedDocuments from '@/components/AttachedDocuments';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency, formatDate } from '@/lib/format';
 
@@ -46,8 +47,9 @@ function statusClass(status: StatusFilter) {
 }
 
 export default function OutsourcedPaymentsPage() {
-  const { projects, outsourcedServices } = useProjectData();
+  const { projects, outsourcedServices, updateOutsourcedServiceStatus } = useProjectData();
   const [payments, setPayments] = useState<Record<string, OutsourcedPayment[]>>({});
+  const [activeTab, setActiveTab] = useState<'open' | 'finalized'>('open');
   const [expandedService, setExpandedService] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState<Record<string, boolean>>({});
   const [paymentForms, setPaymentForms] = useState<Record<string, { date: string; value: number | ''; notes: string }>>({});
@@ -107,7 +109,7 @@ export default function OutsourcedPaymentsPage() {
       })
       .filter(({ service, status }) => {
         if (projectFilter !== 'todos' && service.projectId !== projectFilter) return false;
-        if (statusFilter !== 'todos' && status !== statusFilter) return false;
+        if (!service.finalized && statusFilter !== 'todos' && status !== statusFilter) return false;
         if (companyFilter.trim() && !service.company.toLowerCase().includes(companyFilter.trim().toLowerCase())) return false;
         if (startDate && service.date < startDate) return false;
         if (endDate && service.date > endDate) return false;
@@ -116,8 +118,12 @@ export default function OutsourcedPaymentsPage() {
       .sort((a, b) => b.service.date.localeCompare(a.service.date) || a.service.company.localeCompare(b.service.company));
   }, [outsourcedServices, payments, projectFilter, companyFilter, statusFilter, startDate, endDate]);
 
-  const totalContract = servicesWithTotals.reduce((sum, item) => sum + item.service.value, 0);
-  const totalPaid = servicesWithTotals.reduce((sum, item) => sum + item.paid, 0);
+  const openServices = useMemo(() => servicesWithTotals.filter(item => !item.service.finalized), [servicesWithTotals]);
+  const finalizedServices = useMemo(() => servicesWithTotals.filter(item => item.service.finalized), [servicesWithTotals]);
+  const visibleServices = activeTab === 'open' ? openServices : finalizedServices;
+
+  const totalContract = openServices.reduce((sum, item) => sum + item.service.value, 0);
+  const totalPaid = openServices.reduce((sum, item) => sum + item.paid, 0);
   const totalRemaining = totalContract - totalPaid;
 
   const setFormValue = (serviceId: string, patch: Partial<{ date: string; value: number | ''; notes: string }>) => {
@@ -186,6 +192,22 @@ export default function OutsourcedPaymentsPage() {
     toast.success('Pagamento excluido.');
   };
 
+  const toggleFinalized = async (serviceId: string, finalized: boolean) => {
+    const message = finalized
+      ? 'Deseja finalizar este terceirizado? Ele saira da aba Em aberto e deixara de contar nos totais principais.'
+      : 'Deseja reabrir este terceirizado? Ele voltara para a aba Em aberto e voltara a contar nos totais principais.';
+    if (!window.confirm(message)) return;
+
+    const ok = await updateOutsourcedServiceStatus(serviceId, finalized);
+    if (!ok) {
+      toast.error(finalized ? 'Erro ao finalizar terceirizado.' : 'Erro ao reabrir terceirizado.');
+      return;
+    }
+
+    setExpandedService(null);
+    toast.success(finalized ? 'Terceirizado finalizado.' : 'Terceirizado reaberto.');
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -252,8 +274,14 @@ export default function OutsourcedPaymentsPage() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {servicesWithTotals.map(({ service, paid, remaining, status }) => {
+      <Tabs value={activeTab} onValueChange={value => setActiveTab(value as 'open' | 'finalized')} className="space-y-3">
+        <TabsList>
+          <TabsTrigger value="open">Em aberto</TabsTrigger>
+          <TabsTrigger value="finalized">Finalizados</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="space-y-3">
+        {visibleServices.map(({ service, paid, remaining, status }) => {
           const servicePayments = payments[service.id] || [];
           const isExpanded = expandedService === service.id;
           const form = paymentForms[service.id] || { date: '', value: '', notes: '' };
@@ -279,7 +307,16 @@ export default function OutsourcedPaymentsPage() {
                   <div className="text-right"><span className="text-xs text-muted-foreground">Valor Total</span><p className="text-sm font-semibold">{formatCurrency(service.value)}</p></div>
                   <div className="text-right"><span className="text-xs text-green-600">Pago</span><p className="text-sm font-medium text-green-600">{formatCurrency(paid)}</p></div>
                   <div className="text-right"><span className={`text-xs ${remaining > 0 ? 'text-orange-600' : 'text-green-600'}`}>Restante</span><p className={`text-sm font-medium ${remaining > 0 ? 'text-orange-600' : 'text-green-600'}`}>{formatCurrency(remaining)}</p></div>
-                  <div className="text-right"><span className="text-xs text-muted-foreground">Status</span><p><span className={`text-xs px-2 py-0.5 rounded-full ${statusClass(status)}`}>{statusLabel(status)}</span></p></div>
+                  <div className="text-right">
+                    <span className="text-xs text-muted-foreground">Status</span>
+                    <p>
+                      {service.finalized ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Finalizado</span>
+                      ) : (
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusClass(status)}`}>{statusLabel(status)}</span>
+                      )}
+                    </p>
+                  </div>
                   <div className="text-right"><span className="text-xs text-muted-foreground">Comprov.</span><p className="text-sm font-medium flex items-center justify-end gap-1"><Paperclip className="w-3.5 h-3.5" />{servicePayments.length}</p></div>
                 </div>
               </div>
@@ -304,19 +341,32 @@ export default function OutsourcedPaymentsPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="label-caps text-sm">Pagamentos</h4>
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={e => {
-                          e.stopPropagation();
-                          setShowPaymentForm(prev => ({ ...prev, [service.id]: !showForm }));
-                        }}
-                      >
-                        <Plus className="w-4 h-4 mr-1" /> Registrar Pagamento
-                      </Button>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {!service.finalized && (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={e => {
+                              e.stopPropagation();
+                              setShowPaymentForm(prev => ({ ...prev, [service.id]: !showForm }));
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-1" /> Registrar Pagamento
+                          </Button>
+                        )}
+                        {service.finalized ? (
+                          <Button size="sm" variant="outline" onClick={() => void toggleFinalized(service.id, false)}>
+                            <RotateCcw className="w-4 h-4 mr-1" /> Reabrir
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={() => void toggleFinalized(service.id, true)}>
+                            <Archive className="w-4 h-4 mr-1" /> Finalizar
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
-                    {showForm && (
+                    {showForm && !service.finalized && (
                       <div className="grid grid-cols-1 gap-3 bg-muted/50 rounded-lg p-3 md:grid-cols-[160px_160px_1fr_auto]">
                         <div>
                           <label className="text-xs text-muted-foreground block mb-1">Data *</label>
@@ -364,12 +414,13 @@ export default function OutsourcedPaymentsPage() {
           );
         })}
 
-        {servicesWithTotals.length === 0 && (
+        {visibleServices.length === 0 && (
           <div className="bg-card rounded-xl shadow-card px-6 py-12 text-center text-muted-foreground">
-            Nenhum terceirizado encontrado para os filtros selecionados.
+            {activeTab === 'open' ? 'Nenhum terceirizado em aberto para os filtros selecionados.' : 'Nenhum terceirizado finalizado para os filtros selecionados.'}
           </div>
         )}
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
