@@ -24,7 +24,8 @@ export interface WorkAllocation {
 
 export interface OutsourcedService {
   id: string;
-  projectId: string;
+  projectId: string | null;
+  serviceCategory: OutsourcedServiceCategory;
   date: string;
   company: string;
   cnpj: string;
@@ -36,6 +37,15 @@ export interface OutsourcedService {
   finalizedAt: string | null;
   createdAt: string;
 }
+
+export type OutsourcedServiceCategory = 'obra' | 'avulso' | 'projetos' | 'emprestimo';
+
+export const OUTSOURCED_SERVICE_CATEGORY_LABELS: Record<OutsourcedServiceCategory, string> = {
+  obra: 'Obra',
+  avulso: 'Avulso',
+  projetos: 'Projetos',
+  emprestimo: 'Empréstimo',
+};
 
 export type ProjectDocType =
   | 'ART'

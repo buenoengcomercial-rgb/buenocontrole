@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OUTSOURCED_SERVICE_CATEGORY_LABELS, type OutsourcedServiceCategory } from '@/types/project';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +31,10 @@ type OutsourcedPayment = {
 };
 
 type StatusFilter = 'todos' | 'pendente' | 'parcial' | 'pago' | 'acima';
+type LocationFilter = 'todos' | `project:${string}` | `category:${Exclude<OutsourcedServiceCategory, 'obra'>}`;
+type LocationSelectValue = `project:${string}` | `category:${Exclude<OutsourcedServiceCategory, 'obra'>}`;
+
+const OUTSOURCED_CATEGORY_OPTIONS: Exclude<OutsourcedServiceCategory, 'obra'>[] = ['avulso', 'projetos', 'emprestimo'];
 
 function getStatus(total: number, paid: number): StatusFilter {
   if (paid <= 0) return 'pendente';
@@ -64,7 +69,7 @@ export default function OutsourcedPaymentsPage() {
   const [showPaymentForm, setShowPaymentForm] = useState<Record<string, boolean>>({});
   const [paymentForms, setPaymentForms] = useState<Record<string, { date: string; value: number | ''; notes: string }>>({});
   const [statusAction, setStatusAction] = useState<{ serviceId: string; finalized: boolean } | null>(null);
-  const [projectFilter, setProjectFilter] = useState('todos');
+  const [projectFilter, setProjectFilter] = useState<LocationFilter>('todos');
   const [companyFilter, setCompanyFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
   const [startDate, setStartDate] = useState('');
@@ -107,7 +112,17 @@ export default function OutsourcedPaymentsPage() {
     void loadPayments();
   }, [outsourcedServices]);
 
-  const getProjectName = (projectId: string) => projects.find(p => p.id === projectId)?.name || 'Obra nao encontrada';
+  const getServiceLocationLabel = (service: { projectId: string | null; serviceCategory: OutsourcedServiceCategory }) => {
+    if (service.serviceCategory !== 'obra') return OUTSOURCED_SERVICE_CATEGORY_LABELS[service.serviceCategory];
+    if (!service.projectId) return 'Obra nao encontrada';
+    return projects.find(p => p.id === service.projectId)?.name || 'Obra nao encontrada';
+  };
+
+  const getServiceLocationValue = (service: { projectId: string | null; serviceCategory: OutsourcedServiceCategory }): LocationSelectValue => {
+    if (service.serviceCategory !== 'obra') return `category:${service.serviceCategory}`;
+    return service.projectId ? `project:${service.projectId}` : 'category:avulso';
+  };
+
   const getServicePaid = (serviceId: string) => (payments[serviceId] || []).reduce((sum, p) => sum + p.value, 0);
 
   const servicesWithTotals = useMemo(() => {
@@ -119,7 +134,10 @@ export default function OutsourcedPaymentsPage() {
         return { service, paid, remaining, status };
       })
       .filter(({ service, status }) => {
-        if (projectFilter !== 'todos' && service.projectId !== projectFilter) return false;
+        if (projectFilter !== 'todos') {
+          if (projectFilter.startsWith('project:') && service.projectId !== projectFilter.replace('project:', '')) return false;
+          if (projectFilter.startsWith('category:') && `category:${service.serviceCategory}` !== projectFilter) return false;
+        }
         if (!service.finalized && statusFilter !== 'todos' && status !== statusFilter) return false;
         if (companyFilter.trim() && !service.company.toLowerCase().includes(companyFilter.trim().toLowerCase())) return false;
         if (startDate && service.date < startDate) return false;
@@ -203,14 +221,17 @@ export default function OutsourcedPaymentsPage() {
     toast.success('Pagamento excluido.');
   };
 
-  const updateServiceProject = async (serviceId: string, projectId: string) => {
-    const result = await updateOutsourcedServiceProject(serviceId, projectId);
+  const updateServiceProject = async (serviceId: string, value: LocationSelectValue) => {
+    const isCategory = value.startsWith('category:');
+    const serviceCategory = isCategory ? value.replace('category:', '') as OutsourcedServiceCategory : 'obra';
+    const projectId = isCategory ? null : value.replace('project:', '');
+    const result = await updateOutsourcedServiceProject(serviceId, projectId, serviceCategory);
     if (!result.ok) {
-      toast.error(result.message || 'Erro ao alterar obra do terceirizado.');
+      toast.error(result.message || 'Erro ao alterar obra/categoria do terceirizado.');
       return;
     }
 
-    toast.success('Obra do terceirizado atualizada.');
+    toast.success('Obra/categoria do terceirizado atualizada.');
   };
 
   const toggleFinalized = async (serviceId: string, finalized: boolean) => {
@@ -257,13 +278,16 @@ export default function OutsourcedPaymentsPage() {
 
       <div className="bg-card rounded-xl p-4 shadow-card grid gap-3 md:grid-cols-5">
         <div>
-          <label className="label-caps mb-1 block">Obra</label>
-          <Select value={projectFilter} onValueChange={setProjectFilter}>
+          <label className="label-caps mb-1 block">Obra / Categoria</label>
+          <Select value={projectFilter} onValueChange={value => setProjectFilter(value as LocationFilter)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todas</SelectItem>
+              {OUTSOURCED_CATEGORY_OPTIONS.map(category => (
+                <SelectItem key={category} value={`category:${category}`}>{OUTSOURCED_SERVICE_CATEGORY_LABELS[category]}</SelectItem>
+              ))}
               {projects.map(project => (
-                <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                <SelectItem key={project.id} value={`project:${project.id}`}>{project.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -319,7 +343,7 @@ export default function OutsourcedPaymentsPage() {
                   {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
                   <div className="grid gap-2 sm:grid-cols-4 lg:grid-cols-[120px_180px_180px_minmax(180px,1fr)] min-w-0">
                     <div><span className="text-xs text-muted-foreground">Data</span><p className="text-sm font-medium">{formatDate(service.date)}</p></div>
-                    <div><span className="text-xs text-muted-foreground">Obra</span><p className="text-sm font-medium truncate">{getProjectName(service.projectId)}</p></div>
+                    <div><span className="text-xs text-muted-foreground">Obra / Categoria</span><p className="text-sm font-medium truncate">{getServiceLocationLabel(service)}</p></div>
                     <div><span className="text-xs text-muted-foreground">Empresa</span><p className="text-sm font-medium truncate">{service.company}</p></div>
                     <div><span className="text-xs text-muted-foreground">Descricao</span><p className="text-sm truncate">{service.description || '-'}</p></div>
                   </div>
@@ -360,19 +384,21 @@ export default function OutsourcedPaymentsPage() {
                   <div className="rounded-xl border border-border bg-muted/30 p-3">
                     <label className="label-caps mb-2 flex items-center gap-2 text-xs">
                       <Building2 className="w-4 h-4" />
-                      Obra do servico
+                      Obra / Categoria
                     </label>
                     <Select
-                      value={service.projectId}
-                      onValueChange={value => void updateServiceProject(service.id, value)}
-                      disabled={projects.length === 0}
+                      value={getServiceLocationValue(service)}
+                      onValueChange={value => void updateServiceProject(service.id, value as LocationSelectValue)}
                     >
                       <SelectTrigger className="max-w-xl bg-background" onClick={e => e.stopPropagation()}>
-                        <SelectValue placeholder="Selecione a obra" />
+                        <SelectValue placeholder="Selecione a obra ou categoria" />
                       </SelectTrigger>
                       <SelectContent>
+                        {OUTSOURCED_CATEGORY_OPTIONS.map(category => (
+                          <SelectItem key={category} value={`category:${category}`}>{OUTSOURCED_SERVICE_CATEGORY_LABELS[category]}</SelectItem>
+                        ))}
                         {projects.map(project => (
-                          <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                          <SelectItem key={project.id} value={`project:${project.id}`}>{project.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -480,7 +506,7 @@ export default function OutsourcedPaymentsPage() {
                 {statusActionService && (
                   <div className="rounded-lg bg-muted/60 p-3 text-sm text-foreground space-y-1">
                     <div className="flex justify-between gap-4"><span className="text-muted-foreground">Empresa</span><strong>{statusActionService.service.company}</strong></div>
-                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Obra</span><strong>{getProjectName(statusActionService.service.projectId)}</strong></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Obra/Categoria</span><strong>{getServiceLocationLabel(statusActionService.service)}</strong></div>
                     <div className="flex justify-between gap-4"><span className="text-muted-foreground">Valor total</span><strong>{formatCurrency(statusActionService.service.value)}</strong></div>
                     <div className="flex justify-between gap-4"><span className="text-muted-foreground">Pago</span><strong className="text-green-600">{formatCurrency(statusActionService.paid)}</strong></div>
                     <div className="flex justify-between gap-4"><span className="text-muted-foreground">Restante</span><strong className={statusActionService.remaining > 0 ? 'text-orange-600' : 'text-green-600'}>{formatCurrency(statusActionService.remaining)}</strong></div>

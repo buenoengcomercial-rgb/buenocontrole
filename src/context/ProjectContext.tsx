@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Project, WorkAllocation, OutsourcedService, ProjectDocument, Measurement, DASExpense, ProjectPurchase, EquipmentRental } from '@/types/project';
+import type { Project, WorkAllocation, OutsourcedService, OutsourcedServiceCategory, ProjectDocument, Measurement, DASExpense, ProjectPurchase, EquipmentRental } from '@/types/project';
 
 interface ProjectState {
   projects: Project[];
@@ -17,8 +17,8 @@ interface ProjectState {
   deleteProject: (id: string) => void;
   addAllocation: (a: Omit<WorkAllocation, 'id' | 'createdAt'>) => void;
   deleteAllocation: (id: string) => void;
-  addOutsourcedService: (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt'>) => void;
-  updateOutsourcedServiceProject: (id: string, projectId: string) => Promise<{ ok: boolean; message?: string }>;
+  addOutsourcedService: (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt' | 'serviceCategory'> & { serviceCategory?: OutsourcedServiceCategory }) => void;
+  updateOutsourcedServiceProject: (id: string, projectId: string | null, serviceCategory: OutsourcedServiceCategory) => Promise<{ ok: boolean; message?: string }>;
   updateOutsourcedServiceStatus: (id: string, finalized: boolean) => Promise<{ ok: boolean; message?: string }>;
   deleteOutsourcedService: (id: string) => void;
   addProjectDocument: (d: Omit<ProjectDocument, 'id' | 'createdAt'>) => void;
@@ -47,7 +47,7 @@ function mapAllocation(r: any): WorkAllocation {
   return { id: r.id, employeeId: r.employee_id, projectId: r.project_id, date: r.date, worked: r.worked, interior: r.interior, createdAt: r.created_at };
 }
 function mapOutsourced(r: any): OutsourcedService {
-  return { id: r.id, projectId: r.project_id, date: r.date, company: r.company, cnpj: r.cnpj, description: r.description, value: Number(r.value), invoiceNumber: r.invoice_number, fileName: r.file_name, finalized: Boolean(r.finalized), finalizedAt: r.finalized_at || null, createdAt: r.created_at };
+  return { id: r.id, projectId: r.project_id || null, serviceCategory: (r.service_category || 'obra') as OutsourcedServiceCategory, date: r.date, company: r.company, cnpj: r.cnpj, description: r.description, value: Number(r.value), invoiceNumber: r.invoice_number, fileName: r.file_name, finalized: Boolean(r.finalized), finalizedAt: r.finalized_at || null, createdAt: r.created_at };
 }
 function mapProjectDoc(r: any): ProjectDocument {
   return { id: r.id, projectId: r.project_id, type: r.type as ProjectDocument['type'], description: r.description, documentDate: r.document_date, expiryDate: r.expiry_date || '', fileName: r.file_name, value: Number(r.value || 0), paymentDate: r.payment_date || '', paymentStatus: r.payment_status || 'pendente', docNotes: r.doc_notes || '', createdAt: r.created_at };
@@ -67,7 +67,7 @@ function mapEquipmentRental(r: any): EquipmentRental {
 
 const PROJECT_COLUMNS = 'id, name, client, city, address, responsible, start_date, expected_end_date, contract_value, notes, created_at';
 const ALLOCATION_COLUMNS = 'id, employee_id, project_id, date, worked, interior, created_at';
-const OUTSOURCED_COLUMNS = 'id, project_id, date, company, cnpj, description, value, invoice_number, file_name, finalized, finalized_at, created_at';
+const OUTSOURCED_COLUMNS = 'id, project_id, service_category, date, company, cnpj, description, value, invoice_number, file_name, finalized, finalized_at, created_at';
 const PROJECT_DOCUMENT_COLUMNS = 'id, project_id, type, description, document_date, expiry_date, file_name, value, payment_date, payment_status, doc_notes, created_at';
 const MEASUREMENT_COLUMNS = 'id, project_id, number, date, description, value, percent_executed, status, created_at';
 const DAS_COLUMNS = 'id, month, due_date, value, paid, project_id, created_at';
@@ -128,17 +128,18 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setAllocations(prev => prev.filter(x => x.id !== id));
   }, []);
 
-  const addOutsourcedService = useCallback(async (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt'>) => {
+  const addOutsourcedService = useCallback(async (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt' | 'serviceCategory'> & { serviceCategory?: OutsourcedServiceCategory }) => {
+    const serviceCategory = s.serviceCategory || 'obra';
     const { data } = await supabase.from('outsourced_services').insert({
-      project_id: s.projectId, date: s.date, company: s.company, cnpj: s.cnpj, description: s.description,
+      project_id: serviceCategory === 'obra' ? s.projectId : null, service_category: serviceCategory, date: s.date, company: s.company, cnpj: s.cnpj, description: s.description,
       value: s.value, invoice_number: s.invoiceNumber, file_name: s.fileName,
-    }).select().single();
+    }).select(OUTSOURCED_COLUMNS).single();
     if (data) setOutsourcedServices(prev => [...prev, mapOutsourced(data)]);
   }, []);
-  const updateOutsourcedServiceProject = useCallback(async (id: string, projectId: string) => {
+  const updateOutsourcedServiceProject = useCallback(async (id: string, projectId: string | null, serviceCategory: OutsourcedServiceCategory) => {
     const { data, error } = await supabase
       .from('outsourced_services')
-      .update({ project_id: projectId })
+      .update({ project_id: serviceCategory === 'obra' ? projectId : null, service_category: serviceCategory })
       .eq('id', id)
       .select(OUTSOURCED_COLUMNS)
       .single();

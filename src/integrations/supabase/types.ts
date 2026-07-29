@@ -1104,7 +1104,8 @@ export type Database = {
           finalized_at: string | null
           id: string
           invoice_number: string
-          project_id: string
+          project_id: string | null
+          service_category: string
           value: number
         }
         Insert: {
@@ -1118,7 +1119,8 @@ export type Database = {
           finalized_at?: string | null
           id?: string
           invoice_number?: string
-          project_id: string
+          project_id?: string | null
+          service_category?: string
           value?: number
         }
         Update: {
@@ -1132,7 +1134,8 @@ export type Database = {
           finalized_at?: string | null
           id?: string
           invoice_number?: string
-          project_id?: string
+          project_id?: string | null
+          service_category?: string
           value?: number
         }
         Relationships: [
