@@ -8,6 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency, formatDate } from '@/lib/format';
 
@@ -53,6 +63,7 @@ export default function OutsourcedPaymentsPage() {
   const [expandedService, setExpandedService] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState<Record<string, boolean>>({});
   const [paymentForms, setPaymentForms] = useState<Record<string, { date: string; value: number | ''; notes: string }>>({});
+  const [statusAction, setStatusAction] = useState<{ serviceId: string; finalized: boolean } | null>(null);
   const [projectFilter, setProjectFilter] = useState('todos');
   const [companyFilter, setCompanyFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
@@ -193,11 +204,6 @@ export default function OutsourcedPaymentsPage() {
   };
 
   const toggleFinalized = async (serviceId: string, finalized: boolean) => {
-    const message = finalized
-      ? 'Deseja finalizar este terceirizado? Ele saira da aba Em aberto e deixara de contar nos totais principais.'
-      : 'Deseja reabrir este terceirizado? Ele voltara para a aba Em aberto e voltara a contar nos totais principais.';
-    if (!window.confirm(message)) return;
-
     const ok = await updateOutsourcedServiceStatus(serviceId, finalized);
     if (!ok) {
       toast.error(finalized ? 'Erro ao finalizar terceirizado.' : 'Erro ao reabrir terceirizado.');
@@ -205,8 +211,13 @@ export default function OutsourcedPaymentsPage() {
     }
 
     setExpandedService(null);
+    setStatusAction(null);
     toast.success(finalized ? 'Terceirizado finalizado.' : 'Terceirizado reaberto.');
   };
+
+  const statusActionService = statusAction
+    ? servicesWithTotals.find(item => item.service.id === statusAction.serviceId)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -355,11 +366,11 @@ export default function OutsourcedPaymentsPage() {
                           </Button>
                         )}
                         {service.finalized ? (
-                          <Button size="sm" variant="outline" onClick={() => void toggleFinalized(service.id, false)}>
+                          <Button size="sm" variant="outline" onClick={() => setStatusAction({ serviceId: service.id, finalized: false })}>
                             <RotateCcw className="w-4 h-4 mr-1" /> Reabrir
                           </Button>
                         ) : (
-                          <Button size="sm" variant="outline" onClick={() => void toggleFinalized(service.id, true)}>
+                          <Button size="sm" variant="outline" onClick={() => setStatusAction({ serviceId: service.id, finalized: true })}>
                             <Archive className="w-4 h-4 mr-1" /> Finalizar
                           </Button>
                         )}
@@ -421,6 +432,40 @@ export default function OutsourcedPaymentsPage() {
         )}
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={!!statusAction} onOpenChange={(open) => !open && setStatusAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {statusAction?.finalized ? 'Finalizar terceirizado' : 'Reabrir terceirizado'}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  {statusAction?.finalized
+                    ? 'Este item saira da aba Em aberto e deixara de contar nos totais principais.'
+                    : 'Este item voltara para a aba Em aberto e voltara a contar nos totais principais.'}
+                </p>
+                {statusActionService && (
+                  <div className="rounded-lg bg-muted/60 p-3 text-sm text-foreground space-y-1">
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Empresa</span><strong>{statusActionService.service.company}</strong></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Obra</span><strong>{getProjectName(statusActionService.service.projectId)}</strong></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Valor total</span><strong>{formatCurrency(statusActionService.service.value)}</strong></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Pago</span><strong className="text-green-600">{formatCurrency(statusActionService.paid)}</strong></div>
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Restante</span><strong className={statusActionService.remaining > 0 ? 'text-orange-600' : 'text-green-600'}>{formatCurrency(statusActionService.remaining)}</strong></div>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => statusAction && void toggleFinalized(statusAction.serviceId, statusAction.finalized)}>
+              {statusAction?.finalized ? 'Finalizar' : 'Reabrir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
