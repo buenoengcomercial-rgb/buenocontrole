@@ -68,11 +68,17 @@ function mapEquipmentRental(r: any): EquipmentRental {
 const PROJECT_COLUMNS = 'id, name, client, city, address, responsible, start_date, expected_end_date, contract_value, notes, created_at';
 const ALLOCATION_COLUMNS = 'id, employee_id, project_id, date, worked, interior, created_at';
 const OUTSOURCED_COLUMNS = 'id, project_id, service_category, date, company, cnpj, description, value, invoice_number, file_name, finalized, finalized_at, created_at';
+const OUTSOURCED_LEGACY_COLUMNS = 'id, project_id, date, company, cnpj, description, value, invoice_number, file_name, finalized, finalized_at, created_at';
 const PROJECT_DOCUMENT_COLUMNS = 'id, project_id, type, description, document_date, expiry_date, file_name, value, payment_date, payment_status, doc_notes, created_at';
 const MEASUREMENT_COLUMNS = 'id, project_id, number, date, description, value, percent_executed, status, created_at';
 const DAS_COLUMNS = 'id, month, due_date, value, paid, project_id, created_at';
 const PROJECT_PURCHASE_COLUMNS = 'id, project_id, supplier_id, material_id, date, invoice_number, quantity, unit_price, total_value, freight_value, icms_value, description, notes, payment_method, installments, first_installment_date, installment_dates, installment_values, freight_payment_date, icms_payment_date, created_at';
 const EQUIPMENT_RENTAL_COLUMNS = 'id, project_id, equipment_name, equipment_type, supplier, billing_type, unit_value, quantity, total_value, start_date, end_date, invoice_number, notes, created_at';
+
+function isMissingServiceCategoryError(error: any) {
+  const message = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+  return error?.code === 'PGRST204' || message.includes('service_category');
+}
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -86,10 +92,33 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadOutsourcedServices = async () => {
+      const { data, error } = await supabase.from('outsourced_services').select(OUTSOURCED_COLUMNS);
+
+      if (!error) {
+        setOutsourcedServices((data || []).map(mapOutsourced));
+        return;
+      }
+
+      if (!isMissingServiceCategoryError(error)) {
+        console.error('Erro ao carregar terceirizados:', error);
+        return;
+      }
+
+      console.warn('Banco ainda sem service_category; carregando terceirizados pelo schema antigo.');
+      const legacy = await supabase.from('outsourced_services').select(OUTSOURCED_LEGACY_COLUMNS);
+      if (legacy.error) {
+        console.error('Erro ao carregar terceirizados pelo schema antigo:', legacy.error);
+        return;
+      }
+
+      setOutsourcedServices((legacy.data || []).map(mapOutsourced));
+    };
+
     Promise.all([
       supabase.from('projects').select(PROJECT_COLUMNS).then(({ data }) => setProjects((data || []).map(mapProject))),
       supabase.from('work_allocations').select(ALLOCATION_COLUMNS).then(({ data }) => setAllocations((data || []).map(mapAllocation))),
-      supabase.from('outsourced_services').select(OUTSOURCED_COLUMNS).then(({ data }) => setOutsourcedServices((data || []).map(mapOutsourced))),
+      loadOutsourcedServices(),
       supabase.from('project_documents').select(PROJECT_DOCUMENT_COLUMNS).then(({ data }) => setProjectDocuments((data || []).map(mapProjectDoc))),
       supabase.from('measurements').select(MEASUREMENT_COLUMNS).then(({ data }) => setMeasurements((data || []).map(mapMeasurement))),
       supabase.from('das_expenses').select(DAS_COLUMNS).then(({ data }) => setDASExpenses((data || []).map(mapDAS))),
@@ -130,11 +159,26 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const addOutsourcedService = useCallback(async (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt' | 'serviceCategory'> & { serviceCategory?: OutsourcedServiceCategory }) => {
     const serviceCategory = s.serviceCategory || 'obra';
-    const { data } = await supabase.from('outsourced_services').insert({
+    const { data, error } = await supabase.from('outsourced_services').insert({
       project_id: serviceCategory === 'obra' ? s.projectId : null, service_category: serviceCategory, date: s.date, company: s.company, cnpj: s.cnpj, description: s.description,
       value: s.value, invoice_number: s.invoiceNumber, file_name: s.fileName,
     }).select(OUTSOURCED_COLUMNS).single();
-    if (data) setOutsourcedServices(prev => [...prev, mapOutsourced(data)]);
+
+    if (!error && data) {
+      setOutsourcedServices(prev => [...prev, mapOutsourced(data)]);
+      return;
+    }
+
+    if (serviceCategory !== 'obra' || !isMissingServiceCategoryError(error)) {
+      console.error('Erro ao cadastrar terceirizado:', error);
+      return;
+    }
+
+    const legacy = await supabase.from('outsourced_services').insert({
+      project_id: s.projectId, date: s.date, company: s.company, cnpj: s.cnpj, description: s.description,
+      value: s.value, invoice_number: s.invoiceNumber, file_name: s.fileName,
+    }).select(OUTSOURCED_LEGACY_COLUMNS).single();
+    if (legacy.data) setOutsourcedServices(prev => [...prev, mapOutsourced(legacy.data)]);
   }, []);
   const updateOutsourcedServiceProject = useCallback(async (id: string, projectId: string | null, serviceCategory: OutsourcedServiceCategory) => {
     const { data, error } = await supabase
@@ -145,10 +189,31 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       .single();
 
     if (error || !data) {
+      if (serviceCategory === 'obra' && isMissingServiceCategoryError(error)) {
+        const legacy = await supabase
+          .from('outsourced_services')
+          .update({ project_id: projectId })
+          .eq('id', id)
+          .select(OUTSOURCED_LEGACY_COLUMNS)
+          .single();
+
+        if (!legacy.error && legacy.data) {
+          setOutsourcedServices(prev => prev.map(x => x.id === id ? mapOutsourced(legacy.data) : x));
+          return { ok: true };
+        }
+      }
+
       console.error('Erro ao alterar obra do terceirizado:', error);
+      if (serviceCategory !== 'obra' && isMissingServiceCategoryError(error)) {
+        return {
+          ok: false,
+          message: 'Banco ainda nao atualizado para categorias de terceirizados. Aplique a migration e tente novamente.',
+        };
+      }
+
       return {
         ok: false,
-        message: 'Nao foi possivel alterar a obra do terceirizado. Verifique a conexao e tente novamente.',
+        message: 'Nao foi possivel alterar a obra/categoria do terceirizado. Verifique a conexao e tente novamente.',
       };
     }
 
