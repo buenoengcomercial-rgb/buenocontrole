@@ -123,7 +123,7 @@ function AppRoutes() {
         <Route path="/seguranca/aso" element={<ASOPage />} />
         <Route path="/seguranca/treinamentos" element={<TreinamentosPage />} />
         <Route path="/admin/usuarios" element={<UsersPage />} />
-        <Route path="/admin/logs" element={<AuditLogPage />} />
+        <Route path="/admin/logs" element={<AdminRoute><StorageMigrationPage /></AdminRoute>} />
         <Route path="/admin/storage-migration" element={<AdminRoute><StorageMigrationPage /></AdminRoute>} />
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
