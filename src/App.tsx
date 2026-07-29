@@ -36,7 +36,6 @@ import OutsourcedPaymentsPage from "@/pages/OutsourcedPaymentsPage";
 import UsersPage from "@/pages/UsersPage";
 import RescisaoPage from "@/pages/RescisaoPage";
 import AuditLogPage from "@/pages/AuditLogPage";
-import StorageMigrationPage from "@/pages/StorageMigrationPage";
 import LaudosPage from "@/pages/LaudosPage";
 import MedicoesEnergisaPage from "@/pages/MedicoesEnergisaPage";
 
@@ -123,8 +122,7 @@ function AppRoutes() {
         <Route path="/seguranca/aso" element={<ASOPage />} />
         <Route path="/seguranca/treinamentos" element={<TreinamentosPage />} />
         <Route path="/admin/usuarios" element={<UsersPage />} />
-        <Route path="/admin/logs" element={<AdminRoute><StorageMigrationPage /></AdminRoute>} />
-        <Route path="/admin/storage-migration" element={<AdminRoute><StorageMigrationPage /></AdminRoute>} />
+        <Route path="/admin/logs" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

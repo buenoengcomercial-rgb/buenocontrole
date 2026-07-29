@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X, Users, CalendarDays, DollarSign, FileText, PieChart, Shield, HardHat, Palmtree, BookOpen, GraduationCap, Stethoscope, Building2, Wrench, Receipt, UserCog, ClipboardList, LogOut, FileSpreadsheet, DatabaseBackup } from 'lucide-react';
+import { LayoutDashboard, Truck, Package, ShoppingCart, BarChart3, Menu, X, Users, CalendarDays, DollarSign, FileText, PieChart, Shield, HardHat, Palmtree, BookOpen, GraduationCap, Stethoscope, Building2, Wrench, Receipt, UserCog, ClipboardList, LogOut, FileSpreadsheet } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -75,7 +75,6 @@ const allSections = [
     links: [
       { to: '/admin/usuarios', label: 'Usuários', icon: UserCog },
       { to: '/admin/logs', label: 'Registro de Ações', icon: ClipboardList },
-      { to: '/admin/storage-migration', label: 'Migração Storage', icon: DatabaseBackup },
     ],
   },
 ];

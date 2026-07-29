@@ -15,13 +15,6 @@ SET
   public = false,
   file_size_limit = EXCLUDED.file_size_limit;
 
-INSERT INTO storage.buckets (id, name, public, file_size_limit)
-VALUES ('attachments-backups-private', 'attachments-backups-private', false, 262144000)
-ON CONFLICT (id) DO UPDATE
-SET
-  public = false,
-  file_size_limit = EXCLUDED.file_size_limit;
-
 DROP POLICY IF EXISTS "Anyone can read attachments" ON public.attachments;
 DROP POLICY IF EXISTS "Anyone can insert attachments" ON public.attachments;
 DROP POLICY IF EXISTS "Anyone can update attachments" ON public.attachments;
@@ -81,37 +74,6 @@ ON storage.objects
 FOR DELETE
 TO authenticated
 USING (bucket_id = 'attachments-private');
-
-DROP POLICY IF EXISTS "Authenticated users can read attachment backups" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can insert attachment backups" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can update attachment backups" ON storage.objects;
-
-CREATE POLICY "Authenticated users can read attachment backups"
-ON storage.objects
-FOR SELECT
-TO authenticated
-USING (bucket_id = 'attachments-backups-private');
-
-CREATE POLICY "Authenticated users can insert attachment backups"
-ON storage.objects
-FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'attachments-backups-private');
-
-CREATE POLICY "Authenticated users can update attachment backups"
-ON storage.objects
-FOR UPDATE
-TO authenticated
-USING (bucket_id = 'attachments-backups-private')
-WITH CHECK (bucket_id = 'attachments-backups-private');
-
-DROP POLICY IF EXISTS "Authenticated users can read database export" ON storage.objects;
-
-CREATE POLICY "Authenticated users can read database export"
-ON storage.objects
-FOR SELECT
-TO authenticated
-USING (bucket_id = 'database_export_29_07_26');
 
 CREATE INDEX IF NOT EXISTS idx_attachments_storage_path
 ON public.attachments (storage_path)
