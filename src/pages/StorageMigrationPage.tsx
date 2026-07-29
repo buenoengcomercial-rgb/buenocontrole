@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 const BUCKET = 'attachments-private';
 const BACKUP_BUCKET = 'attachments-backups-private';
+const DATABASE_BACKUP_BUCKET = 'database_export_29_07_26';
 const SELECT_METADATA = 'id, entity_type, entity_id, file_name, file_size, file_type, storage_path, storage_bucket, storage_checksum, storage_migrated_at, created_at';
 
 type MigrationRow = {
@@ -68,6 +69,7 @@ export default function StorageMigrationPage() {
   const [verified, setVerified] = useState(false);
   const [backupDownloaded, setBackupDownloaded] = useState(false);
   const [backupUrl, setBackupUrl] = useState<string | null>(null);
+  const [databaseBackupUrl, setDatabaseBackupUrl] = useState<string | null>(null);
 
   const migrated = useMemo(() => rows.filter(row => row.storage_path).length, [rows]);
   const legacy = useMemo(() => rows.filter(row => !row.storage_path).length, [rows]);
@@ -151,6 +153,32 @@ export default function StorageMigrationPage() {
     } catch (error) {
       console.error(error);
       toast.error(`Falha ao preparar backup: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const prepareDatabaseBackup = async () => {
+    setLoading(true);
+    try {
+      const { data: files, error: listError } = await supabase.storage
+        .from(DATABASE_BACKUP_BUCKET)
+        .list('');
+      if (listError) throw listError;
+
+      const backupFile = files?.find(file => file.name.endsWith('.backup'));
+      if (!backupFile) throw new Error('Arquivo de exportacao nao encontrado');
+
+      const { data, error } = await supabase.storage
+        .from(DATABASE_BACKUP_BUCKET)
+        .createSignedUrl(backupFile.name, 3600);
+      if (error || !data?.signedUrl) throw error || new Error('URL de exportacao indisponivel');
+
+      setDatabaseBackupUrl(data.signedUrl);
+      toast.success('Exportacao integral pronta para download seguro.');
+    } catch (error) {
+      console.error(error);
+      toast.error(`Falha ao preparar exportacao: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
@@ -327,6 +355,10 @@ export default function StorageMigrationPage() {
             <DatabaseBackup className="mr-2 h-4 w-4" />
             Baixar backup JSON
           </Button>
+          <Button variant="outline" onClick={() => void prepareDatabaseBackup()} disabled={loading}>
+            <DatabaseBackup className="mr-2 h-4 w-4" />
+            Preparar backup do banco
+          </Button>
           <Button onClick={() => void migrate()} disabled={loading || !rows.length}>
             <HardDriveUpload className="mr-2 h-4 w-4" />
             Migrar para Storage
@@ -346,6 +378,15 @@ export default function StorageMigrationPage() {
               className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-accent"
             >
               Baixar backup pronto
+            </a>
+          )}
+          {databaseBackupUrl && (
+            <a
+              data-testid="database-backup-download"
+              href={databaseBackupUrl}
+              className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-accent"
+            >
+              Baixar banco completo
             </a>
           )}
         </div>

@@ -105,6 +105,14 @@ TO authenticated
 USING (bucket_id = 'attachments-backups-private')
 WITH CHECK (bucket_id = 'attachments-backups-private');
 
+DROP POLICY IF EXISTS "Authenticated users can read database export" ON storage.objects;
+
+CREATE POLICY "Authenticated users can read database export"
+ON storage.objects
+FOR SELECT
+TO authenticated
+USING (bucket_id = 'database_export_29_07_26');
+
 CREATE INDEX IF NOT EXISTS idx_attachments_storage_path
 ON public.attachments (storage_path)
 WHERE storage_path IS NOT NULL;
