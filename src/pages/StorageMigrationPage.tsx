@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 
 const BUCKET = 'attachments-private';
-const SELECT_WITH_DATA = 'id, entity_type, entity_id, file_name, file_size, file_type, file_data, storage_path, storage_bucket, storage_checksum, storage_migrated_at, created_at';
+const SELECT_METADATA = 'id, entity_type, entity_id, file_name, file_size, file_type, storage_path, storage_bucket, storage_checksum, storage_migrated_at, created_at';
 
 type MigrationRow = {
   id: string;
@@ -15,7 +15,6 @@ type MigrationRow = {
   file_name: string;
   file_size: number;
   file_type: string;
-  file_data: string | null;
   storage_path: string | null;
   storage_bucket: string | null;
   storage_checksum: string | null;
@@ -49,6 +48,18 @@ async function checksum(bytes: Uint8Array) {
     .join('');
 }
 
+async function fetchLegacyData(id: string) {
+  const { data, error } = await supabase
+    .from('attachments')
+    .select('file_data')
+    .eq('id', id)
+    .single();
+
+  if (error) throw error;
+  if (!data?.file_data) throw new Error(`Anexo ${id} sem Base64 disponivel`);
+  return data.file_data;
+}
+
 export default function StorageMigrationPage() {
   const [rows, setRows] = useState<MigrationRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,19 +68,19 @@ export default function StorageMigrationPage() {
   const [backupDownloaded, setBackupDownloaded] = useState(false);
 
   const migrated = useMemo(() => rows.filter(row => row.storage_path).length, [rows]);
-  const legacy = useMemo(() => rows.filter(row => row.file_data && !row.storage_path).length, [rows]);
+  const legacy = useMemo(() => rows.filter(row => !row.storage_path).length, [rows]);
 
   const loadRows = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('attachments')
-      .select(SELECT_WITH_DATA)
+      .select(SELECT_METADATA)
       .order('created_at');
     setLoading(false);
 
     if (error) {
       console.error(error);
-      toast.error('Nao foi possivel carregar os anexos.');
+      toast.error(`Nao foi possivel carregar os anexos: ${error.message}`);
       return;
     }
 
@@ -79,30 +90,46 @@ export default function StorageMigrationPage() {
   };
 
   const downloadBackup = async () => {
-    const sourceRows = rows.length ? rows : await (async () => {
-      const { data, error } = await supabase.from('attachments').select(SELECT_WITH_DATA).order('created_at');
-      if (error) throw error;
-      return (data || []) as MigrationRow[];
-    })();
+    if (!rows.length) {
+      toast.error('Carregue o inventario antes de gerar o backup.');
+      return;
+    }
 
-    const blob = new Blob([JSON.stringify({
-      createdAt: new Date().toISOString(),
-      project: 'vayxxheiqaueuortorln',
-      count: sourceRows.length,
-      attachments: sourceRows,
-    })], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `attachments-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setBackupDownloaded(true);
-    toast.success(`Backup preparado com ${sourceRows.length} anexos.`);
+    setLoading(true);
+    setProgress(0);
+    try {
+      const attachments = [];
+      for (let index = 0; index < rows.length; index += 1) {
+        const row = rows[index];
+        const fileData = row.storage_path ? null : await fetchLegacyData(row.id);
+        attachments.push({ ...row, file_data: fileData });
+        setProgress(Math.round(((index + 1) / rows.length) * 100));
+      }
+
+      const blob = new Blob([JSON.stringify({
+        createdAt: new Date().toISOString(),
+        project: 'vayxxheiqaueuortorln',
+        count: attachments.length,
+        attachments,
+      })], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `attachments-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setBackupDownloaded(true);
+      toast.success(`Backup preparado com ${attachments.length} anexos.`);
+    } catch (error) {
+      console.error(error);
+      toast.error(`Falha ao preparar backup: ${error instanceof Error ? error.message : 'erro desconhecido'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const migrate = async () => {
-    const pending = rows.filter(row => row.file_data && !row.storage_path);
+    const pending = rows.filter(row => !row.storage_path);
     if (!pending.length) {
       toast.info('Nao ha anexos pendentes de migracao.');
       return;
@@ -115,7 +142,8 @@ export default function StorageMigrationPage() {
     for (let index = 0; index < pending.length; index += 1) {
       const row = pending[index];
       try {
-        const { bytes, mimeType } = dataUrlToBytes(row.file_data!);
+        const fileData = await fetchLegacyData(row.id);
+        const { bytes, mimeType } = dataUrlToBytes(fileData);
         const hash = await checksum(bytes);
         const storagePath = [
           sanitizePathPart(row.entity_type),
@@ -127,7 +155,7 @@ export default function StorageMigrationPage() {
         const { error: uploadError } = await supabase.storage
           .from(BUCKET)
           .upload(storagePath, bytes, {
-            contentType: row.file_type || mimeType,
+            contentType: row.file_type.includes('/') ? row.file_type : mimeType,
             cacheControl: '3600',
             upsert: true,
           });
@@ -222,7 +250,6 @@ export default function StorageMigrationPage() {
       return;
     }
 
-    setRows(current => current.map(row => row.storage_path ? { ...row, file_data: null } : row));
     toast.success('Base64 removido somente dos arquivos validados.');
   };
 
