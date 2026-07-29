@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronRight, Paperclip, AlertTriangle, Archive, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, Paperclip, AlertTriangle, Archive, RotateCcw, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useProjectData } from '@/context/ProjectContext';
@@ -57,7 +57,7 @@ function statusClass(status: StatusFilter) {
 }
 
 export default function OutsourcedPaymentsPage() {
-  const { projects, outsourcedServices, updateOutsourcedServiceStatus } = useProjectData();
+  const { projects, outsourcedServices, updateOutsourcedServiceProject, updateOutsourcedServiceStatus } = useProjectData();
   const [payments, setPayments] = useState<Record<string, OutsourcedPayment[]>>({});
   const [activeTab, setActiveTab] = useState<'open' | 'finalized'>('open');
   const [expandedService, setExpandedService] = useState<string | null>(null);
@@ -203,6 +203,16 @@ export default function OutsourcedPaymentsPage() {
     toast.success('Pagamento excluido.');
   };
 
+  const updateServiceProject = async (serviceId: string, projectId: string) => {
+    const result = await updateOutsourcedServiceProject(serviceId, projectId);
+    if (!result.ok) {
+      toast.error(result.message || 'Erro ao alterar obra do terceirizado.');
+      return;
+    }
+
+    toast.success('Obra do terceirizado atualizada.');
+  };
+
   const toggleFinalized = async (serviceId: string, finalized: boolean) => {
     const result = await updateOutsourcedServiceStatus(serviceId, finalized);
     if (!result.ok) {
@@ -346,6 +356,27 @@ export default function OutsourcedPaymentsPage() {
                       Total pago acima do valor contratado em {formatCurrency(Math.abs(remaining))}.
                     </div>
                   )}
+
+                  <div className="rounded-xl border border-border bg-muted/30 p-3">
+                    <label className="label-caps mb-2 flex items-center gap-2 text-xs">
+                      <Building2 className="w-4 h-4" />
+                      Obra do servico
+                    </label>
+                    <Select
+                      value={service.projectId}
+                      onValueChange={value => void updateServiceProject(service.id, value)}
+                      disabled={projects.length === 0}
+                    >
+                      <SelectTrigger className="max-w-xl bg-background" onClick={e => e.stopPropagation()}>
+                        <SelectValue placeholder="Selecione a obra" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map(project => (
+                          <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   <AttachedDocuments entityType="outsourced" entityId={service.id} />
 

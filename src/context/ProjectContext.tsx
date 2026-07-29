@@ -18,6 +18,7 @@ interface ProjectState {
   addAllocation: (a: Omit<WorkAllocation, 'id' | 'createdAt'>) => void;
   deleteAllocation: (id: string) => void;
   addOutsourcedService: (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt'>) => void;
+  updateOutsourcedServiceProject: (id: string, projectId: string) => Promise<{ ok: boolean; message?: string }>;
   updateOutsourcedServiceStatus: (id: string, finalized: boolean) => Promise<{ ok: boolean; message?: string }>;
   deleteOutsourcedService: (id: string) => void;
   addProjectDocument: (d: Omit<ProjectDocument, 'id' | 'createdAt'>) => void;
@@ -133,6 +134,25 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       value: s.value, invoice_number: s.invoiceNumber, file_name: s.fileName,
     }).select().single();
     if (data) setOutsourcedServices(prev => [...prev, mapOutsourced(data)]);
+  }, []);
+  const updateOutsourcedServiceProject = useCallback(async (id: string, projectId: string) => {
+    const { data, error } = await supabase
+      .from('outsourced_services')
+      .update({ project_id: projectId })
+      .eq('id', id)
+      .select(OUTSOURCED_COLUMNS)
+      .single();
+
+    if (error || !data) {
+      console.error('Erro ao alterar obra do terceirizado:', error);
+      return {
+        ok: false,
+        message: 'Nao foi possivel alterar a obra do terceirizado. Verifique a conexao e tente novamente.',
+      };
+    }
+
+    setOutsourcedServices(prev => prev.map(x => x.id === id ? mapOutsourced(data) : x));
+    return { ok: true };
   }, []);
   const updateOutsourcedServiceStatus = useCallback(async (id: string, finalized: boolean) => {
     const finalizedAt = finalized ? new Date().toISOString() : null;
@@ -278,7 +298,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, projectPurchases, equipmentRentals, loading,
       addProject, updateProject, deleteProject,
       addAllocation, deleteAllocation,
-      addOutsourcedService, updateOutsourcedServiceStatus, deleteOutsourcedService,
+      addOutsourcedService, updateOutsourcedServiceProject, updateOutsourcedServiceStatus, deleteOutsourcedService,
       addProjectDocument, updateProjectDocument, deleteProjectDocument,
       addMeasurement, updateMeasurement, deleteMeasurement,
       addDASExpense, updateDASExpense, deleteDASExpense,
