@@ -32,6 +32,7 @@ import ProjectsPage from "@/pages/ProjectsPage";
 import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import ProjectReportsPage from "@/pages/ProjectReportsPage";
 import DASPage from "@/pages/DASPage";
+import OutsourcedPaymentsPage from "@/pages/OutsourcedPaymentsPage";
 import UsersPage from "@/pages/UsersPage";
 import RescisaoPage from "@/pages/RescisaoPage";
 import AuditLogPage from "@/pages/AuditLogPage";
@@ -101,6 +102,7 @@ function AppRoutes() {
         <Route path="/laudos" element={<LaudosPage />} />
         <Route path="/medicoes-energisa" element={<MedicoesEnergisaPage />} />
         <Route path="/financeiro/das" element={<DASPage />} />
+        <Route path="/financeiro/terceirizados" element={<OutsourcedPaymentsPage />} />
         <Route path="/fornecedores" element={<SuppliersPage />} />
         <Route path="/materiais" element={<MaterialsPage />} />
         <Route path="/compras" element={<PurchasesPage />} />

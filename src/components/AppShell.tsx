@@ -29,7 +29,10 @@ const allSections = [
   {
     title: 'Financeiro',
     adminOnly: true,
-    links: [{ to: '/financeiro/das', label: 'DAS — Simples Nacional', icon: Receipt }],
+    links: [
+      { to: '/financeiro/das', label: 'DAS — Simples Nacional', icon: Receipt },
+      { to: '/financeiro/terceirizados', label: 'Terceirizados', icon: Wrench },
+    ],
   },
   {
     title: 'Compras',
