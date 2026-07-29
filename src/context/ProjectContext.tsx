@@ -18,7 +18,7 @@ interface ProjectState {
   addAllocation: (a: Omit<WorkAllocation, 'id' | 'createdAt'>) => void;
   deleteAllocation: (id: string) => void;
   addOutsourcedService: (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt'>) => void;
-  updateOutsourcedServiceStatus: (id: string, finalized: boolean) => Promise<boolean>;
+  updateOutsourcedServiceStatus: (id: string, finalized: boolean) => Promise<{ ok: boolean; message?: string }>;
   deleteOutsourcedService: (id: string) => void;
   addProjectDocument: (d: Omit<ProjectDocument, 'id' | 'createdAt'>) => void;
   updateProjectDocument: (d: ProjectDocument) => void;
@@ -134,10 +134,25 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       .select()
       .single();
 
-    if (error || !data) return false;
+    if (error || !data) {
+      console.error('Erro ao atualizar status do terceirizado:', error);
+
+      const message = error?.message || '';
+      if (message.includes('finalized') || message.includes('finalized_at') || error?.code === 'PGRST204') {
+        return {
+          ok: false,
+          message: 'Banco ainda nao atualizado para finalizar terceirizados. Aplique a migration e tente novamente.',
+        };
+      }
+
+      return {
+        ok: false,
+        message: 'Nao foi possivel atualizar o status do terceirizado. Verifique a conexao e tente novamente.',
+      };
+    }
 
     setOutsourcedServices(prev => prev.map(x => x.id === id ? mapOutsourced(data) : x));
-    return true;
+    return { ok: true };
   }, []);
   const deleteOutsourcedService = useCallback(async (id: string) => {
     await supabase.from('outsourced_services').delete().eq('id', id);

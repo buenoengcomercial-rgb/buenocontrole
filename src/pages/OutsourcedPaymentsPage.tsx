@@ -204,9 +204,9 @@ export default function OutsourcedPaymentsPage() {
   };
 
   const toggleFinalized = async (serviceId: string, finalized: boolean) => {
-    const ok = await updateOutsourcedServiceStatus(serviceId, finalized);
-    if (!ok) {
-      toast.error(finalized ? 'Erro ao finalizar terceirizado.' : 'Erro ao reabrir terceirizado.');
+    const result = await updateOutsourcedServiceStatus(serviceId, finalized);
+    if (!result.ok) {
+      toast.error(result.message || (finalized ? 'Erro ao finalizar terceirizado.' : 'Erro ao reabrir terceirizado.'));
       return;
     }
 
