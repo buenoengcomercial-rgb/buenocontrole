@@ -98,12 +98,16 @@ export default function StorageMigrationPage() {
     setLoading(true);
     setProgress(0);
     try {
-      const attachments = [];
-      for (let index = 0; index < rows.length; index += 1) {
-        const row = rows[index];
-        const fileData = row.storage_path ? null : await fetchLegacyData(row.id);
-        attachments.push({ ...row, file_data: fileData });
-        setProgress(Math.round(((index + 1) / rows.length) * 100));
+      const attachments: Array<MigrationRow & { file_data: string | null }> = [];
+      const batchSize = 5;
+      for (let index = 0; index < rows.length; index += batchSize) {
+        const batch = rows.slice(index, index + batchSize);
+        const batchAttachments = await Promise.all(batch.map(async row => ({
+          ...row,
+          file_data: row.storage_path ? null : await fetchLegacyData(row.id),
+        })));
+        attachments.push(...batchAttachments);
+        setProgress(Math.round((Math.min(index + batch.length, rows.length) / rows.length) * 100));
       }
 
       const blob = new Blob([JSON.stringify({
