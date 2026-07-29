@@ -10,9 +10,17 @@ export interface Attachment {
   fileSize: number;
   fileType: string;
   createdAt: string;
+  storagePath: string | null;
+  storageBucket: string | null;
+  storageChecksum: string | null;
+  storageMigratedAt: string | null;
 }
 
-type AttachmentPayload = Omit<Attachment, 'id' | 'createdAt'> & { dataUrl: string };
+interface AttachmentPayload {
+  entityType: string;
+  entityId: string;
+  file: File;
+}
 
 interface AttachmentState {
   attachments: Attachment[];
@@ -23,11 +31,28 @@ interface AttachmentState {
 }
 
 const AttachmentContext = createContext<AttachmentState | null>(null);
-const METADATA_SELECT = 'id, entity_type, entity_id, file_name, file_size, file_type, created_at';
+const STORAGE_BUCKET = 'attachments-private';
+const METADATA_SELECT = 'id, entity_type, entity_id, file_name, file_size, file_type, created_at, storage_path, storage_bucket, storage_checksum, storage_migrated_at';
 type AttachmentMetadataRow = Pick<
   Tables<'attachments'>,
-  'id' | 'entity_type' | 'entity_id' | 'file_name' | 'file_size' | 'file_type' | 'created_at'
+  'id' | 'entity_type' | 'entity_id' | 'file_name' | 'file_size' | 'file_type' | 'created_at' |
+  'storage_path' | 'storage_bucket' | 'storage_checksum' | 'storage_migrated_at'
 >;
+
+function sanitizePathPart(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'arquivo';
+}
+
+async function sha256(file: File) {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 function mapRow(r: AttachmentMetadataRow): Attachment {
   return {
@@ -38,6 +63,10 @@ function mapRow(r: AttachmentMetadataRow): Attachment {
     fileSize: r.file_size,
     fileType: r.file_type,
     createdAt: r.created_at,
+    storagePath: r.storage_path,
+    storageBucket: r.storage_bucket,
+    storageChecksum: r.storage_checksum,
+    storageMigratedAt: r.storage_migrated_at,
   };
 }
 
@@ -68,21 +97,49 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
   }, [fetchAttachments]);
 
   const addAttachment = useCallback(async (a: AttachmentPayload): Promise<boolean> => {
+    const id = crypto.randomUUID();
+    const storagePath = [
+      sanitizePathPart(a.entityType),
+      sanitizePathPart(a.entityId),
+      id,
+      sanitizePathPart(a.file.name),
+    ].join('/');
+    const checksum = await sha256(a.file);
+
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(storagePath, a.file, {
+        cacheControl: '3600',
+        contentType: a.file.type || 'application/octet-stream',
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Falha ao enviar anexo ao Storage', uploadError);
+      return false;
+    }
+
     const { data, error } = await supabase
       .from('attachments')
       .insert({
+        id,
         entity_type: a.entityType,
         entity_id: a.entityId,
-        file_name: a.fileName,
-        file_size: a.fileSize,
-        file_type: a.fileType,
-        file_data: a.dataUrl,
+        file_name: a.file.name,
+        file_size: a.file.size,
+        file_type: a.file.type || a.file.name.split('.').pop() || '',
+        file_data: null,
+        storage_path: storagePath,
+        storage_bucket: STORAGE_BUCKET,
+        storage_checksum: checksum,
+        storage_migrated_at: new Date().toISOString(),
       })
       .select(METADATA_SELECT)
       .single();
 
     if (error || !data) {
       console.error('Falha ao salvar anexo', error);
+      await supabase.storage.from(STORAGE_BUCKET).remove([storagePath]);
       return false;
     }
 
@@ -92,6 +149,19 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const deleteAttachment = useCallback(async (id: string): Promise<boolean> => {
+    const attachment = attachments.find(item => item.id === id);
+
+    if (attachment?.storagePath) {
+      const { error: storageError } = await supabase.storage
+        .from(attachment.storageBucket || STORAGE_BUCKET)
+        .remove([attachment.storagePath]);
+
+      if (storageError) {
+        console.error('Falha ao remover arquivo do Storage', storageError);
+        return false;
+      }
+    }
+
     const { error } = await supabase.from('attachments').delete().eq('id', id);
 
     if (error) {
@@ -101,7 +171,7 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
 
     setAttachments(prev => prev.filter(a => a.id !== id));
     return true;
-  }, []);
+  }, [attachments]);
 
   const getAttachments = useCallback((entityType: string, entityId: string) => {
     return attachments.filter(a => a.entityType === entityType && a.entityId === entityId);
@@ -109,6 +179,21 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
 
   const downloadAttachment = useCallback(async (id: string): Promise<string | null> => {
     try {
+      const attachment = attachments.find(item => item.id === id);
+
+      if (attachment?.storagePath) {
+        const { data, error } = await supabase.storage
+          .from(attachment.storageBucket || STORAGE_BUCKET)
+          .createSignedUrl(attachment.storagePath, 60);
+
+        if (error) {
+          console.error('Erro ao criar link temporario:', error.message);
+          return null;
+        }
+
+        return data.signedUrl;
+      }
+
       const { data, error } = await supabase
         .from('attachments')
         .select('file_data')
@@ -125,7 +210,7 @@ export function AttachmentProvider({ children }: { children: React.ReactNode }) 
       console.error('Erro inesperado ao baixar anexo:', err);
       return null;
     }
-  }, []);
+  }, [attachments]);
 
   return (
     <AttachmentContext.Provider value={{ attachments, addAttachment, deleteAttachment, getAttachments, downloadAttachment }}>

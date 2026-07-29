@@ -60,31 +60,43 @@ export type Database = {
           created_at: string
           entity_id: string
           entity_type: string
-          file_data: string
+          file_data: string | null
           file_name: string
           file_size: number
           file_type: string
           id: string
+          storage_bucket: string | null
+          storage_checksum: string | null
+          storage_migrated_at: string | null
+          storage_path: string | null
         }
         Insert: {
           created_at?: string
           entity_id: string
           entity_type: string
-          file_data?: string
+          file_data?: string | null
           file_name: string
           file_size?: number
           file_type?: string
           id?: string
+          storage_bucket?: string | null
+          storage_checksum?: string | null
+          storage_migrated_at?: string | null
+          storage_path?: string | null
         }
         Update: {
           created_at?: string
           entity_id?: string
           entity_type?: string
-          file_data?: string
+          file_data?: string | null
           file_name?: string
           file_size?: number
           file_type?: string
           id?: string
+          storage_bucket?: string | null
+          storage_checksum?: string | null
+          storage_migrated_at?: string | null
+          storage_path?: string | null
         }
         Relationships: []
       }

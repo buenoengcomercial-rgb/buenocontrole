@@ -12,15 +12,6 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
 function FileIcon({ type }: { type: string }) {
   if (type.includes('pdf')) return <FileText className="w-4 h-4 text-destructive" />;
   if (type.includes('sheet') || type.includes('excel') || type.includes('.xls')) return <FileSpreadsheet className="w-4 h-4 text-success" />;
@@ -49,19 +40,16 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
       }
 
       try {
-        const dataUrl = await readAsDataUrl(file);
         const saved = await addAttachment({
           entityType,
           entityId,
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type || file.name.split('.').pop() || '',
-          dataUrl,
+          file,
         });
 
         if (saved) toast.success(`${file.name} anexado.`);
         else toast.error(`Falha ao anexar ${file.name}.`);
-      } catch {
+      } catch (error) {
+        console.error('Falha inesperada ao anexar arquivo', error);
         toast.error(`Falha ao ler ${file.name}.`);
       }
     }
