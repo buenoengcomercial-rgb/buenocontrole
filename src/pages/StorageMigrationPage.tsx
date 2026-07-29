@@ -74,10 +74,16 @@ export default function StorageMigrationPage() {
 
   const loadRows = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('attachments')
-      .select(SELECT_METADATA)
-      .order('created_at');
+    const backupFileName = `attachments-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const [{ data, error }, { data: backupFiles, error: backupError }] = await Promise.all([
+      supabase
+        .from('attachments')
+        .select(SELECT_METADATA)
+        .order('created_at'),
+      supabase.storage
+        .from(BACKUP_BUCKET)
+        .list('', { search: backupFileName }),
+    ]);
     setLoading(false);
 
     if (error) {
@@ -85,10 +91,16 @@ export default function StorageMigrationPage() {
       toast.error(`Nao foi possivel carregar os anexos: ${error.message}`);
       return;
     }
+    if (backupError) {
+      console.error(backupError);
+      toast.error(`Nao foi possivel verificar o backup privado: ${backupError.message}`);
+      return;
+    }
 
     setRows((data || []) as MigrationRow[]);
     setProgress(0);
     setVerified(false);
+    setBackupDownloaded(Boolean(backupFiles?.some(file => file.name === backupFileName)));
   };
 
   const downloadBackup = async () => {
@@ -233,10 +245,17 @@ export default function StorageMigrationPage() {
         return;
       }
 
-      const response = await fetch(data.signedUrl, { headers: { Range: 'bytes=0-0' } });
-      if (!response.ok && response.status !== 206) {
+      const response = await fetch(data.signedUrl);
+      if (!response.ok) {
         setLoading(false);
         toast.error(`Arquivo indisponivel no Storage: ${row.file_name}.`);
+        return;
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const actualChecksum = await checksum(bytes);
+      if (bytes.byteLength !== row.file_size || actualChecksum !== row.storage_checksum) {
+        setLoading(false);
+        toast.error(`Arquivo divergente no Storage: ${row.file_name}. O Base64 foi preservado.`);
         return;
       }
       setProgress(Math.round(((index + 1) / storageRows.length) * 100));
