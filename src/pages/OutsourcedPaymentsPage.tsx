@@ -404,8 +404,6 @@ export default function OutsourcedPaymentsPage() {
                     </Select>
                   </div>
 
-                  <AttachedDocuments entityType="outsourced" entityId={service.id} />
-
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="label-caps text-sm">Pagamentos</h4>
@@ -422,6 +420,12 @@ export default function OutsourcedPaymentsPage() {
                             <Plus className="w-4 h-4 mr-1" /> Registrar Pagamento
                           </Button>
                         )}
+                        <AttachedDocuments
+                          entityType="outsourced"
+                          entityId={service.id}
+                          variant="compact"
+                          compactLabel="Anexos do serviço"
+                        />
                         {service.finalized ? (
                           <Button size="sm" variant="outline" onClick={() => setStatusAction({ serviceId: service.id, finalized: false })}>
                             <RotateCcw className="w-4 h-4 mr-1" /> Reabrir
@@ -462,12 +466,17 @@ export default function OutsourcedPaymentsPage() {
                               <div><span className="text-xs text-muted-foreground">Data</span><p className="text-sm font-medium">{formatDate(payment.date)}</p></div>
                               <div><span className="text-xs text-muted-foreground">Valor</span><p className="text-sm font-semibold text-green-600">{formatCurrency(payment.value)}</p></div>
                               <div><span className="text-xs text-muted-foreground">Observacoes</span><p className="text-sm text-muted-foreground">{payment.notes || '-'}</p></div>
-                              <button onClick={() => void deletePayment(service.id, payment.id)} className="justify-self-end text-destructive p-1.5 rounded-md hover:bg-destructive/10" title="Excluir pagamento">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <div className="px-4 pb-4">
-                              <AttachedDocuments entityType="outsourced_payment" entityId={payment.id} />
+                              <div className="flex items-center justify-self-end gap-2">
+                                <AttachedDocuments
+                                  entityType="outsourced_payment"
+                                  entityId={payment.id}
+                                  variant="compact"
+                                  compactLabel="Comprovantes do pagamento"
+                                />
+                                <button onClick={() => void deletePayment(service.id, payment.id)} className="text-destructive p-1.5 rounded-md hover:bg-destructive/10" title="Excluir pagamento">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}

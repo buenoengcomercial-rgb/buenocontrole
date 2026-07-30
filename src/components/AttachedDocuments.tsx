@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useAttachments } from '@/context/AttachmentContext';
-import { Paperclip, Download, Trash2, FileText, FileSpreadsheet, File } from 'lucide-react';
+import { Paperclip, Download, Trash2, FileText, FileSpreadsheet, File, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const ACCEPTED = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp';
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
@@ -23,9 +24,16 @@ function FileIcon({ type }: { type: string }) {
 interface Props {
   entityType: string;
   entityId: string;
+  variant?: 'panel' | 'compact';
+  compactLabel?: string;
 }
 
-export default function AttachedDocuments({ entityType, entityId }: Props) {
+export default function AttachedDocuments({
+  entityType,
+  entityId,
+  variant = 'panel',
+  compactLabel = 'Anexos',
+}: Props) {
   const { addAttachment, deleteAttachment, getAttachments, loadAttachments, downloadAttachment } = useAttachments();
   const inputRef = useRef<HTMLInputElement>(null);
   const files = getAttachments(entityType, entityId);
@@ -81,6 +89,91 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
     else toast.error('Erro ao remover arquivo.');
   };
 
+  const fileInput = (
+    <input
+      ref={inputRef}
+      type="file"
+      multiple
+      accept={ACCEPTED}
+      className="hidden"
+      onChange={e => { void handleFiles(e.target.files); }}
+    />
+  );
+
+  const fileList = files.length > 0 ? (
+    <div className="space-y-1.5">
+      {files.map(f => (
+        <div key={f.id} className="flex items-center gap-2 rounded-md bg-muted/50 px-2.5 py-2 text-sm group">
+          <FileIcon type={f.fileType} />
+          <span className="min-w-0 flex-1 truncate font-medium">{f.fileName}</span>
+          <span className="hidden text-xs text-muted-foreground sm:inline">{formatSize(f.fileSize)}</span>
+          <button
+            type="button"
+            onClick={() => { void handleDownload(f); }}
+            className="p-1 text-muted-foreground hover:text-foreground"
+            title="Baixar"
+            aria-label={`Baixar ${f.fileName}`}
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => { void handleDelete(f.id); }}
+            className="p-1 text-muted-foreground hover:text-destructive"
+            title="Excluir"
+            aria-label={`Excluir ${f.fileName}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p className="py-3 text-center text-xs text-muted-foreground">Nenhum arquivo anexado.</p>
+  );
+
+  if (variant === 'compact') {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            title={compactLabel}
+            aria-label={`${compactLabel}. ${files.length} arquivo(s).`}
+          >
+            <Paperclip className="w-4 h-4" />
+            {files.length > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-5 text-primary-foreground">
+                {files.length}
+              </span>
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-[min(420px,calc(100vw-2rem))] space-y-3 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{compactLabel}</p>
+              <p className="text-xs text-muted-foreground">
+                {files.length === 1 ? '1 arquivo' : `${files.length} arquivos`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="inline-flex h-8 items-center gap-1 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Anexar
+            </button>
+            {fileInput}
+          </div>
+          {fileList}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
   return (
     <div className="bg-card rounded-xl p-4 shadow-card space-y-3">
       <div className="flex items-center justify-between">
@@ -95,7 +188,7 @@ export default function AttachedDocuments({ entityType, entityId }: Props) {
         >
           + Anexar
         </button>
-        <input ref={inputRef} type="file" multiple accept={ACCEPTED} className="hidden" onChange={e => { void handleFiles(e.target.files); }} />
+        {fileInput}
       </div>
 
       {files.length === 0 && (
