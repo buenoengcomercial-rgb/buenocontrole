@@ -151,7 +151,7 @@ export default function AttachedDocuments({
         {files.map(file => (
           <div
             key={file.id}
-            className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-primary/5"
+            className="flex w-full flex-col gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-primary/5 sm:flex-row sm:items-start"
           >
             <button
               type="button"
@@ -164,17 +164,29 @@ export default function AttachedDocuments({
               <span className="min-w-0 flex-1 break-words font-medium">
                 {fileNameWithoutExtension(file.fileName)}
               </span>
-              <span className="shrink-0 text-xs text-muted-foreground">Baixar</span>
             </button>
-            <button
-              type="button"
-              onClick={() => { void handleDelete(file.id); }}
-              className="mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-              title={`Excluir ${file.fileName}`}
-              aria-label={`Excluir ${file.fileName}`}
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="flex shrink-0 items-center justify-end gap-3 pl-6 sm:pl-0">
+              <button
+                type="button"
+                onClick={() => { void handleDownload(file); }}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                title={`Baixar ${file.fileName}`}
+                aria-label={`Baixar ${file.fileName}`}
+              >
+                <Download className="h-3.5 w-3.5" />
+                Baixar
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleDelete(file.id); }}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                title={`Excluir ${file.fileName}`}
+                aria-label={`Excluir ${file.fileName}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Excluir
+              </button>
+            </div>
           </div>
         ))}
       </div>
