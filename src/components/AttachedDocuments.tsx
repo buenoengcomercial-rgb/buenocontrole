@@ -24,7 +24,7 @@ function FileIcon({ type }: { type: string }) {
 interface Props {
   entityType: string;
   entityId: string;
-  variant?: 'panel' | 'compact';
+  variant?: 'panel' | 'compact' | 'links';
   compactLabel?: string;
 }
 
@@ -131,6 +131,28 @@ export default function AttachedDocuments({
   ) : (
     <p className="py-3 text-center text-xs text-muted-foreground">Nenhum arquivo anexado.</p>
   );
+
+  if (variant === 'links') {
+    if (files.length === 0) return null;
+
+    return (
+      <div className="mt-1.5 max-w-[220px] space-y-1">
+        {files.map(file => (
+          <button
+            key={file.id}
+            type="button"
+            onClick={() => { void handleDownload(file); }}
+            className="flex w-full items-center gap-1.5 text-left text-xs text-primary hover:underline"
+            title={`Baixar ${file.fileName}`}
+            aria-label={`Baixar ${file.fileName}`}
+          >
+            <Download className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{file.fileName}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   if (variant === 'compact') {
     return (

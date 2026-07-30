@@ -342,7 +342,11 @@ export default function OutsourcedPaymentsPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />}
                   <div className="grid gap-2 sm:grid-cols-4 lg:grid-cols-[120px_180px_180px_minmax(180px,1fr)] min-w-0">
-                    <div><span className="text-xs text-muted-foreground">Data</span><p className="text-sm font-medium">{formatDate(service.date)}</p></div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Data</span>
+                      <p className="text-sm font-medium">{formatDate(service.date)}</p>
+                      <AttachedDocuments entityType="outsourced" entityId={service.id} variant="links" />
+                    </div>
                     <div><span className="text-xs text-muted-foreground">Obra / Categoria</span><p className="text-sm font-medium truncate">{getServiceLocationLabel(service)}</p></div>
                     <div><span className="text-xs text-muted-foreground">Empresa</span><p className="text-sm font-medium truncate">{service.company}</p></div>
                     <div><span className="text-xs text-muted-foreground">Descricao</span><p className="text-sm truncate">{service.description || '-'}</p></div>
@@ -463,7 +467,11 @@ export default function OutsourcedPaymentsPage() {
                         {servicePayments.map(payment => (
                           <div key={payment.id} className="rounded-xl border border-border overflow-hidden">
                             <div className="grid gap-3 px-4 py-3 md:grid-cols-[140px_160px_1fr_auto] md:items-center">
-                              <div><span className="text-xs text-muted-foreground">Data</span><p className="text-sm font-medium">{formatDate(payment.date)}</p></div>
+                              <div>
+                                <span className="text-xs text-muted-foreground">Data</span>
+                                <p className="text-sm font-medium">{formatDate(payment.date)}</p>
+                                <AttachedDocuments entityType="outsourced_payment" entityId={payment.id} variant="links" />
+                              </div>
                               <div><span className="text-xs text-muted-foreground">Valor</span><p className="text-sm font-semibold text-green-600">{formatCurrency(payment.value)}</p></div>
                               <div><span className="text-xs text-muted-foreground">Observacoes</span><p className="text-sm text-muted-foreground">{payment.notes || '-'}</p></div>
                               <div className="flex items-center justify-self-end gap-2">
