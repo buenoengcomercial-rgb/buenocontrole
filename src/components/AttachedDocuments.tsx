@@ -3,6 +3,7 @@ import { useAttachments } from '@/context/AttachmentContext';
 import { Paperclip, Download, Trash2, FileText, FileSpreadsheet, File, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { downloadUrlAsFile } from '@/lib/downloadFile';
 
 const ACCEPTED = '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp';
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
@@ -75,16 +76,22 @@ export default function AttachedDocuments({
 
   const handleDownload = async (att: { id: string; fileName: string }) => {
     toast.info('Baixando arquivo...');
-    const dataUrl = await downloadAttachment(att.id);
-    if (!dataUrl) {
+    const fileUrl = await downloadAttachment(att.id);
+    if (!fileUrl) {
+      toast.dismiss();
       toast.error('Erro ao baixar arquivo.');
       return;
     }
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = att.fileName;
-    a.click();
-    toast.dismiss();
+
+    try {
+      await downloadUrlAsFile(fileUrl, att.fileName);
+      toast.dismiss();
+      toast.success('Download iniciado.');
+    } catch (error) {
+      console.error('Erro ao transferir anexo para download', error);
+      toast.dismiss();
+      toast.error('Nao foi possivel baixar o arquivo.');
+    }
   };
 
   const handleDelete = async (id: string) => {
