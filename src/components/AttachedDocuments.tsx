@@ -13,6 +13,10 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function fileNameWithoutExtension(fileName: string) {
+  return fileName.replace(/\.[^./\\]+$/, '');
+}
+
 function FileIcon({ type }: { type: string }) {
   if (type.includes('pdf')) return <FileText className="w-4 h-4 text-destructive" />;
   if (type.includes('sheet') || type.includes('excel') || type.includes('.xls')) return <FileSpreadsheet className="w-4 h-4 text-success" />;
@@ -24,7 +28,7 @@ function FileIcon({ type }: { type: string }) {
 interface Props {
   entityType: string;
   entityId: string;
-  variant?: 'panel' | 'compact' | 'links';
+  variant?: 'panel' | 'compact' | 'download-list';
   compactLabel?: string;
 }
 
@@ -132,22 +136,25 @@ export default function AttachedDocuments({
     <p className="py-3 text-center text-xs text-muted-foreground">Nenhum arquivo anexado.</p>
   );
 
-  if (variant === 'links') {
+  if (variant === 'download-list') {
     if (files.length === 0) return null;
 
     return (
-      <div className="mt-1.5 max-w-[220px] space-y-1">
+      <div className="border-t border-border bg-muted/20 px-4 py-2.5">
         {files.map(file => (
           <button
             key={file.id}
             type="button"
             onClick={() => { void handleDownload(file); }}
-            className="flex w-full items-center gap-1.5 text-left text-xs text-primary hover:underline"
+            className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm text-primary transition-colors hover:bg-primary/5"
             title={`Baixar ${file.fileName}`}
             aria-label={`Baixar ${file.fileName}`}
           >
-            <Download className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{file.fileName}</span>
+            <Download className="mt-0.5 h-4 w-4 shrink-0" />
+            <span className="min-w-0 flex-1 break-words font-medium">
+              {fileNameWithoutExtension(file.fileName)}
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">Baixar</span>
           </button>
         ))}
       </div>
