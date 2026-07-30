@@ -149,20 +149,33 @@ export default function AttachedDocuments({
     return (
       <div className="border-t border-border bg-muted/20 px-4 py-2.5">
         {files.map(file => (
-          <button
+          <div
             key={file.id}
-            type="button"
-            onClick={() => { void handleDownload(file); }}
-            className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm text-primary transition-colors hover:bg-primary/5"
-            title={`Baixar ${file.fileName}`}
-            aria-label={`Baixar ${file.fileName}`}
+            className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-primary/5"
           >
-            <Download className="mt-0.5 h-4 w-4 shrink-0" />
-            <span className="min-w-0 flex-1 break-words font-medium">
-              {fileNameWithoutExtension(file.fileName)}
-            </span>
-            <span className="shrink-0 text-xs text-muted-foreground">Baixar</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => { void handleDownload(file); }}
+              className="flex min-w-0 flex-1 items-start gap-2 text-left text-primary"
+              title={`Baixar ${file.fileName}`}
+              aria-label={`Baixar ${file.fileName}`}
+            >
+              <Download className="mt-0.5 h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 break-words font-medium">
+                {fileNameWithoutExtension(file.fileName)}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">Baixar</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { void handleDelete(file.id); }}
+              className="mt-0.5 shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              title={`Excluir ${file.fileName}`}
+              aria-label={`Excluir ${file.fileName}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         ))}
       </div>
     );
