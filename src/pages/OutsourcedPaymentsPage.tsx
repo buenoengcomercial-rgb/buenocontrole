@@ -420,12 +420,6 @@ export default function OutsourcedPaymentsPage() {
                             <Plus className="w-4 h-4 mr-1" /> Registrar Pagamento
                           </Button>
                         )}
-                        <AttachedDocuments
-                          entityType="outsourced"
-                          entityId={service.id}
-                          variant="compact"
-                          compactLabel="Anexos do serviço"
-                        />
                         {service.finalized ? (
                           <Button size="sm" variant="outline" onClick={() => setStatusAction({ serviceId: service.id, finalized: false })}>
                             <RotateCcw className="w-4 h-4 mr-1" /> Reabrir
