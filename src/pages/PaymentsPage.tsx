@@ -423,18 +423,20 @@ export default function PaymentsPage() {
                     {isExpanded && (
                       <div className="border-t border-border">
                         {advs.sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)).map(a => (
-                          <div key={a.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors border-b border-border last:border-b-0">
-                            <div className="flex items-center gap-4">
-                              <span className="text-sm">{formatCurrency(a.value)}</span>
-                              <span className="text-xs text-muted-foreground">Pagamento: {formatDate(a.paymentDate)}</span>
-                              <span className="text-xs text-muted-foreground">Cadastro: {new Date(a.createdAt).toLocaleDateString('pt-BR')}</span>
+                          <div key={a.id} className="flex items-start justify-between gap-3 px-6 py-3 hover:bg-muted/30 transition-colors border-b border-border last:border-b-0">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                                <span className="text-sm">{formatCurrency(a.value)}</span>
+                                <span className="text-xs text-muted-foreground">Pagamento: {formatDate(a.paymentDate)}</span>
+                                <span className="text-xs text-muted-foreground">Cadastro: {new Date(a.createdAt).toLocaleDateString('pt-BR')}</span>
+                              </div>
                               {a.notes && (
-                                <span className="text-xs text-muted-foreground italic border-l border-border pl-3 max-w-[400px] truncate" title={a.notes}>
+                                <p className="mt-2 border-l border-border pl-3 text-xs italic text-muted-foreground whitespace-pre-wrap break-words">
                                   {a.notes}
-                                </span>
+                                </p>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex shrink-0 items-center gap-2">
                               <button onClick={(e) => { e.stopPropagation(); setEditAdvance({ ...a }); setEditAdvOpen(true); }} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><Pencil className="w-4 h-4" /></button>
                               <button onClick={(e) => { e.stopPropagation(); deleteAdvance(a.id); toast.success('Removido.'); }} className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></button>
                             </div>
