@@ -54,6 +54,24 @@ export interface SalaryPayment {
   createdAt: string;
 }
 
+export interface PartnerPayment {
+  id: string;
+  partnerName: string;
+  cpf: string;
+  month: string;
+  netAmount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  replacesSalaryPaymentId: string | null;
+  notes: string;
+  createdAt: string;
+}
+
+export function activeSalaryPayments(payments: SalaryPayment[], partnerPayments: Pick<PartnerPayment, 'replacesSalaryPaymentId'>[]): SalaryPayment[] {
+  const replacedIds = new Set(partnerPayments.map(p => p.replacesSalaryPaymentId).filter(Boolean));
+  return payments.filter(p => !replacedIds.has(p.id));
+}
+
 export function getSalaryPaymentTotal(payment: Pick<SalaryPayment, 'netSalary' | 'advanceDiscount'>): number {
   return payment.advanceDiscount + payment.netSalary;
 }

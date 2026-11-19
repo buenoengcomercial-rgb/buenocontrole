@@ -13,6 +13,7 @@ import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCa
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { exportRowsToXlsx } from '@/lib/xlsx-export';
+import PartnerPaymentsTab from '@/components/PartnerPaymentsTab';
 
 const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'] as const;
 
@@ -173,6 +174,7 @@ export default function PaymentsPage() {
           <TabsTrigger value="salaries" className="gap-2"><DollarSign className="w-4 h-4" />Salários</TabsTrigger>
           <TabsTrigger value="advances" className="gap-2"><ArrowUpCircle className="w-4 h-4" />Adiantamentos</TabsTrigger>
           <TabsTrigger value="meals" className="gap-2"><UtensilsCrossed className="w-4 h-4" />Marmitas</TabsTrigger>
+          <TabsTrigger value="partners" className="gap-2"><DollarSign className="w-4 h-4" />Sócios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="salaries" className="space-y-4">
@@ -344,6 +346,7 @@ export default function PaymentsPage() {
             <span className="text-xl font-semibold text-primary">{formatCurrency(filteredPaymentsTotal)}</span>
           </div>
         </TabsContent>
+        <TabsContent value="partners"><PartnerPaymentsTab /></TabsContent>
 
         <TabsContent value="advances" className="space-y-4">
           <div className="flex flex-col gap-3">

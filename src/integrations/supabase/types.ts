@@ -1148,6 +1148,51 @@ export type Database = {
           },
         ]
       }
+      partner_payments: {
+        Row: {
+          id: string
+          partner_name: string
+          cpf: string
+          month: string
+          net_amount: number
+          payment_date: string
+          payment_method: string
+          replaces_salary_payment_id: string | null
+          notes: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          partner_name: string
+          cpf: string
+          month: string
+          net_amount: number
+          payment_date: string
+          payment_method?: string
+          replaces_salary_payment_id?: string | null
+          notes?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          partner_name?: string
+          cpf?: string
+          month?: string
+          net_amount?: number
+          payment_date?: string
+          payment_method?: string
+          replaces_salary_payment_id?: string | null
+          notes?: string
+          created_at?: string
+        }
+        Relationships: [{
+          foreignKeyName: "partner_payments_replaces_salary_payment_id_fkey"
+          columns: ["replaces_salary_payment_id"]
+          isOneToOne: true
+          referencedRelation: "salary_payments"
+          referencedColumns: ["id"]
+        }]
+      }
       payroll_charges: {
         Row: {
           created_at: string
