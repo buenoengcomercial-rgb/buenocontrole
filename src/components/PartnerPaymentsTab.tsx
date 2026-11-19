@@ -9,12 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, subMonths } from 'date-fns';
 
 const emptyForm = { partnerName: '', cpf: '', month: '', netAmount: '', paymentDate: '', paymentMethod: 'PIX', replacesSalaryPaymentId: '', notes: '' };
 
 export default function PartnerPaymentsTab() {
   const { employees, sourcePayments, partnerPayments, partnerPaymentsError, addPartnerPayment, updatePartnerPayment } = useEmployeeData();
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [month, setMonth] = useState(() => format(subMonths(new Date(), 1), 'yyyy-MM'));
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -55,7 +56,7 @@ export default function PartnerPaymentsTab() {
   return <div className="space-y-4">
     {partnerPaymentsError && <p role="alert" className="text-sm text-destructive">Pagamentos a sócios indisponíveis: {partnerPaymentsError}</p>}
     <Button onClick={startNew} disabled={!!partnerPaymentsError}><Plus className="w-4 h-4 mr-2" />Registrar pagamento</Button>
-    <div><label className="label-caps block mb-1">Filtrar por mês</label><Input type="month" className="max-w-[200px]" value={month} onChange={e => setMonth(e.target.value)} /></div>
+    <div><label className="label-caps block mb-1">Competência</label><Input type="month" className="max-w-[200px]" value={month} onChange={e => setMonth(e.target.value)} /></div>
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead><tr className="border-b text-left text-muted-foreground"><th className="py-2">Nome</th><th>Data</th><th>Valor líquido</th><th>Origem</th><th className="w-12">Ações</th></tr></thead>

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { exportRowsToXlsx } from '@/lib/xlsx-export';
 import PartnerPaymentsTab from '@/components/PartnerPaymentsTab';
+import { format, subMonths } from 'date-fns';
 
 const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'] as const;
 
@@ -144,10 +145,11 @@ export default function PaymentsPage() {
 
   // Filter
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [salaryMonth, setSalaryMonth] = useState(() => format(subMonths(new Date(), 1), 'yyyy-MM'));
 
   const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth && !isMealExpense(a)).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredMeals = useMemo(() => advances.filter(a => a.month === filterMonth && isMealExpense(a)).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
-  const filteredPayments = useMemo(() => payments.filter(p => p.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, filterMonth]);
+  const filteredPayments = useMemo(() => payments.filter(p => p.month === salaryMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, salaryMonth]);
   const filteredPaymentsTotal = useMemo(() => filteredPayments.reduce((sum, payment) => sum + payment.netSalary, 0), [filteredPayments]);
 
   // Expand advance details (now grouped by employee)
@@ -278,8 +280,8 @@ export default function PaymentsPage() {
           </div>
 
           <div>
-            <label className="label-caps mb-1 block">Filtrar por mês</label>
-            <Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" />
+            <label className="label-caps mb-1 block">Competência</label>
+            <Input type="month" value={salaryMonth} onChange={e => setSalaryMonth(e.target.value)} className="max-w-[200px]" />
           </div>
 
 
