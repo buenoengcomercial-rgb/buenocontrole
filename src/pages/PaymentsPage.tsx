@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
-import { calculateAdvance, getSalaryPaymentDate, getSalaryPaymentTotal, isMealExpense } from '@/types/employee';
+import { calculateAdvance, getSalaryPaymentDate, isMealExpense } from '@/types/employee';
 import type { SalaryPayment, SalaryAdvance } from '@/types/employee';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
@@ -147,7 +147,7 @@ export default function PaymentsPage() {
   const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth && !isMealExpense(a)).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredMeals = useMemo(() => advances.filter(a => a.month === filterMonth && isMealExpense(a)).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredPayments = useMemo(() => payments.filter(p => p.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, filterMonth]);
-  const filteredPaymentsTotal = useMemo(() => filteredPayments.reduce((sum, payment) => sum + getSalaryPaymentTotal(payment), 0), [filteredPayments]);
+  const filteredPaymentsTotal = useMemo(() => filteredPayments.reduce((sum, payment) => sum + payment.netSalary, 0), [filteredPayments]);
 
   // Expand advance details (now grouped by employee)
   const [expandedAdvance, setExpandedAdvance] = useState<string | null>(null);
@@ -296,8 +296,8 @@ export default function PaymentsPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-muted-foreground uppercase">Total</span>
-                        <span className="text-sm font-semibold">{formatCurrency(getSalaryPaymentTotal(p))}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase">Salário pago</span>
+                        <span className="text-sm font-semibold">{formatCurrency(p.netSalary)}</span>
                       </div>
                       <span className="text-xs text-muted-foreground">{formatDate(p.paymentDate)}</span>
                       {p.notes && <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />}
@@ -340,7 +340,7 @@ export default function PaymentsPage() {
             className="bg-card rounded-xl border-2 border-primary/30 shadow-card px-6 py-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
             aria-live="polite"
           >
-            <span className="text-sm font-semibold uppercase text-foreground">Total</span>
+            <span className="text-sm font-semibold uppercase text-foreground">Total pago de salários</span>
             <span className="text-xl font-semibold text-primary">{formatCurrency(filteredPaymentsTotal)}</span>
           </div>
         </TabsContent>
