@@ -77,7 +77,7 @@ export default function PaymentsPage() {
   // Salary payment form
   const [payOpen, setPayOpen] = useState(false);
   const [payForm, setPayForm] = useState({
-    employeeId: '', month: '', inssDiscount: 0, absenceDiscount: 0, otherDiscounts: 0, otherAdditions: 0,
+    employeeId: '', month: '', monthlyBase: '' as number | '', inssDiscount: 0, absenceDiscount: 0, otherDiscounts: 0, otherAdditions: 0,
     paidValue: '' as number | '', paymentDate: '', paymentMethod: 'PIX', notes: '',
   });
 
@@ -98,10 +98,11 @@ export default function PaymentsPage() {
     const empAdvances = advances.filter(a => a.employeeId === payForm.employeeId && a.month === payForm.month && !isMealExpense(a));
     const totalAdvances = empAdvances.reduce((s, a) => s + a.value, 0);
     const totalDiscounts = payForm.inssDiscount + payForm.absenceDiscount + payForm.otherDiscounts;
-    const netSalary = selectedEmp.grossSalary - totalAdvances - totalDiscounts + payForm.otherAdditions;
+    const grossSalary = payForm.monthlyBase === '' ? selectedEmp.grossSalary : payForm.monthlyBase;
+    const netSalary = grossSalary - totalAdvances - totalDiscounts + payForm.otherAdditions;
     const [y, m] = payForm.month.split('-').map(Number);
     const defaultDate = getSalaryPaymentDate(y, m + 1).toISOString().slice(0, 10);
-    return { grossSalary: selectedEmp.grossSalary, totalAdvances, totalDiscounts, netSalary, defaultDate };
+    return { grossSalary, totalAdvances, totalDiscounts, netSalary, defaultDate };
   }, [payForm, selectedEmp, advances]);
 
   const handlePayment = () => {
@@ -126,7 +127,7 @@ export default function PaymentsPage() {
     resetPayForm();
   };
 
-  const resetPayForm = () => setPayForm({ employeeId: '', month: '', inssDiscount: 0, absenceDiscount: 0, otherDiscounts: 0, otherAdditions: 0, paidValue: '', paymentDate: '', paymentMethod: 'PIX', notes: '' });
+  const resetPayForm = () => setPayForm({ employeeId: '', month: '', monthlyBase: '', inssDiscount: 0, absenceDiscount: 0, otherDiscounts: 0, otherAdditions: 0, paidValue: '', paymentDate: '', paymentMethod: 'PIX', notes: '' });
 
   const openEdit = (p: SalaryPayment) => {
     setEditPayment({ ...p });
@@ -184,13 +185,15 @@ export default function PaymentsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="label-caps mb-1 block">Colaborador</label>
-                      <Select value={payForm.employeeId} onValueChange={v => setPayForm(f => ({ ...f, employeeId: v }))}>
+                      <Select value={payForm.employeeId} onValueChange={v => setPayForm(f => ({ ...f, employeeId: v, monthlyBase: '' }))}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         <SelectContent>{activeEmployees.filter(e => !payForm.month || !payments.some(p => p.employeeId === e.id && p.month === payForm.month)).map(e => <SelectItem key={e.id} value={e.id}>{e.name}{e.status === 'desligado' ? ' (desligado)' : ''}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div><label className="label-caps mb-1 block">Mês Referência</label><Input type="month" value={payForm.month} onChange={e => setPayForm(f => ({ ...f, month: e.target.value }))} /></div>
                   </div>
+
+                  {selectedEmp && <div><label className="label-caps mb-1 block">Salário-base nesta competência</label><Input type="number" min={0} step={0.01} value={payForm.monthlyBase === '' ? selectedEmp.grossSalary : payForm.monthlyBase} onChange={e => setPayForm(f => ({ ...f, monthlyBase: e.target.value ? Number(e.target.value) : '' }))} /></div>}
 
                   {/* PIX info */}
                   {selectedEmp && selectedEmp.pixKey && (
