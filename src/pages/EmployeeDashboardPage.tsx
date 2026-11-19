@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
+import { isMealExpense } from '@/types/employee';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency } from '@/lib/format';
 import { Users, DollarSign, ArrowUpCircle, UtensilsCrossed, Palmtree } from 'lucide-react';
@@ -24,7 +25,7 @@ export default function EmployeeDashboardPage() {
   );
 
   const totalAdvancesMonth = useMemo(() =>
-    advances.filter(a => a.month === currentMonth).reduce((s, a) => s + a.value, 0),
+    advances.filter(a => a.month === currentMonth && !isMealExpense(a)).reduce((s, a) => s + a.value, 0),
     [advances, currentMonth]
   );
 

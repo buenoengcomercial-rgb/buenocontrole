@@ -35,6 +35,10 @@ export interface SalaryAdvance {
   createdAt: string;
 }
 
+export function isMealExpense(advance: Pick<SalaryAdvance, 'notes'>): boolean {
+  return /\bmarmitas?\b/i.test(advance.notes || '');
+}
+
 export interface SalaryPayment {
   id: string;
   employeeId: string;

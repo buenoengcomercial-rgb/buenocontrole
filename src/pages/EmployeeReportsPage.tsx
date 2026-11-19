@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
+import { isMealExpense } from '@/types/employee';
 import { useSafetyData } from '@/context/SafetyContext';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
@@ -30,7 +31,7 @@ export default function EmployeeReportsPage() {
   // Advance report
   const advanceReport = useMemo(() => {
     return advances
-      .filter(a => a.month === month)
+      .filter(a => a.month === month && !isMealExpense(a))
       .filter(a => filterEmployee === 'all' || a.employeeId === filterEmployee)
       .map(a => ({
         ...a,

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useEmployeeData } from '@/context/EmployeeContext';
-import { calculateAdvance, getSalaryPaymentDate, getSalaryPaymentTotal } from '@/types/employee';
+import { calculateAdvance, getSalaryPaymentDate, getSalaryPaymentTotal, isMealExpense } from '@/types/employee';
 import type { SalaryPayment, SalaryAdvance } from '@/types/employee';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCard, KeyRound, ChevronDown, ChevronRight, Pencil, FileText } from 'lucide-react';
+import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCard, KeyRound, ChevronDown, ChevronRight, Pencil, FileText, UtensilsCrossed } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { exportRowsToXlsx } from '@/lib/xlsx-export';
@@ -34,6 +34,22 @@ export default function PaymentsPage() {
   const [advCustomValue, setAdvCustomValue] = useState<number | ''>('');
   const [advNotes, setAdvNotes] = useState('');
   const [advPayDate, setAdvPayDate] = useState('');
+  const [mealEmployee, setMealEmployee] = useState('');
+  const [mealValue, setMealValue] = useState<number | ''>('');
+  const [mealDate, setMealDate] = useState('');
+  const [mealNotes, setMealNotes] = useState('');
+
+  const handleAddMeal = () => {
+    if (!mealEmployee || !mealDate || !mealValue || mealValue <= 0) {
+      toast.error('Informe colaborador, valor e data.');
+      return;
+    }
+    addAdvanceManual(mealEmployee, mealDate.slice(0, 7), mealValue, `Marmitas: ${mealNotes.trim() || 'refeições fornecidas'}`, mealDate);
+    setMealValue('');
+    setMealDate('');
+    setMealNotes('');
+    toast.success('Marmitas registradas.');
+  };
 
   const handleGenerateAdvance = () => {
     if (!advEmployee) { toast.error('Selecione um colaborador.'); return; }
@@ -52,7 +68,7 @@ export default function PaymentsPage() {
   const handleGenerateAllAdvances = () => {
     let count = 0;
     activeOnly.forEach(emp => {
-      const exists = advances.find(a => a.employeeId === emp.id && a.month === advMonth);
+      const exists = advances.find(a => a.employeeId === emp.id && a.month === advMonth && !isMealExpense(a));
       if (!exists) { generateAdvance(emp.id, advMonth); count++; }
     });
     toast.success(`${count} adiantamentos gerados.`);
@@ -79,7 +95,7 @@ export default function PaymentsPage() {
 
   const payPreview = useMemo(() => {
     if (!selectedEmp || !payForm.month) return null;
-    const empAdvances = advances.filter(a => a.employeeId === payForm.employeeId && a.month === payForm.month);
+    const empAdvances = advances.filter(a => a.employeeId === payForm.employeeId && a.month === payForm.month && !isMealExpense(a));
     const totalAdvances = empAdvances.reduce((s, a) => s + a.value, 0);
     const totalDiscounts = payForm.inssDiscount + payForm.absenceDiscount + payForm.otherDiscounts;
     const netSalary = selectedEmp.grossSalary - totalAdvances - totalDiscounts + payForm.otherAdditions;
@@ -127,7 +143,8 @@ export default function PaymentsPage() {
   // Filter
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
 
-  const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
+  const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth && !isMealExpense(a)).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
+  const filteredMeals = useMemo(() => advances.filter(a => a.month === filterMonth && isMealExpense(a)).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredPayments = useMemo(() => payments.filter(p => p.month === filterMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, filterMonth]);
   const filteredPaymentsTotal = useMemo(() => filteredPayments.reduce((sum, payment) => sum + getSalaryPaymentTotal(payment), 0), [filteredPayments]);
 
@@ -154,6 +171,7 @@ export default function PaymentsPage() {
         <TabsList>
           <TabsTrigger value="salaries" className="gap-2"><DollarSign className="w-4 h-4" />Salários</TabsTrigger>
           <TabsTrigger value="advances" className="gap-2"><ArrowUpCircle className="w-4 h-4" />Adiantamentos</TabsTrigger>
+          <TabsTrigger value="meals" className="gap-2"><UtensilsCrossed className="w-4 h-4" />Marmitas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="salaries" className="space-y-4">
@@ -449,6 +467,27 @@ export default function PaymentsPage() {
               });
             })()}
           </div>
+        </TabsContent>
+        <TabsContent value="meals" className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
+            <div><label className="label-caps mb-1 block">Colaborador</label><Select value={mealEmployee} onValueChange={setMealEmployee}><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
+            <div><label className="label-caps mb-1 block">Valor</label><Input type="number" min={0} step={0.01} value={mealValue} onChange={e => setMealValue(e.target.value ? Number(e.target.value) : '')} /></div>
+            <div><label className="label-caps mb-1 block">Data</label><Input type="date" value={mealDate} onChange={e => setMealDate(e.target.value)} /></div>
+            <Button onClick={handleAddMeal}><Plus className="w-4 h-4 mr-2" />Registrar marmitas</Button>
+          </div>
+          <div><label className="label-caps mb-1 block">Observações</label><Textarea value={mealNotes} onChange={e => setMealNotes(e.target.value)} placeholder="Quantidade e período" className="min-h-[60px]" /></div>
+          <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
+          <div className="space-y-2">
+            {filteredMeals.map(meal => {
+              const employee = employees.find(e => e.id === meal.employeeId);
+              return <div key={meal.id} className="flex flex-wrap items-start justify-between gap-3 border-b border-border py-3 text-sm">
+                <div><div className="font-medium">{employee?.name || '—'}</div><div className="text-muted-foreground">{formatDate(meal.paymentDate)} · {meal.notes}</div></div>
+                <span className="font-semibold">{formatCurrency(meal.value)}</span>
+              </div>;
+            })}
+            {filteredMeals.length === 0 && <p className="py-8 text-center text-meta">Nenhuma marmita encontrada.</p>}
+          </div>
+          <div className="flex justify-between border-t border-border pt-3 text-sm font-semibold"><span>Total</span><span>{formatCurrency(filteredMeals.reduce((sum, meal) => sum + meal.value, 0))}</span></div>
         </TabsContent>
       </Tabs>
 
