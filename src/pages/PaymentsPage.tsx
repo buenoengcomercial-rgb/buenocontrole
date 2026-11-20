@@ -61,6 +61,7 @@ export default function PaymentsPage() {
 
   const handleGenerateAdvance = async () => {
     if (!advEmployee) { toast.error('Selecione um colaborador.'); return; }
+    if (advCustomValue !== '' && !advPayDate) { toast.error('Informe a data do pagamento para um adiantamento manual.'); return; }
     try {
       if (advCustomValue && advCustomValue > 0) {
         await addAdvanceManual(advEmployee, advMonth, advCustomValue, advNotes, advPayDate || undefined);
