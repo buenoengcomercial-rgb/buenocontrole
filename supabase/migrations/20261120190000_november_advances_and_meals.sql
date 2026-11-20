@@ -14,7 +14,8 @@ BEGIN
       ('%RAIMUNDO%LEONEL%', '2026-11-14'::date, 110.00::numeric, 'Alimentação: comprovante BB 111602 (ALIMENTA 3.jpeg)', '111602'),
       ('%RAIMUNDO%LEONEL%', '2026-11-20'::date, 88.00::numeric, 'Alimentação: comprovante BB 112303 (ALIMENTA 6.jpeg)', '112303'),
       ('%FAGNER%COSTA%FERREIRA%', '2026-11-05'::date, 44.00::numeric, 'Alimentação: comprovante BB 110509 (ALIMENTA 4.jpeg)', '110509'),
-      ('%FAGNER%COSTA%FERREIRA%', '2026-11-17'::date, 88.00::numeric, 'Alimentação: comprovante BB 111706 (ALIMENTA 5.jpeg)', '111706')
+      ('%FAGNER%COSTA%FERREIRA%', '2026-11-17'::date, 88.00::numeric, 'Alimentação: comprovante BB 111706 (ALIMENTA 5.jpeg)', '111706'),
+      ('%MARCOS%RODRIGUES%NOGUEIRA%', '2026-11-20'::date, 1000.00::numeric, 'Adiantamento salarial; comprovante BB 112305 (adiantamento 7.jpeg)', '112305')
     ) AS receipts(employee_pattern, paid_on, amount, description, bank_document)
   LOOP
     SELECT count(*), min(id) INTO employee_count, matched_employee
