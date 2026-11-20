@@ -15,6 +15,7 @@ describe('meal expenses', () => {
   it('keeps marmitas separate from salary advances', () => {
     expect(isMealExpense({ notes: 'Bruno: 19 marmitas - outubro/2026' })).toBe(true);
     expect(isMealExpense({ notes: '1 marmita - outubro/2026' })).toBe(true);
+    expect(isMealExpense({ notes: 'Alimentação: comprovante BB 112303' })).toBe(true);
     expect(isMealExpense({ notes: 'ADIANTAMENTO REALIZADO VIA PIX - R$728' })).toBe(false);
     expect(isMealExpense({ notes: '' })).toBe(false);
   });

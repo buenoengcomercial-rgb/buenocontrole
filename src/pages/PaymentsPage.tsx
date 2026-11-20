@@ -45,30 +45,37 @@ export default function PaymentsPage() {
   const [mealDate, setMealDate] = useState('');
   const [mealNotes, setMealNotes] = useState('');
 
-  const handleAddMeal = () => {
+  const handleAddMeal = async () => {
     if (!mealEmployee || !mealDate || !mealValue || mealValue <= 0) {
       toast.error('Informe colaborador, valor e data.');
       return;
     }
-    addAdvanceManual(mealEmployee, mealDate.slice(0, 7), mealValue, `Marmitas: ${mealNotes.trim() || 'refeições fornecidas'}`, mealDate);
-    setMealValue('');
-    setMealDate('');
-    setMealNotes('');
-    toast.success('Marmitas registradas.');
+    try {
+      await addAdvanceManual(mealEmployee, mealDate.slice(0, 7), mealValue, `Alimentação: ${mealNotes.trim() || 'pagamento informado'}`, mealDate);
+      setMealValue('');
+      setMealDate('');
+      setMealNotes('');
+      toast.success('Alimentação registrada.');
+    } catch (error) { toast.error(`Não foi possível registrar: ${error instanceof Error ? error.message : 'erro no banco'}`); }
   };
 
-  const handleGenerateAdvance = () => {
+  const handleGenerateAdvance = async () => {
     if (!advEmployee) { toast.error('Selecione um colaborador.'); return; }
-    if (advCustomValue && advCustomValue > 0) {
-      addAdvanceManual(advEmployee, advMonth, advCustomValue, advNotes, advPayDate || undefined);
-    } else {
-      const emp = activeEmployees.find(e => e.id === advEmployee);
-      if (emp) addAdvanceManual(advEmployee, advMonth, calculateAdvance(emp.grossSalary), advNotes, advPayDate || undefined);
+    try {
+      if (advCustomValue && advCustomValue > 0) {
+        await addAdvanceManual(advEmployee, advMonth, advCustomValue, advNotes, advPayDate || undefined);
+      } else {
+        const emp = activeEmployees.find(e => e.id === advEmployee);
+        if (!emp) throw new Error('Colaborador não encontrado.');
+        await addAdvanceManual(advEmployee, advMonth, calculateAdvance(emp.grossSalary), advNotes, advPayDate || undefined);
+      }
+      toast.success('Adiantamento registrado.');
+      setAdvCustomValue('');
+      setAdvNotes('');
+      setAdvPayDate('');
+    } catch (error) {
+      toast.error(`Não foi possível registrar: ${error instanceof Error ? error.message : 'erro no banco'}`);
     }
-    toast.success('Adiantamento gerado.');
-    setAdvCustomValue('');
-    setAdvNotes('');
-    setAdvPayDate('');
   };
 
   const handleGenerateAllAdvances = () => {
@@ -179,7 +186,7 @@ export default function PaymentsPage() {
         <TabsList className="h-auto flex flex-wrap justify-start">
           <TabsTrigger value="salaries" className="gap-2"><DollarSign className="w-4 h-4" />Salários</TabsTrigger>
           <TabsTrigger value="advances" className="gap-2"><ArrowUpCircle className="w-4 h-4" />Adiantamentos</TabsTrigger>
-          <TabsTrigger value="meals" className="gap-2"><UtensilsCrossed className="w-4 h-4" />Marmitas</TabsTrigger>
+          <TabsTrigger value="meals" className="gap-2"><UtensilsCrossed className="w-4 h-4" />Alimentação</TabsTrigger>
           <TabsTrigger value="partners" className="gap-2"><DollarSign className="w-4 h-4" />Sócios</TabsTrigger>
           <TabsTrigger value="diarists" className="gap-2"><CalendarDays className="w-4 h-4" />Diaristas</TabsTrigger>
         </TabsList>
@@ -487,7 +494,7 @@ export default function PaymentsPage() {
             <div><label className="label-caps mb-1 block">Colaborador</label><Select value={mealEmployee} onValueChange={setMealEmployee}><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent>{activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select></div>
             <div><label className="label-caps mb-1 block">Valor</label><Input type="number" min={0} step={0.01} value={mealValue} onChange={e => setMealValue(e.target.value ? Number(e.target.value) : '')} /></div>
             <div><label className="label-caps mb-1 block">Data</label><Input type="date" value={mealDate} onChange={e => setMealDate(e.target.value)} /></div>
-            <Button onClick={handleAddMeal}><Plus className="w-4 h-4 mr-2" />Registrar marmitas</Button>
+            <Button onClick={handleAddMeal}><Plus className="w-4 h-4 mr-2" />Registrar alimentação</Button>
           </div>
           <div><label className="label-caps mb-1 block">Observações</label><Textarea value={mealNotes} onChange={e => setMealNotes(e.target.value)} placeholder="Quantidade e período" className="min-h-[60px]" /></div>
           <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
@@ -499,7 +506,7 @@ export default function PaymentsPage() {
                 <span className="font-semibold">{formatCurrency(meal.value)}</span>
               </div>;
             })}
-            {filteredMeals.length === 0 && <p className="py-8 text-center text-meta">Nenhuma marmita encontrada.</p>}
+            {filteredMeals.length === 0 && <p className="py-8 text-center text-meta">Nenhum pagamento de alimentação encontrado.</p>}
           </div>
           <div className="flex justify-between border-t border-border pt-3 text-sm font-semibold"><span>Total</span><span>{formatCurrency(filteredMeals.reduce((sum, meal) => sum + meal.value, 0))}</span></div>
         </TabsContent>

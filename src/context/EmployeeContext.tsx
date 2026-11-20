@@ -30,7 +30,7 @@ interface EmployeeState {
   updateWorkDay: (w: WorkDay) => void;
   deleteWorkDay: (id: string) => void;
   generateAdvance: (employeeId: string, month: string) => void;
-  addAdvanceManual: (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => void;
+  addAdvanceManual: (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => Promise<void>;
   updateAdvance: (a: SalaryAdvance) => void;
   addPayment: (p: Omit<SalaryPayment, 'id' | 'createdAt'>) => void;
   updatePayment: (p: SalaryPayment) => void;
@@ -149,10 +149,12 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   const addAdvanceManual = useCallback(async (employeeId: string, month: string, value: number, notes?: string, paymentDate?: string) => {
     const [y, m] = month.split('-').map(Number);
     const payDate = paymentDate || getAdvancePaymentDate(y, m).toISOString().slice(0, 10);
-    const { data } = await supabase.from('salary_advances').insert({
+    const { data, error } = await supabase.from('salary_advances').insert({
       employee_id: employeeId, month, value, payment_date: payDate, notes: notes || '',
     }).select().single();
-    if (data) setAdvances(prev => [...prev, mapAdvance(data)]);
+    if (error) throw error;
+    if (!data) throw new Error('O banco não confirmou o adiantamento.');
+    setAdvances(prev => [...prev, mapAdvance(data)]);
   }, []);
 
   const updateAdvance = useCallback(async (a: SalaryAdvance) => {

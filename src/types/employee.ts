@@ -36,7 +36,7 @@ export interface SalaryAdvance {
 }
 
 export function isMealExpense(advance: Pick<SalaryAdvance, 'notes'>): boolean {
-  return /\bmarmitas?\b/i.test(advance.notes || '');
+  return /\b(?:marmitas?|alimentação|alimentacao)\b/i.test(advance.notes || '');
 }
 
 export interface SalaryPayment {
