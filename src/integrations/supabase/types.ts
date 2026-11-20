@@ -1193,6 +1193,54 @@ export type Database = {
           referencedColumns: ["id"]
         }]
       }
+      daily_worker_settlements: {
+        Row: {
+          id: string
+          worker_name: string
+          period_start: string
+          period_end: string
+          work_days: Json
+          labor_amount: number
+          meal_amount: number
+          carry_advance: number
+          payments: Json
+          notes: string
+          source_key: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          worker_name: string
+          period_start: string
+          period_end: string
+          work_days?: Json
+          labor_amount?: number
+          meal_amount?: number
+          carry_advance?: number
+          payments?: Json
+          notes?: string
+          source_key?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          worker_name?: string
+          period_start?: string
+          period_end?: string
+          work_days?: Json
+          labor_amount?: number
+          meal_amount?: number
+          carry_advance?: number
+          payments?: Json
+          notes?: string
+          source_key?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payroll_charges: {
         Row: {
           created_at: string

@@ -52,6 +52,7 @@ const allSections = [
       { to: '/colaboradores', label: 'Colaboradores', icon: Users },
       { to: '/colaboradores/dias', label: 'Dias Trabalhados', icon: CalendarDays },
       { to: '/colaboradores/pagamentos', label: 'Pagamentos', icon: DollarSign },
+      { to: '/colaboradores/diaristas', label: 'Diaristas', icon: CalendarDays },
       { to: '/colaboradores/encargos', label: 'Encargos', icon: Shield },
       { to: '/colaboradores/ferias', label: 'Férias', icon: Palmtree },
       { to: '/colaboradores/advertencias', label: 'Advertências', icon: ClipboardList },
