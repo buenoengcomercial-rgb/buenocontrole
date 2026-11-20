@@ -10,6 +10,7 @@ import { Plus, Trash2, Pencil, CheckCircle2, Clock, Paperclip, ExternalLink } fr
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import type { CompanyCharge, ChargeType } from '@/types/safety';
+import { parseTaxCheckpoint } from '@/lib/tax-import';
 
 const PAYER_CNPJ = '39973085000120';
 const categories = {
@@ -19,14 +20,24 @@ const categories = {
 };
 type Category = keyof typeof categories;
 
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message;
+  return 'erro desconhecido';
+}
+
 export default function EncargosPage() {
-  const { charges, addCharge, updateCharge, deleteCharge } = useSafetyData();
+  const { charges, chargeSchemaReady, addCharge, updateCharge, deleteCharge } = useSafetyData();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [filterType, setFilterType] = useState<'all' | ChargeType>('all');
   const [category, setCategory] = useState<Category>('trabalhistas');
   const [attachOpenId, setAttachOpenId] = useState<string | null>(null);
+  const [importItems, setImportItems] = useState<Omit<CompanyCharge, 'id' | 'createdAt'>[]>([]);
+  const [importSkipped, setImportSkipped] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [form, setForm] = useState({
     chargeType: 'INSS' as ChargeType,
@@ -74,7 +85,7 @@ export default function EncargosPage() {
     if (!form.month || !form.dueDate) { toast.error('Preencha mês e data de vencimento.'); return; }
     if (form.value <= 0) { toast.error('Informe o valor do imposto.'); return; }
     if (form.paid && !form.paymentDate) { toast.error('Informe a data do pagamento comprovado.'); return; }
-    if (form.source === 'Nibo Empresa' && (form.verificationStatus === 'Guia conferida' || form.paid) && !form.sourceDocumentId.trim()) { toast.error('Informe o ID do documento do Nibo para confirmar a guia ou o pagamento.'); return; }
+    if (form.source === 'Nibo Empresa' && (form.verificationStatus === 'Guia conferida' || form.paid) && !form.sourceDocumentId.trim() && !form.documentNumber.trim()) { toast.error('Informe o ID do Nibo ou o número da guia.'); return; }
     try {
       if (editId) {
         const existing = charges.find(c => c.id === editId)!;
@@ -82,7 +93,33 @@ export default function EncargosPage() {
       } else await addCharge(form);
       toast.success('Imposto salvo.');
       setOpen(false);
-    } catch (error) { toast.error(`Não foi possível salvar: ${error instanceof Error ? error.message : String(error)}`); }
+    } catch (error) { toast.error(`Não foi possível salvar: ${errorMessage(error)}`); }
+  };
+
+  const handleImportFile = async (file: File) => {
+    try {
+      const { ready, skipped } = parseTaxCheckpoint(JSON.parse(await file.text()), charges);
+      setImportItems(ready);
+      setImportSkipped(skipped);
+      setImportOpen(true);
+    } catch (error) { toast.error(errorMessage(error)); }
+  };
+
+  const handleImport = async () => {
+    setImporting(true);
+    let imported = 0;
+    try {
+      for (const charge of importItems) {
+        await addCharge(charge);
+        imported++;
+      }
+      toast.success(`${imported} imposto(s) registrado(s); ${importSkipped} já existente(s).`);
+      setImportOpen(false);
+      setImportItems([]);
+    } catch (error) {
+      setImportItems(items => items.slice(imported));
+      toast.error(`${imported} registrado(s); importação interrompida: ${errorMessage(error)}`);
+    } finally { setImporting(false); }
   };
 
   const total = filtered.reduce((s, c) => s + c.value, 0);
@@ -96,6 +133,11 @@ export default function EncargosPage() {
           <h1>Impostos</h1>
           <p className="text-sm text-muted-foreground mt-1">K. C. Bueno de Godoy Oliveira Ltda. · CNPJ 39.973.085/0001-20</p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <label className="inline-flex h-10 items-center justify-center rounded-md border px-4 text-sm font-medium cursor-pointer hover:bg-muted">
+            Importar guias
+            <input type="file" accept=".json,application/json" className="sr-only" onChange={e => { const file = e.target.files?.[0]; if (file) void handleImportFile(file); e.target.value = ''; }} />
+          </label>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpen()}><Plus className="w-4 h-4 mr-2" />Novo imposto</Button>
@@ -127,7 +169,7 @@ export default function EncargosPage() {
                 <Input type="number" min={0} step={0.01} value={form.value || ''} onChange={e => setForm(f => ({ ...f, value: Number(e.target.value) }))} />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="label-caps mb-1 block">Origem</label><Select value={form.source} onValueChange={source => setForm(f => ({ ...f, source }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Manual">Manual</SelectItem><SelectItem value="Nibo Empresa">Nibo Empresa</SelectItem></SelectContent></Select></div>
+                <div><label className="label-caps mb-1 block">Origem</label><Select value={form.source} onValueChange={source => setForm(f => ({ ...f, source }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Manual">Manual</SelectItem><SelectItem value="Guia local">Guia local</SelectItem><SelectItem value="Nibo Empresa">Nibo Empresa</SelectItem></SelectContent></Select></div>
                 <div><label className="label-caps mb-1 block">Conferência</label><Select value={form.verificationStatus} onValueChange={verificationStatus => setForm(f => ({ ...f, verificationStatus }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="A confirmar">A confirmar</SelectItem><SelectItem value="Guia conferida">Guia conferida</SelectItem><SelectItem value="Erro de leitura">Erro de leitura</SelectItem><SelectItem value="Pago no Nibo; comprovante pendente">Pago no Nibo; comprovante pendente</SelectItem><SelectItem value="Pagamento comprovado">Pagamento comprovado</SelectItem></SelectContent></Select></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -158,7 +200,24 @@ export default function EncargosPage() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      {!chargeSchemaReady && <p role="status" className="text-sm text-warning">Migração do banco pendente. Os dados de conferência serão mantidos nas observações até a atualização da tabela.</p>}
+
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Importar guias conferidas</DialogTitle></DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>{importItems.length} nova(s) · {importSkipped} já existente(s)</p>
+            {importItems.map(item => <div key={`${item.chargeType}-${item.documentNumber}`} className="flex justify-between gap-3 border-b py-1"><span>{item.chargeType} · {item.month} · {item.documentNumber}</span><span className="shrink-0">{formatCurrency(item.value)}</span></div>)}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" disabled={importing} onClick={() => setImportOpen(false)}>Cancelar</Button>
+            <Button disabled={importing || importItems.length === 0} onClick={() => void handleImport()}>{importing ? 'Registrando...' : 'Registrar guias'}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-wrap gap-2 border-b pb-3" role="tablist" aria-label="Categorias de impostos">
         {(Object.entries(categories) as [Category, typeof categories[Category]][]).map(([key, value]) => <button key={key} type="button" role="tab" aria-selected={category === key} className={`rounded-md px-3 py-2 text-sm ${category === key ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`} onClick={() => { setCategory(key); setFilterType('all'); }}>{value.label}</button>)}

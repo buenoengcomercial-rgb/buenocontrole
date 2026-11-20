@@ -2,9 +2,11 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { supabase } from '@/integrations/supabase/client';
 import type { CompanyCharge, Vacation, EmployeeDocument, EPIDelivery, ASO, Training } from '@/types/safety';
 import { toast } from 'sonner';
+import { notesForLegacyStorage, readImportedNotes } from '@/lib/tax-import';
 
 interface SafetyState {
   charges: CompanyCharge[];
+  chargeSchemaReady: boolean;
   vacations: Vacation[];
   documents: EmployeeDocument[];
   epiDeliveries: EPIDelivery[];
@@ -33,7 +35,8 @@ interface SafetyState {
 const SafetyContext = createContext<SafetyState | null>(null);
 
 function mapCharge(r: any): CompanyCharge {
-  return { id: r.id, chargeType: r.charge_type as CompanyCharge['chargeType'], month: r.month, value: Number(r.value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: r.notes || '', payerCnpj: r.payer_cnpj || '39973085000120', source: r.source || 'Manual', sourceDocumentId: r.source_document_id || '', documentNumber: r.document_number || '', documentUrl: r.document_url || '', documentHash: r.document_hash || '', verificationStatus: r.verification_status || 'A confirmar', createdAt: r.created_at };
+  const imported = readImportedNotes(r.notes || '');
+  return { id: r.id, chargeType: r.charge_type as CompanyCharge['chargeType'], month: r.month, value: Number(r.value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: imported.notes, payerCnpj: r.payer_cnpj || '39973085000120', source: r.source || imported.metadata?.source || 'Manual', sourceDocumentId: r.source_document_id || imported.metadata?.sourceDocumentId || '', documentNumber: r.document_number || imported.metadata?.documentNumber || '', documentUrl: r.document_url || imported.metadata?.documentUrl || '', documentHash: r.document_hash || '', verificationStatus: r.verification_status || imported.metadata?.verificationStatus || 'A confirmar', createdAt: r.created_at };
 }
 function mapVacation(r: any): Vacation {
   return { id: r.id, employeeId: r.employee_id, startDate: r.start_date, endDate: r.end_date, status: r.status as Vacation['status'], vacationValue: Number(r.vacation_value), bonusValue: Number(r.bonus_value), totalPaid: Number(r.total_paid), paymentDate: r.payment_date || '', notes: r.notes, createdAt: r.created_at };
@@ -60,6 +63,7 @@ const TRAINING_COLUMNS = 'id, employee_id, training_type, training_date, expiry_
 
 export function SafetyProvider({ children }: { children: React.ReactNode }) {
   const [charges, setCharges] = useState<CompanyCharge[]>([]);
+  const [chargeSchemaReady, setChargeSchemaReady] = useState(true);
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [epiDeliveries, setEPIDeliveries] = useState<EPIDelivery[]>([]);
@@ -70,10 +74,14 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     Promise.all([
       supabase.from('company_charges').select(CHARGE_COLUMNS).then(async ({ data, error }) => {
-        if (!error) { setCharges((data || []).map(mapCharge)); return; }
+        if (!error) { setChargeSchemaReady(true); setCharges((data || []).map(mapCharge)); return; }
+        if (error.code !== '42703' && error.code !== 'PGRST204') {
+          toast.error(`Não foi possível carregar impostos: ${error.message}`);
+          return;
+        }
         const legacy = await supabase.from('company_charges').select('id, charge_type, month, value, due_date, paid, payment_date, notes, created_at');
         if (legacy.error) toast.error(`Não foi possível carregar impostos: ${legacy.error.message}`);
-        else { setCharges((legacy.data || []).map(mapCharge)); toast.error('Migração dos impostos pendente no banco. Os registros antigos foram preservados, mas novos impostos não podem ser salvos.'); }
+        else { setChargeSchemaReady(false); setCharges((legacy.data || []).map(mapCharge)); toast.warning('Migração dos impostos pendente: os dados de conferência serão preservados nas observações até a atualização do banco.'); }
       }),
       supabase.from('vacations').select(VACATION_COLUMNS).then(({ data }) => setVacations((data || []).map(mapVacation))),
       supabase.from('employee_documents').select(DOCUMENT_COLUMNS).then(({ data }) => setDocuments((data || []).map(mapDoc))),
@@ -85,27 +93,41 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
 
   // Company Charges
   const addCharge = useCallback(async (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => {
-    const { data, error } = await supabase.from('company_charges').insert({
+    const payload = {
       charge_type: c.chargeType, month: c.month, value: c.value,
       due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
       payer_cnpj: c.payerCnpj, source: c.source, source_document_id: c.sourceDocumentId || null,
       document_number: c.documentNumber, document_url: c.documentUrl, document_hash: c.documentHash,
       verification_status: c.verificationStatus,
-    }).select().single();
+    };
+    const { data, error } = chargeSchemaReady
+      ? await supabase.from('company_charges').insert(payload).select().single()
+      : await supabase.from('company_charges').insert({
+          charge_type: c.chargeType, month: c.month, value: c.value,
+          due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null,
+          notes: notesForLegacyStorage(c),
+        }).select().single();
     if (error) throw error;
     if (data) setCharges(prev => [...prev, mapCharge(data)]);
-  }, []);
+  }, [chargeSchemaReady]);
   const updateCharge = useCallback(async (c: CompanyCharge) => {
-    const { error } = await supabase.from('company_charges').update({
+    const payload = {
       charge_type: c.chargeType, month: c.month, value: c.value,
       due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
       payer_cnpj: c.payerCnpj, source: c.source, source_document_id: c.sourceDocumentId || null,
       document_number: c.documentNumber, document_url: c.documentUrl, document_hash: c.documentHash,
       verification_status: c.verificationStatus,
-    }).eq('id', c.id);
+    };
+    const { error } = chargeSchemaReady
+      ? await supabase.from('company_charges').update(payload).eq('id', c.id)
+      : await supabase.from('company_charges').update({
+          charge_type: c.chargeType, month: c.month, value: c.value,
+          due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null,
+          notes: notesForLegacyStorage(c),
+        }).eq('id', c.id);
     if (error) throw error;
     setCharges(prev => prev.map(x => x.id === c.id ? c : x));
-  }, []);
+  }, [chargeSchemaReady]);
   const deleteCharge = useCallback(async (id: string) => {
     const { error } = await supabase.from('company_charges').delete().eq('id', id);
     if (error) throw error;
@@ -202,7 +224,7 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SafetyContext.Provider value={{
-      charges, vacations, documents, epiDeliveries, asos, trainings, loading,
+      charges, chargeSchemaReady, vacations, documents, epiDeliveries, asos, trainings, loading,
       addCharge, updateCharge, deleteCharge,
       addVacation, updateVacation, deleteVacation,
       addDocument, updateDocument, deleteDocument,
