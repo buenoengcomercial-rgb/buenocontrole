@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const totalTerminations = useMemo(() => terminations.filter(t => t.paymentDate && t.paymentDate.startsWith(currentMonth)).reduce((s, t) => s + t.value, 0), [terminations, currentMonth]);
   const totalPayroll = useMemo(() => totalSalariesPaid + totalVacationsPaid + totalTerminations, [totalSalariesPaid, totalVacationsPaid, totalTerminations]);
 
-  const totalCharges = useMemo(() => charges.filter(c => c.month === previousTaxMonth).reduce((s, c) => s + c.value, 0), [charges, previousTaxMonth]);
+  const totalCharges = useMemo(() => charges.filter(c => c.month === previousTaxMonth && !c.paid && c.verificationStatus !== 'Pago no Nibo; comprovante pendente' && c.payerCnpj.replace(/\D/g, '') === '39973085000120').reduce((s, c) => s + c.value, 0), [charges, previousTaxMonth]);
   const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === previousTaxMonth).reduce((s, d) => s + d.value, 0), [dasExpenses, previousTaxMonth]);
 
   const onVacation = useMemo(() => {
@@ -177,7 +177,7 @@ export default function DashboardPage() {
 
   const kpis = [
     { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Férias: ${formatCurrency(totalVacationsPaid)}${totalTerminations > 0 ? ` | Resc: ${formatCurrency(totalTerminations)}` : ''}` },
-    { label: 'Encargos a Pagar', value: formatCurrency(totalCharges), icon: Shield, subtitle: `Competência ${previousTaxMonthLabel}` },
+    { label: 'Impostos a Pagar', value: formatCurrency(totalCharges), icon: Shield, subtitle: `Competência ${previousTaxMonthLabel}` },
     { label: 'Vale Alimentação', value: formatCurrency(totalMealVoucher), icon: HardHat },
     { label: 'DAS a Pagar', value: formatCurrency(totalDASMonth), icon: Receipt, subtitle: `Competência ${previousTaxMonthLabel}` },
     { label: 'Materiais no Mês', value: formatCurrency(totalMaterialsMonth), icon: Package },

@@ -102,6 +102,7 @@ function AppRoutes() {
         <Route path="/laudos" element={<LaudosPage />} />
         <Route path="/medicoes-energisa" element={<MedicoesEnergisaPage />} />
         <Route path="/financeiro/das" element={<DASPage />} />
+        <Route path="/financeiro/impostos" element={<EncargosPage />} />
         <Route path="/financeiro/terceirizados" element={<OutsourcedPaymentsPage />} />
         <Route path="/fornecedores" element={<SuppliersPage />} />
         <Route path="/materiais" element={<MaterialsPage />} />
@@ -113,7 +114,7 @@ function AppRoutes() {
         <Route path="/colaboradores/dias" element={<WorkDaysPage />} />
         <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
         <Route path="/colaboradores/diaristas" element={<Navigate to="/colaboradores/pagamentos?aba=diarists" replace />} />
-        <Route path="/colaboradores/encargos" element={<EncargosPage />} />
+        <Route path="/colaboradores/encargos" element={<Navigate to="/financeiro/impostos" replace />} />
         <Route path="/colaboradores/ferias" element={<FeriasPage />} />
         <Route path="/colaboradores/advertencias" element={<AdvertenciasPage />} />
         <Route path="/colaboradores/relatorios" element={<EmployeeReportsPage />} />

@@ -31,6 +31,7 @@ const allSections = [
     adminOnly: true,
     links: [
       { to: '/financeiro/das', label: 'DAS — Simples Nacional', icon: Receipt },
+      { to: '/financeiro/impostos', label: 'Impostos', icon: Shield },
       { to: '/financeiro/terceirizados', label: 'Terceirizados', icon: Wrench },
     ],
   },
@@ -52,7 +53,6 @@ const allSections = [
       { to: '/colaboradores', label: 'Colaboradores', icon: Users },
       { to: '/colaboradores/dias', label: 'Dias Trabalhados', icon: CalendarDays },
       { to: '/colaboradores/pagamentos', label: 'Pagamentos', icon: DollarSign },
-      { to: '/colaboradores/encargos', label: 'Encargos', icon: Shield },
       { to: '/colaboradores/ferias', label: 'Férias', icon: Palmtree },
       { to: '/colaboradores/advertencias', label: 'Advertências', icon: ClipboardList },
       { to: '/colaboradores/rescisao', label: 'Rescisão', icon: FileText },

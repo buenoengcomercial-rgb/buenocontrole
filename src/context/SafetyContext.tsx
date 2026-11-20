@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { CompanyCharge, Vacation, EmployeeDocument, EPIDelivery, ASO, Training } from '@/types/safety';
+import { toast } from 'sonner';
 
 interface SafetyState {
   charges: CompanyCharge[];
@@ -10,9 +11,9 @@ interface SafetyState {
   asos: ASO[];
   trainings: Training[];
   loading: boolean;
-  addCharge: (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => void;
-  updateCharge: (c: CompanyCharge) => void;
-  deleteCharge: (id: string) => void;
+  addCharge: (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => Promise<void>;
+  updateCharge: (c: CompanyCharge) => Promise<void>;
+  deleteCharge: (id: string) => Promise<void>;
   addVacation: (v: Omit<Vacation, 'id' | 'createdAt'>) => void;
   updateVacation: (v: Vacation) => void;
   deleteVacation: (id: string) => void;
@@ -32,7 +33,7 @@ interface SafetyState {
 const SafetyContext = createContext<SafetyState | null>(null);
 
 function mapCharge(r: any): CompanyCharge {
-  return { id: r.id, chargeType: r.charge_type as CompanyCharge['chargeType'], month: r.month, value: Number(r.value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: r.notes || '', createdAt: r.created_at };
+  return { id: r.id, chargeType: r.charge_type as CompanyCharge['chargeType'], month: r.month, value: Number(r.value), dueDate: r.due_date || '', paid: r.paid, paymentDate: r.payment_date || '', notes: r.notes || '', payerCnpj: r.payer_cnpj || '39973085000120', source: r.source || 'Manual', sourceDocumentId: r.source_document_id || '', documentNumber: r.document_number || '', documentUrl: r.document_url || '', documentHash: r.document_hash || '', verificationStatus: r.verification_status || 'A confirmar', createdAt: r.created_at };
 }
 function mapVacation(r: any): Vacation {
   return { id: r.id, employeeId: r.employee_id, startDate: r.start_date, endDate: r.end_date, status: r.status as Vacation['status'], vacationValue: Number(r.vacation_value), bonusValue: Number(r.bonus_value), totalPaid: Number(r.total_paid), paymentDate: r.payment_date || '', notes: r.notes, createdAt: r.created_at };
@@ -50,7 +51,7 @@ function mapTraining(r: any): Training {
   return { id: r.id, employeeId: r.employee_id, trainingType: r.training_type, trainingDate: r.training_date, expiryDate: r.expiry_date, fileName: r.file_name, createdAt: r.created_at };
 }
 
-const CHARGE_COLUMNS = 'id, charge_type, month, value, due_date, paid, payment_date, notes, created_at';
+const CHARGE_COLUMNS = 'id, charge_type, month, value, due_date, paid, payment_date, notes, payer_cnpj, source, source_document_id, document_number, document_url, document_hash, verification_status, created_at';
 const VACATION_COLUMNS = 'id, employee_id, start_date, end_date, status, vacation_value, bonus_value, total_paid, payment_date, notes, created_at';
 const DOCUMENT_COLUMNS = 'id, employee_id, type, completed, date, file_name, created_at';
 const EPI_COLUMNS = 'id, employee_id, epi_type, unit, delivery_date, quantity, notes, file_name, created_at';
@@ -68,7 +69,12 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('company_charges').select(CHARGE_COLUMNS).then(({ data }) => setCharges((data || []).map(mapCharge))),
+      supabase.from('company_charges').select(CHARGE_COLUMNS).then(async ({ data, error }) => {
+        if (!error) { setCharges((data || []).map(mapCharge)); return; }
+        const legacy = await supabase.from('company_charges').select('id, charge_type, month, value, due_date, paid, payment_date, notes, created_at');
+        if (legacy.error) toast.error(`Não foi possível carregar impostos: ${legacy.error.message}`);
+        else { setCharges((legacy.data || []).map(mapCharge)); toast.error('Migração dos impostos pendente no banco. Os registros antigos foram preservados, mas novos impostos não podem ser salvos.'); }
+      }),
       supabase.from('vacations').select(VACATION_COLUMNS).then(({ data }) => setVacations((data || []).map(mapVacation))),
       supabase.from('employee_documents').select(DOCUMENT_COLUMNS).then(({ data }) => setDocuments((data || []).map(mapDoc))),
       supabase.from('epi_deliveries').select(EPI_COLUMNS).then(({ data }) => setEPIDeliveries((data || []).map(mapEPI))),
@@ -79,21 +85,30 @@ export function SafetyProvider({ children }: { children: React.ReactNode }) {
 
   // Company Charges
   const addCharge = useCallback(async (c: Omit<CompanyCharge, 'id' | 'createdAt'>) => {
-    const { data } = await supabase.from('company_charges').insert({
+    const { data, error } = await supabase.from('company_charges').insert({
       charge_type: c.chargeType, month: c.month, value: c.value,
       due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
-    } as any).select().single();
+      payer_cnpj: c.payerCnpj, source: c.source, source_document_id: c.sourceDocumentId || null,
+      document_number: c.documentNumber, document_url: c.documentUrl, document_hash: c.documentHash,
+      verification_status: c.verificationStatus,
+    }).select().single();
+    if (error) throw error;
     if (data) setCharges(prev => [...prev, mapCharge(data)]);
   }, []);
   const updateCharge = useCallback(async (c: CompanyCharge) => {
-    await supabase.from('company_charges').update({
+    const { error } = await supabase.from('company_charges').update({
       charge_type: c.chargeType, month: c.month, value: c.value,
       due_date: c.dueDate || null, paid: c.paid, payment_date: c.paymentDate || null, notes: c.notes,
-    } as any).eq('id', c.id);
+      payer_cnpj: c.payerCnpj, source: c.source, source_document_id: c.sourceDocumentId || null,
+      document_number: c.documentNumber, document_url: c.documentUrl, document_hash: c.documentHash,
+      verification_status: c.verificationStatus,
+    }).eq('id', c.id);
+    if (error) throw error;
     setCharges(prev => prev.map(x => x.id === c.id ? c : x));
   }, []);
   const deleteCharge = useCallback(async (id: string) => {
-    await supabase.from('company_charges').delete().eq('id', id);
+    const { error } = await supabase.from('company_charges').delete().eq('id', id);
+    if (error) throw error;
     setCharges(prev => prev.filter(x => x.id !== id));
   }, []);
 

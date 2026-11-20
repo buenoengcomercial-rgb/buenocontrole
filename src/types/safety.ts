@@ -1,4 +1,4 @@
-export type ChargeType = 'INSS' | 'FGTS';
+export type ChargeType = 'INSS' | 'FGTS' | 'CSLL' | 'IRPJ' | 'COFINS' | 'PIS' | 'ISSQN';
 
 export interface CompanyCharge {
   id: string;
@@ -9,6 +9,13 @@ export interface CompanyCharge {
   paymentDate: string;
   paid: boolean;
   notes: string;
+  payerCnpj: string;
+  source: string;
+  sourceDocumentId: string;
+  documentNumber: string;
+  documentUrl: string;
+  documentHash: string;
+  verificationStatus: string;
   createdAt: string;
 }
 

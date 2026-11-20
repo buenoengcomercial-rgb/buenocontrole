@@ -181,38 +181,59 @@ export type Database = {
         Row: {
           charge_type: string
           created_at: string
+          document_hash: string
+          document_number: string
+          document_url: string
           due_date: string
           id: string
           month: string
           notes: string
           paid: boolean
+          payer_cnpj: string
           payment_date: string | null
+          source: string
+          source_document_id: string | null
           updated_at: string
           value: number
+          verification_status: string
         }
         Insert: {
           charge_type?: string
           created_at?: string
+          document_hash?: string
+          document_number?: string
+          document_url?: string
           due_date: string
           id?: string
           month: string
           notes?: string
           paid?: boolean
+          payer_cnpj?: string
           payment_date?: string | null
+          source?: string
+          source_document_id?: string | null
           updated_at?: string
           value?: number
+          verification_status?: string
         }
         Update: {
           charge_type?: string
           created_at?: string
+          document_hash?: string
+          document_number?: string
+          document_url?: string
           due_date?: string
           id?: string
           month?: string
           notes?: string
           paid?: boolean
+          payer_cnpj?: string
           payment_date?: string | null
+          source?: string
+          source_document_id?: string | null
           updated_at?: string
           value?: number
+          verification_status?: string
         }
         Relationships: []
       }
