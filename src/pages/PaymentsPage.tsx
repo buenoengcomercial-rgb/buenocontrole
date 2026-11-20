@@ -9,16 +9,20 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCard, KeyRound, ChevronDown, ChevronRight, Pencil, FileText, UtensilsCrossed } from 'lucide-react';
+import { Plus, Trash2, DollarSign, ArrowUpCircle, MessageSquare, Edit2, CreditCard, KeyRound, ChevronDown, ChevronRight, Pencil, FileText, UtensilsCrossed, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import AttachedDocuments from '@/components/AttachedDocuments';
 import { exportRowsToXlsx } from '@/lib/xlsx-export';
 import PartnerPaymentsTab from '@/components/PartnerPaymentsTab';
+import DiaristasPage from '@/pages/DiaristasPage';
 import { format, subMonths } from 'date-fns';
+import { useSearchParams } from 'react-router-dom';
 
 const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'] as const;
 
 export default function PaymentsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = ['salaries', 'advances', 'meals', 'partners', 'diarists'].includes(searchParams.get('aba') || '') ? searchParams.get('aba')! : 'salaries';
   const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, updateAdvance, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
   const activeEmployees = useMemo(() => {
     const list = [...employees];
@@ -171,12 +175,13 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <h1>Pagamentos</h1>
 
-      <Tabs defaultValue="salaries" className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={value => setSearchParams({ aba: value })} className="space-y-4">
+        <TabsList className="h-auto flex flex-wrap justify-start">
           <TabsTrigger value="salaries" className="gap-2"><DollarSign className="w-4 h-4" />Salários</TabsTrigger>
           <TabsTrigger value="advances" className="gap-2"><ArrowUpCircle className="w-4 h-4" />Adiantamentos</TabsTrigger>
           <TabsTrigger value="meals" className="gap-2"><UtensilsCrossed className="w-4 h-4" />Marmitas</TabsTrigger>
           <TabsTrigger value="partners" className="gap-2"><DollarSign className="w-4 h-4" />Sócios</TabsTrigger>
+          <TabsTrigger value="diarists" className="gap-2"><CalendarDays className="w-4 h-4" />Diaristas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="salaries" className="space-y-4">
@@ -349,6 +354,7 @@ export default function PaymentsPage() {
           </div>
         </TabsContent>
         <TabsContent value="partners"><PartnerPaymentsTab /></TabsContent>
+        <TabsContent value="diarists"><DiaristasPage /></TabsContent>
 
         <TabsContent value="advances" className="space-y-4">
           <div className="flex flex-col gap-3">

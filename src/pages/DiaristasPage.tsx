@@ -103,8 +103,8 @@ export default function DiaristasPage() {
   const patchDay = (index: number, patch: Partial<WorkDay>) => setDraft(current => current && ({ ...current, workDays: current.workDays.map((day, i) => i === index ? { ...day, ...patch } : day) }));
   const patchPayment = (index: number, patch: Partial<Payment>) => setDraft(current => current && ({ ...current, payments: current.payments.map((payment, i) => i === index ? { ...payment, ...patch } : payment) }));
 
-  return <div className="space-y-5 p-6 lg:p-8 max-w-7xl mx-auto">
-    <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-semibold">Diaristas</h1><Button onClick={() => setDraft(emptyDraft())}><Plus className="w-4 h-4 mr-2" />Nova apuração</Button></div>
+  return <div className="space-y-5">
+    <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">Diárias</h2><Button onClick={() => setDraft(emptyDraft())}><Plus className="w-4 h-4 mr-2" />Nova apuração</Button></div>
     <div className="flex flex-wrap gap-3"><Input type="month" aria-label="Filtrar por mês" className="w-48" value={month} onChange={event => setMonth(event.target.value)} /><Input aria-label="Buscar diarista" placeholder="Buscar diarista" className="w-60" value={search} onChange={event => setSearch(event.target.value)} /></div>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-y py-4 text-sm"><div><span className="text-muted-foreground">Total a conciliar</span><strong className="block text-lg">{formatCurrency(due / 100)}</strong></div><div><span className="text-muted-foreground">Pagamentos informados</span><strong className="block text-lg">{formatCurrency(paid / 100)}</strong></div><div><span className="text-muted-foreground">Diferença</span><strong className="block text-lg">{formatCurrency((due - paid) / 100)}</strong></div></div>
     {loading ? <p className="text-muted-foreground">Carregando...</p> : visible.length === 0 ? <p className="text-muted-foreground">Nenhuma apuração encontrada.</p> : <div className="border rounded-md divide-y bg-background">{visible.map(row => {

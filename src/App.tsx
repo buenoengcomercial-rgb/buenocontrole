@@ -19,7 +19,6 @@ import ReportsPage from "@/pages/ReportsPage";
 import EmployeesPage from "@/pages/EmployeesPage";
 import WorkDaysPage from "@/pages/WorkDaysPage";
 import PaymentsPage from "@/pages/PaymentsPage";
-import DiaristasPage from "@/pages/DiaristasPage";
 import EmployeeDashboardPage from "@/pages/EmployeeDashboardPage";
 import EmployeeReportsPage from "@/pages/EmployeeReportsPage";
 import EncargosPage from "@/pages/EncargosPage";
@@ -113,7 +112,7 @@ function AppRoutes() {
         <Route path="/colaboradores/painel" element={<EmployeeDashboardPage />} />
         <Route path="/colaboradores/dias" element={<WorkDaysPage />} />
         <Route path="/colaboradores/pagamentos" element={<PaymentsPage />} />
-        <Route path="/colaboradores/diaristas" element={<DiaristasPage />} />
+        <Route path="/colaboradores/diaristas" element={<Navigate to="/colaboradores/pagamentos?aba=diarists" replace />} />
         <Route path="/colaboradores/encargos" element={<EncargosPage />} />
         <Route path="/colaboradores/ferias" element={<FeriasPage />} />
         <Route path="/colaboradores/advertencias" element={<AdvertenciasPage />} />
