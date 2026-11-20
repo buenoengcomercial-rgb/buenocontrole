@@ -160,11 +160,26 @@ export default function PaymentsPage() {
 
   const filteredAdvances = useMemo(() => advances.filter(a => a.month === filterMonth && !isMealExpense(a)).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
   const filteredMeals = useMemo(() => advances.filter(a => a.month === filterMonth && isMealExpense(a)).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [advances, filterMonth]);
+  const mealGroups = useMemo(() => {
+    const groups = new Map<string, SalaryAdvance[]>();
+    filteredMeals.forEach(meal => {
+      const records = groups.get(meal.employeeId) || [];
+      records.push(meal);
+      groups.set(meal.employeeId, records);
+    });
+    return [...groups].map(([employeeId, records]) => ({
+      employeeId,
+      name: employees.find(employee => employee.id === employeeId)?.name || '—',
+      records,
+      total: records.reduce((sum, meal) => sum + meal.value, 0),
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [filteredMeals, employees]);
   const filteredPayments = useMemo(() => payments.filter(p => p.month === salaryMonth).sort((a, b) => a.paymentDate.localeCompare(b.paymentDate)), [payments, salaryMonth]);
   const filteredPaymentsTotal = useMemo(() => filteredPayments.reduce((sum, payment) => sum + payment.netSalary, 0), [filteredPayments]);
 
   // Expand advance details (now grouped by employee)
   const [expandedAdvance, setExpandedAdvance] = useState<string | null>(null);
+  const [expandedMeal, setExpandedMeal] = useState<string | null>(null);
   const [expandedPayment, setExpandedPayment] = useState<string | null>(null);
 
   // Edit advance
@@ -498,15 +513,35 @@ export default function PaymentsPage() {
           </div>
           <div><label className="label-caps mb-1 block">Observações</label><Textarea value={mealNotes} onChange={e => setMealNotes(e.target.value)} placeholder="Quantidade e período" className="min-h-[60px]" /></div>
           <div><label className="label-caps mb-1 block">Filtrar por mês</label><Input type="month" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="max-w-[200px]" /></div>
-          <div className="space-y-2">
-            {filteredMeals.map(meal => {
-              const employee = employees.find(e => e.id === meal.employeeId);
-              return <div key={meal.id} className="flex flex-wrap items-start justify-between gap-3 border-b border-border py-3 text-sm">
-                <div><div className="font-medium">{employee?.name || '—'}</div><div className="text-muted-foreground">{formatDate(meal.paymentDate)} · {meal.notes}</div></div>
-                <span className="font-semibold">{formatCurrency(meal.value)}</span>
+          <div className="space-y-3">
+            {mealGroups.map(group => {
+              const isExpanded = expandedMeal === group.employeeId;
+              return <div key={group.employeeId} className="rounded-lg border border-border bg-card overflow-hidden">
+                <button
+                  type="button"
+                  aria-expanded={isExpanded}
+                  aria-controls={`meal-records-${group.employeeId}`}
+                  onClick={() => setExpandedMeal(isExpanded ? null : group.employeeId)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-row-hover"
+                >
+                  <span className="flex min-w-0 items-start gap-3">
+                    {isExpanded ? <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                    <span className="min-w-0">
+                      <span className="block break-words text-sm font-medium">{group.name}</span>
+                      <span className="block text-xs text-muted-foreground">{group.records.length} registro{group.records.length > 1 ? 's' : ''}</span>
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold">{formatCurrency(group.total)}</span>
+                </button>
+                {isExpanded && <div id={`meal-records-${group.employeeId}`} className="divide-y border-t border-border">
+                  {group.records.map(meal => <div key={meal.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 text-sm">
+                    <div className="min-w-0"><div className="text-muted-foreground">{formatDate(meal.paymentDate)}</div><div className="break-words">{meal.notes}</div></div>
+                    <span className="shrink-0 font-medium">{formatCurrency(meal.value)}</span>
+                  </div>)}
+                </div>}
               </div>;
             })}
-            {filteredMeals.length === 0 && <p className="py-8 text-center text-meta">Nenhum pagamento de alimentação encontrado.</p>}
+            {mealGroups.length === 0 && <p className="py-8 text-center text-meta">Nenhum pagamento de alimentação encontrado.</p>}
           </div>
           <div className="flex justify-between border-t border-border pt-3 text-sm font-semibold"><span>Total</span><span>{formatCurrency(filteredMeals.reduce((sum, meal) => sum + meal.value, 0))}</span></div>
         </TabsContent>
