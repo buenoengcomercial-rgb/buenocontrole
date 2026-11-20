@@ -17,10 +17,24 @@ import PartnerPaymentsTab from '@/components/PartnerPaymentsTab';
 import DiaristasPage from '@/pages/DiaristasPage';
 import { format, subMonths } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const PAYMENT_METHODS = ['PIX', 'Transferência', 'Dinheiro', 'Boleto', 'Cheque'] as const;
 
+const novemberReceipts = [
+  { employee: 'RAIMUNDO DAS GRACAS MIRANDA LEONEL', date: '2026-11-08', value: 210, document: '110901', notes: 'Adiantamento salarial; comprovante BB 110901 (ADIANTA 1.jpeg)' },
+  { employee: 'RAIMUNDO DAS GRACAS MIRANDA LEONEL', date: '2026-11-20', value: 1000, document: '112302', notes: 'Adiantamento salarial; comprovante BB 112302 (ADIANTA 2.jpeg)' },
+  { employee: 'RAIMUNDO DAS GRACAS MIRANDA LEONEL', date: '2026-11-05', value: 44, document: '110508', notes: 'Alimentação: comprovante BB 110508 (ALIMENTA 1.jpeg)' },
+  { employee: 'RAIMUNDO DAS GRACAS MIRANDA LEONEL', date: '2026-11-14', value: 110, document: '111602', notes: 'Alimentação: comprovante BB 111602 (ALIMENTA 3.jpeg)' },
+  { employee: 'RAIMUNDO DAS GRACAS MIRANDA LEONEL', date: '2026-11-20', value: 88, document: '112303', notes: 'Alimentação: comprovante BB 112303 (ALIMENTA 6.jpeg)' },
+  { employee: 'FAGNER COSTA FERREIRA', date: '2026-11-05', value: 44, document: '110509', notes: 'Alimentação: comprovante BB 110509 (ALIMENTA 4.jpeg)' },
+  { employee: 'FAGNER COSTA FERREIRA', date: '2026-11-17', value: 88, document: '111706', notes: 'Alimentação: comprovante BB 111706 (ALIMENTA 5.jpeg)' },
+  { employee: 'MARCOS RODRIGUES NOGUEIRA', date: '2026-11-20', value: 1000, document: '112305', notes: 'Adiantamento salarial; comprovante BB 112305 (adiantamento 7.jpeg)' },
+] as const;
+
 export default function PaymentsPage() {
+  const { isAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = ['salaries', 'advances', 'meals', 'partners', 'diarists'].includes(searchParams.get('aba') || '') ? searchParams.get('aba')! : 'salaries';
   const { employees, advances, payments, workDays, generateAdvance, addAdvanceManual, updateAdvance, addPayment, updatePayment, deleteAdvance, deletePayment } = useEmployeeData();
@@ -85,6 +99,35 @@ export default function PaymentsPage() {
       if (!exists) { generateAdvance(emp.id, advMonth); count++; }
     });
     toast.success(`${count} adiantamentos gerados.`);
+  };
+
+  const [importingReceipts, setImportingReceipts] = useState(false);
+  const handleImportNovemberReceipts = async () => {
+    if (!isAdmin || importingReceipts) return;
+    setImportingReceipts(true);
+    try {
+      const { data: existing, error: readError } = await supabase.from('salary_advances')
+        .select('employee_id,payment_date,value,notes').eq('month', '2026-11');
+      if (readError) throw readError;
+      const pending = novemberReceipts.flatMap(receipt => {
+        const matches = employees.filter(employee => employee.name.trim().toUpperCase() === receipt.employee);
+        if (matches.length !== 1) throw new Error(`Cadastro não identificado de forma única: ${receipt.employee}`);
+        const employeeId = matches[0].id;
+        const samePayment = (existing || []).filter(row => row.employee_id === employeeId && row.payment_date === receipt.date && Number(row.value) === receipt.value);
+        if (samePayment.some(row => row.notes?.includes(`BB ${receipt.document}`))) return [];
+        if (samePayment.length) throw new Error(`Possível duplicidade: ${receipt.employee}, ${receipt.date}, ${receipt.value}`);
+        return [{ employee_id: employeeId, month: '2026-11', value: receipt.value, payment_date: receipt.date, notes: receipt.notes }];
+      });
+      if (!pending.length) { toast.info('Todos os comprovantes já estão registrados.'); return; }
+      const { data: inserted, error: insertError } = await supabase.from('salary_advances').insert(pending).select('id');
+      if (insertError) throw insertError;
+      if (inserted?.length !== pending.length) throw new Error('O banco não confirmou todos os lançamentos.');
+      window.location.reload();
+    } catch (error) {
+      toast.error(`Importação interrompida: ${error instanceof Error ? error.message : 'erro no banco'}`);
+    } finally {
+      setImportingReceipts(false);
+    }
   };
 
   // Salary payment form
@@ -400,6 +443,7 @@ export default function PaymentsPage() {
             <div className="flex gap-2">
               <Button onClick={handleGenerateAdvance}>Gerar Adiantamento</Button>
               <Button variant="outline" onClick={handleGenerateAllAdvances}>Gerar Todos (40%)</Button>
+              {isAdmin && <Button variant="outline" disabled={importingReceipts} onClick={handleImportNovemberReceipts}>Importar comprovantes BB de novembro</Button>}
               <Button variant="outline" onClick={() => {
                 const rows = filteredAdvances
                   .map(a => {
