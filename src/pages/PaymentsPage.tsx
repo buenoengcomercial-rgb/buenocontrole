@@ -15,6 +15,7 @@ import AttachedDocuments from '@/components/AttachedDocuments';
 import { exportRowsToXlsx } from '@/lib/xlsx-export';
 import PartnerPaymentsTab from '@/components/PartnerPaymentsTab';
 import DiaristasPage from '@/pages/DiaristasPage';
+import ReceiptImport from '@/components/ReceiptImport';
 import { format, subMonths } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 
@@ -199,6 +200,7 @@ export default function PaymentsPage() {
       <h1>Pagamentos</h1>
 
       <Tabs value={activeTab} onValueChange={value => setSearchParams({ aba: value })} className="space-y-4">
+        <div className="flex justify-end"><ReceiptImport employees={employees} /></div>
         <TabsList className="h-auto flex flex-wrap justify-start">
           <TabsTrigger value="salaries" className="gap-2"><DollarSign className="w-4 h-4" />Salários</TabsTrigger>
           <TabsTrigger value="advances" className="gap-2"><ArrowUpCircle className="w-4 h-4" />Adiantamentos</TabsTrigger>
