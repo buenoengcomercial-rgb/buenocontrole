@@ -4,9 +4,10 @@ import { useEmployeeData } from '@/context/EmployeeContext';
 import { useSafetyData } from '@/context/SafetyContext';
 import { useProjectData } from '@/context/ProjectContext';
 import { formatCurrency } from '@/lib/format';
+import { companyTaxes, taxSummary, TAX_GROUPS } from '@/lib/dashboard-taxes';
 import { calculate13thDailyCost, getSalaryPaymentTotal } from '@/types/employee';
 import { daysUntilExpiry } from '@/types/safety';
-import { TrendingUp, Users, Shield, Palmtree, AlertTriangle, Package, DollarSign, Stethoscope, GraduationCap, FileText, HardHat, Receipt, CheckCircle2, Clock, Info } from 'lucide-react';
+import { TrendingUp, Users, Shield, Palmtree, AlertTriangle, Package, DollarSign, Stethoscope, GraduationCap, FileText, HardHat, Receipt, Info } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { Link } from 'react-router-dom';
 
@@ -21,14 +22,20 @@ type PayrollTrendCategoryKey = 'salarios' | 'inss' | 'fgts' | 'ferias' | 'rescis
 export default function DashboardPage() {
   const { purchases } = useAppData();
   const { employees, workDays, payments, terminations } = useEmployeeData();
-  const { charges, vacations, asos, trainings } = useSafetyData();
+  const { charges, chargeSchemaReady, vacations, asos, trainings } = useSafetyData();
   const { projects, allocations, outsourcedServices, projectDocuments, dasExpenses } = useProjectData();
   const [hoveredPayrollCategory, setHoveredPayrollCategory] = useState<PayrollTrendCategoryKey | null>(null);
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const today = `${currentMonth}-${String(now.getDate()).padStart(2, '0')}`;
   const previousTaxMonth = getPreviousMonth(currentMonth);
   const previousTaxMonthLabel = formatMonthLabel(previousTaxMonth);
   const activeEmployees = employees.filter(e => e.status === 'ativo');
+  const taxes = useMemo(() => companyTaxes(charges), [charges]);
+  const openTaxes = useMemo(() => taxSummary(taxes, today), [taxes, today]);
+  const taxMonth = useMemo(() => taxes.filter(charge => charge.month === previousTaxMonth), [taxes, previousTaxMonth]);
+  const showLegacyDAS = previousTaxMonth < '2026-09';
 
   // Folha de pagamento = aba Salários + férias + rescisões.
   // Adiantamento e vale alimentação já entram no fechamento de salários.
@@ -40,8 +47,7 @@ export default function DashboardPage() {
   const totalTerminations = useMemo(() => terminations.filter(t => t.paymentDate && t.paymentDate.startsWith(currentMonth)).reduce((s, t) => s + t.value, 0), [terminations, currentMonth]);
   const totalPayroll = useMemo(() => totalSalariesPaid + totalVacationsPaid + totalTerminations, [totalSalariesPaid, totalVacationsPaid, totalTerminations]);
 
-  const totalCharges = useMemo(() => charges.filter(c => c.month === previousTaxMonth && !c.paid && c.verificationStatus !== 'Pago no Nibo; comprovante pendente' && c.payerCnpj.replace(/\D/g, '') === '39973085000120').reduce((s, c) => s + c.value, 0), [charges, previousTaxMonth]);
-  const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === previousTaxMonth).reduce((s, d) => s + d.value, 0), [dasExpenses, previousTaxMonth]);
+  const totalDASMonth = useMemo(() => dasExpenses.filter(d => d.month === previousTaxMonth && !d.paid).reduce((s, d) => s + d.value, 0), [dasExpenses, previousTaxMonth]);
 
   const onVacation = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -55,12 +61,11 @@ export default function DashboardPage() {
 
   // DAS status
   const dasCurrentMonth = useMemo(() => dasExpenses.find(d => d.month === previousTaxMonth), [dasExpenses, previousTaxMonth]);
-  const chargesCurrentMonth = useMemo(() => charges.filter(c => c.month === previousTaxMonth), [charges, previousTaxMonth]);
 
   const projectCostData = useMemo(() => {
     const activeProjectCount = projects.length || 1;
     const totalDAS = dasExpenses.reduce((s, d) => s + d.value, 0);
-    const totalChargesAll = charges.reduce((s, c) => s + c.value, 0);
+    const totalChargesAll = taxes.reduce((s, c) => s + c.value, 0);
     return projects.map(p => {
       const projAllocs = allocations.filter(a => a.projectId === p.id && a.worked);
       const projPurchases = purchases.filter(pu => pu.city === p.city);
@@ -94,7 +99,7 @@ export default function DashboardPage() {
         percentUsed,
       };
     });
-  }, [projects, allocations, purchases, outsourcedServices, employees, charges, dasExpenses]);
+  }, [projects, allocations, purchases, outsourcedServices, employees, taxes, dasExpenses]);
 
   const payrollTrendData = useMemo(() => {
     const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' });
@@ -106,8 +111,8 @@ export default function DashboardPage() {
       const month = date.toISOString().slice(0, 7);
 
       const salaryPayments = payments.filter(p => p.month === month);
-      const inssCharges = charges.filter(c => c.month === month && c.chargeType === 'INSS');
-      const fgtsCharges = charges.filter(c => c.month === month && c.chargeType === 'FGTS');
+      const inssCharges = taxes.filter(c => c.month === month && c.chargeType === 'INSS');
+      const fgtsCharges = taxes.filter(c => c.month === month && c.chargeType === 'FGTS');
       const paidVacations = vacations.filter(v => v.paymentDate && v.paymentDate.startsWith(month));
       const paidTerminations = terminations.filter(t => t.paymentDate && t.paymentDate.startsWith(month));
 
@@ -161,7 +166,7 @@ export default function DashboardPage() {
         },
       };
     });
-  }, [payments, charges, vacations, terminations, employees]);
+  }, [payments, taxes, vacations, terminations, employees]);
 
   const payrollTrendTotal = useMemo(
     () => payrollTrendData.reduce((sum, month) => sum + month.total, 0),
@@ -177,9 +182,11 @@ export default function DashboardPage() {
 
   const kpis = [
     { label: 'Folha de Pagamento', value: formatCurrency(totalPayroll), icon: DollarSign, accent: true, subtitle: `Sal: ${formatCurrency(totalSalariesPaid)} | Férias: ${formatCurrency(totalVacationsPaid)}${totalTerminations > 0 ? ` | Resc: ${formatCurrency(totalTerminations)}` : ''}` },
-    { label: 'Impostos a Pagar', value: formatCurrency(totalCharges), icon: Shield, subtitle: `Competência ${previousTaxMonthLabel}` },
+    { label: 'Impostos em aberto', value: formatCurrency(openTaxes.openValue), icon: Shield, subtitle: `${openTaxes.openCount} guia(s) · todas as competências` },
     { label: 'Vale Alimentação', value: formatCurrency(totalMealVoucher), icon: HardHat },
-    { label: 'DAS a Pagar', value: formatCurrency(totalDASMonth), icon: Receipt, subtitle: `Competência ${previousTaxMonthLabel}` },
+    showLegacyDAS
+      ? { label: 'DAS a pagar', value: formatCurrency(totalDASMonth), icon: Receipt, subtitle: `Competência ${previousTaxMonthLabel}` }
+      : { label: 'Comprovantes pendentes', value: String(openTaxes.proofPendingCount), icon: Receipt, subtitle: 'Pago no Nibo; ainda não comprovado' },
     { label: 'Materiais no Mês', value: formatCurrency(totalMaterialsMonth), icon: Package },
   ];
 
@@ -222,57 +229,42 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Payment Status Indicators */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link to="/financeiro/das" className="bg-card rounded-xl p-4 shadow-card hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">DAS</span>
-            <Receipt className="w-4 h-4 text-muted-foreground" />
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2>Impostos · {previousTaxMonthLabel}</h2>
+          <Link to="/financeiro/impostos" className="text-sm text-primary hover:underline">Ver todos os lançamentos</Link>
+        </div>
+        {!chargeSchemaReady && <p className="text-sm text-warning">Migração dos impostos pendente; confira os lançamentos na aba Impostos.</p>}
+        {TAX_GROUPS.map(group => <div key={group.title} className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">{group.title}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {group.types.map(type => {
+              const summary = taxSummary(taxMonth.filter(charge => charge.chargeType === type), today);
+              return <Link key={type} to="/financeiro/impostos" className="border rounded-md bg-card p-4 hover:bg-muted/30 transition-colors min-w-0">
+                <div className="flex items-center justify-between gap-2"><strong className="text-sm">{type}</strong>
+                  {summary.overdueCount > 0 ? <span className="text-xs text-destructive">Vencido</span>
+                    : summary.openCount > 0 ? <span className="text-xs text-warning">Em aberto</span>
+                    : summary.proofPendingCount > 0 ? <span className="text-xs text-warning">A comprovar</span>
+                    : summary.count > 0 ? <span className="text-xs text-success">Pago</span>
+                    : <span className="text-xs text-muted-foreground">Sem registro</span>}
+                </div>
+                <p className="mt-2 text-lg font-semibold">{summary.count ? formatCurrency(summary.openValue) : '—'}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {summary.openCount > 0 ? `${summary.openCount} guia(s) em aberto${summary.dueDates[0] ? ` · vence ${formatDateLabel(summary.dueDates[0])}` : ''}`
+                    : summary.proofPendingCount > 0 ? `${summary.proofPendingCount} comprovante(s) pendente(s)`
+                    : summary.count > 0 ? `${summary.paidCount} guia(s) paga(s)` : 'Nenhuma guia desta competência'}
+                </p>
+                {summary.openCount > 0 && summary.proofPendingCount > 0 && <p className="text-xs text-warning mt-1">{summary.proofPendingCount} pagamento(s) a comprovar</p>}
+              </Link>;
+            })}
           </div>
-          <p className="text-xs text-muted-foreground mb-2">Competência {previousTaxMonthLabel}</p>
-          {dasCurrentMonth ? (
-            dasCurrentMonth.paid
-              ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
-              : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Sem registro desta competência</span>
-          )}
-        </Link>
-
-        <Link to="/colaboradores/encargos" className="bg-card rounded-xl p-4 shadow-card hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">INSS</span>
-            <Shield className="w-4 h-4 text-muted-foreground" />
-          </div>
-          <p className="text-xs text-muted-foreground mb-2">Competência {previousTaxMonthLabel}</p>
-          {(() => {
-            const inssCharge = chargesCurrentMonth.find(c => c.chargeType === 'INSS');
-            if (inssCharge) {
-              return inssCharge.paid
-                ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
-                : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>;
-            }
-            return <span className="text-xs text-muted-foreground">Sem registro desta competência</span>;
-          })()}
-        </Link>
-
-        <Link to="/colaboradores/encargos" className="bg-card rounded-xl p-4 shadow-card hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">FGTS</span>
-            <Shield className="w-4 h-4 text-muted-foreground" />
-          </div>
-          <p className="text-xs text-muted-foreground mb-2">Competência {previousTaxMonthLabel}</p>
-          {(() => {
-            const fgtsCharge = chargesCurrentMonth.find(c => c.chargeType === 'FGTS');
-            if (fgtsCharge) {
-              return fgtsCharge.paid
-                ? <span className="inline-flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full font-medium"><CheckCircle2 className="w-3 h-3" />Pago</span>
-                : <span className="inline-flex items-center gap-1 text-xs bg-destructive/10 text-destructive px-2 py-0.5 rounded-full font-medium"><Clock className="w-3 h-3" />Pendente</span>;
-            }
-            return <span className="text-xs text-muted-foreground">Sem registro desta competência</span>;
-          })()}
-        </Link>
-      </div>
+        </div>)}
+        {showLegacyDAS && <Link to="/financeiro/das" className="block border rounded-md bg-card p-4 hover:bg-muted/30">
+          <div className="flex items-center justify-between"><strong className="text-sm">DAS</strong><span className="text-xs text-muted-foreground">Simples Nacional</span></div>
+          <p className="mt-2 text-lg font-semibold">{dasCurrentMonth ? formatCurrency(totalDASMonth) : '—'}</p>
+          <p className="text-xs text-muted-foreground">{dasCurrentMonth ? dasCurrentMonth.paid ? 'Pago' : 'Em aberto' : 'Sem registro desta competência'}</p>
+        </Link>}
+      </section>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <AlertCard icon={Palmtree} label="Em Férias" count={onVacation.length} color="blue" link="/colaboradores/ferias" />
@@ -285,7 +277,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2>Folha de Pagamentos - Últimos 12 Meses</h2>
-            <p className="text-sm text-muted-foreground mt-1">Visualização por mês com o total de salários da subaba Pagamentos (adiantamento + total pago), impostos (INSS e FGTS), férias e rescisões.</p>
+            <p className="text-sm text-muted-foreground mt-1">Salários, encargos trabalhistas (INSS e FGTS), férias e rescisões por mês. PIS, COFINS, IRPJ, CSLL e ISSQN ficam no quadro de impostos acima.</p>
           </div>
           <div className="text-left sm:text-right">
             <p className="text-xs text-muted-foreground">Total no período</p>
@@ -365,7 +357,7 @@ export default function DashboardPage() {
                 <Bar dataKey="materiais" name="Materiais" fill="hsl(221 83% 53%)" stackId="a" radius={[0, 0, 0, 0]} />
                 <Bar dataKey="maoDeObra" name="Mão de Obra" fill="hsl(142 76% 36%)" stackId="a" />
                 <Bar dataKey="terceirizados" name="Terceirizados" fill="hsl(38 92% 50%)" stackId="a" />
-                <Bar dataKey="encargos" name="INSS/FGTS" fill="hsl(200 70% 50%)" stackId="a" />
+                <Bar dataKey="encargos" name="Impostos" fill="hsl(200 70% 50%)" stackId="a" />
                 <Bar dataKey="das" name="DAS" fill="hsl(280 60% 50%)" stackId="a" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
