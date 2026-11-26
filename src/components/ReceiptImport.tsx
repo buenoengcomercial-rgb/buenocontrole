@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 type BaseReceipt = { name: string; date: string; amount: number; pixId: string; document: string };
 type Receipt = BaseReceipt & (
   | { type: 'advance' | 'meal' }
-  | { type: 'daily'; periodStart: string; periodEnd: string; days: string[]; dayRate: number }
+  | { type: 'daily'; groupName?: string; periodStart: string; periodEnd: string; days: string[]; dayRate: number }
 );
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -29,7 +29,7 @@ function parseReceipts(value: unknown): Receipt[] {
     }
     if (ids.has(row.pixId)) throw new Error(`ID Pix repetido no arquivo: ${row.pixId}`);
     ids.add(row.pixId);
-    if (row.type === 'daily' && (!validDate(row.periodStart || '') || !validDate(row.periodEnd || '') ||
+    if (row.type === 'daily' && ((row.groupName != null && (typeof row.groupName !== 'string' || !row.groupName.trim())) || !validDate(row.periodStart || '') || !validDate(row.periodEnd || '') ||
         row.periodEnd! < row.periodStart! || !Array.isArray(row.days) || row.days.length === 0 ||
         row.days.some(day => typeof day !== 'string' || !validDate(day) || day < row.periodStart! || day > row.periodEnd!) ||
         typeof row.dayRate !== 'number' || row.dayRate <= 0 ||
@@ -59,15 +59,24 @@ export default function ReceiptImport({ employees }: { employees: Employee[] }) 
     setBusy(true);
     let added = 0;
     let skipped = 0;
+    let reconciled = 0;
     try {
       for (const receipt of receipts) {
         if (receipt.type === 'daily') {
           const { data: matches, error: readError } = await supabase.from('daily_worker_settlements')
-            .select('id').ilike('notes', `%${receipt.pixId}%`).limit(1);
+            .select('id, worker_name').ilike('notes', `%${receipt.pixId}%`).limit(1);
           if (readError) throw readError;
-          if (matches?.length) { skipped++; continue; }
+          const workerName = receipt.groupName?.trim() || receipt.name;
+          if (matches?.length) {
+            if (normalized(matches[0].worker_name) !== normalized(workerName)) {
+              const { error } = await supabase.from('daily_worker_settlements').update({ worker_name: workerName }).eq('id', matches[0].id);
+              if (error) throw error;
+              reconciled++;
+            } else skipped++;
+            continue;
+          }
           const { error } = await supabase.from('daily_worker_settlements').insert({
-            worker_name: receipt.name,
+            worker_name: workerName,
             period_start: receipt.periodStart,
             period_end: receipt.periodEnd,
             work_days: receipt.days.map(date => ({ date, amount: receipt.dayRate, note: 'Horas não informadas' })),
@@ -98,10 +107,10 @@ export default function ReceiptImport({ employees }: { employees: Employee[] }) 
         }
         added++;
       }
-      toast.success(`${added} lançamento(s) importado(s); ${skipped} já existente(s).`);
+      toast.success(`${added} importado(s), ${reconciled} reconciliado(s), ${skipped} já existente(s).`);
       setOpen(false);
       setReceipts([]);
-      if (added) window.location.reload();
+      if (added || reconciled) window.location.reload();
     } catch (error) {
       toast.error(`Importação interrompida após ${added} lançamento(s): ${error instanceof Error ? error.message : 'erro no banco'}`);
     } finally {
