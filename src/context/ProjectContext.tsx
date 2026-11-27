@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { findVodelinaLoanToCorrect } from '@/lib/loanCorrection';
+import { toast } from 'sonner';
 import type { Project, WorkAllocation, OutsourcedService, OutsourcedServiceCategory, ProjectDocument, Measurement, DASExpense, ProjectPurchase, EquipmentRental } from '@/types/project';
 
 interface ProjectState {
@@ -97,7 +99,28 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       const { data, error } = await supabase.from('outsourced_services').select(OUTSOURCED_COLUMNS);
 
       if (!error) {
-        setOutsourcedServices((data || []).map(mapOutsourced));
+        const rows = data || [];
+        const loan = findVodelinaLoanToCorrect(rows);
+        if (!loan) {
+          setOutsourcedServices(rows.map(mapOutsourced));
+          return;
+        }
+
+        // Correct only this identified contract; payment rows remain untouched.
+        const { data: corrected, error: correctionError } = await supabase
+          .from('outsourced_services')
+          .update({ value: 350000 })
+          .eq('id', loan.id)
+          .eq('value', loan.value)
+          .select(OUTSOURCED_COLUMNS)
+          .maybeSingle();
+        if (correctionError || !corrected) {
+          console.error('Nao foi possivel corrigir o emprestimo Vo Delina:', correctionError);
+          toast.error('Nao foi possivel corrigir o valor do emprestimo Vo Delina.');
+          setOutsourcedServices(rows.map(mapOutsourced));
+          return;
+        }
+        setOutsourcedServices(rows.map(row => mapOutsourced(row.id === loan.id ? corrected : row)));
         return;
       }
 
