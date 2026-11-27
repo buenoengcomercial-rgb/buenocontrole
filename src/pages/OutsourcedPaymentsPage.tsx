@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronRight, Paperclip, AlertTriangle, Archive, RotateCcw, Building2 } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronRight, Paperclip, AlertTriangle, Archive, RotateCcw, Building2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useProjectData } from '@/context/ProjectContext';
@@ -62,11 +62,14 @@ function statusClass(status: StatusFilter) {
 }
 
 export default function OutsourcedPaymentsPage() {
-  const { projects, outsourcedServices, updateOutsourcedServiceProject, updateOutsourcedServiceStatus } = useProjectData();
+  const { projects, outsourcedServices, updateOutsourcedServiceProject, updateOutsourcedServiceValue, updateOutsourcedServiceStatus } = useProjectData();
   const [payments, setPayments] = useState<Record<string, OutsourcedPayment[]>>({});
   const [activeTab, setActiveTab] = useState<'open' | 'finalized'>('open');
   const [expandedService, setExpandedService] = useState<string | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState<Record<string, boolean>>({});
+  const [editingValueId, setEditingValueId] = useState<string | null>(null);
+  const [contractValueInput, setContractValueInput] = useState('');
+  const [savingValue, setSavingValue] = useState(false);
   const [paymentForms, setPaymentForms] = useState<Record<string, { date: string; value: number | ''; notes: string }>>({});
   const [statusAction, setStatusAction] = useState<{ serviceId: string; finalized: boolean } | null>(null);
   const [projectFilter, setProjectFilter] = useState<LocationFilter>('todos');
@@ -232,6 +235,26 @@ export default function OutsourcedPaymentsPage() {
     }
 
     toast.success('Obra/categoria do terceirizado atualizada.');
+  };
+
+  const saveContractValue = async (serviceId: string) => {
+    const value = Number(contractValueInput.replace(',', '.'));
+    if (!Number.isFinite(value) || value <= 0) {
+      toast.error('Informe um valor maior que zero.');
+      return;
+    }
+    setSavingValue(true);
+    try {
+      const result = await updateOutsourcedServiceValue(serviceId, value);
+      if (!result.ok) {
+        toast.error(result.message || 'Erro ao salvar valor contratado.');
+        return;
+      }
+      setEditingValueId(null);
+      toast.success('Valor contratado atualizado. Os pagamentos foram preservados.');
+    } finally {
+      setSavingValue(false);
+    }
   };
 
   const toggleFinalized = async (serviceId: string, finalized: boolean) => {
@@ -402,6 +425,30 @@ export default function OutsourcedPaymentsPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="border-b border-border pb-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">Valor total contratado: {formatCurrency(service.value)}</span>
+                      {!service.finalized && editingValueId !== service.id && (
+                        <Button size="sm" variant="outline" title="Editar valor contratado" onClick={() => {
+                          setEditingValueId(service.id);
+                          setContractValueInput(service.value.toFixed(2));
+                        }}>
+                          <Pencil className="w-4 h-4 mr-1" /> Editar valor
+                        </Button>
+                      )}
+                    </div>
+                    {editingValueId === service.id && (
+                      <div className="flex flex-wrap items-end gap-2 mt-3">
+                        <div>
+                          <label htmlFor={`contract-value-${service.id}`} className="text-xs text-muted-foreground block mb-1">Novo valor total (R$)</label>
+                          <Input id={`contract-value-${service.id}`} type="number" min="0.01" step="0.01" value={contractValueInput} onChange={e => setContractValueInput(e.target.value)} className="w-44" />
+                        </div>
+                        <Button size="sm" disabled={savingValue} onClick={() => void saveContractValue(service.id)}>Salvar</Button>
+                        <Button size="sm" variant="outline" disabled={savingValue} onClick={() => setEditingValueId(null)}>Cancelar</Button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">

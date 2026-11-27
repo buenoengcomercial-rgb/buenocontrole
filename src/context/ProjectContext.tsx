@@ -19,6 +19,7 @@ interface ProjectState {
   deleteAllocation: (id: string) => void;
   addOutsourcedService: (s: Omit<OutsourcedService, 'id' | 'createdAt' | 'finalized' | 'finalizedAt' | 'serviceCategory'> & { serviceCategory?: OutsourcedServiceCategory }) => void;
   updateOutsourcedServiceProject: (id: string, projectId: string | null, serviceCategory: OutsourcedServiceCategory) => Promise<{ ok: boolean; message?: string }>;
+  updateOutsourcedServiceValue: (id: string, value: number) => Promise<{ ok: boolean; message?: string }>;
   updateOutsourcedServiceStatus: (id: string, finalized: boolean) => Promise<{ ok: boolean; message?: string }>;
   deleteOutsourcedService: (id: string) => void;
   addProjectDocument: (d: Omit<ProjectDocument, 'id' | 'createdAt'>) => void;
@@ -220,6 +221,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setOutsourcedServices(prev => prev.map(x => x.id === id ? mapOutsourced(data) : x));
     return { ok: true };
   }, []);
+  const updateOutsourcedServiceValue = useCallback(async (id: string, value: number) => {
+    if (!Number.isFinite(value) || value <= 0) return { ok: false, message: 'Informe um valor maior que zero.' };
+    const { data, error } = await supabase
+      .from('outsourced_services')
+      .update({ value })
+      .eq('id', id)
+      .select(OUTSOURCED_COLUMNS)
+      .single();
+
+    if (error || !data) {
+      console.error('Erro ao alterar valor do terceirizado:', error);
+      return { ok: false, message: 'Nao foi possivel salvar o valor. Tente novamente.' };
+    }
+
+    setOutsourcedServices(prev => prev.map(x => x.id === id ? mapOutsourced(data) : x));
+    return { ok: true };
+  }, []);
   const updateOutsourcedServiceStatus = useCallback(async (id: string, finalized: boolean) => {
     const finalizedAt = finalized ? new Date().toISOString() : null;
     const { data, error } = await supabase
@@ -364,7 +382,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       projects, allocations, outsourcedServices, projectDocuments, measurements, dasExpenses, projectPurchases, equipmentRentals, loading,
       addProject, updateProject, deleteProject,
       addAllocation, deleteAllocation,
-      addOutsourcedService, updateOutsourcedServiceProject, updateOutsourcedServiceStatus, deleteOutsourcedService,
+      addOutsourcedService, updateOutsourcedServiceProject, updateOutsourcedServiceValue, updateOutsourcedServiceStatus, deleteOutsourcedService,
       addProjectDocument, updateProjectDocument, deleteProjectDocument,
       addMeasurement, updateMeasurement, deleteMeasurement,
       addDASExpense, updateDASExpense, deleteDASExpense,
