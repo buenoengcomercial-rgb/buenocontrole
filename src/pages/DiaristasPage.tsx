@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { ensureDailyWorkerWeek20261123 } from '@/lib/dailyWorkerWeek20261123';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,6 +59,8 @@ export default function DiaristasPage() {
 
   const reload = useCallback(async () => {
     setLoading(true);
+    try { await ensureDailyWorkerWeek20261123(); }
+    catch (error) { toast.error(`Não foi possível importar a semana de 23/11: ${error instanceof Error ? error.message : 'erro no banco'}`); }
     const result: Settlement[] = [];
     for (let offset = 0; ; offset += 1000) {
       const { data, error } = await supabase.from('daily_worker_settlements').select('*').order('period_start', { ascending: false }).range(offset, offset + 999);
